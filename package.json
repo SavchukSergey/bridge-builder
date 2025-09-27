@@ -1,0 +1,15 @@
+{
+  "name": "bridge-builder",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Serhii Savchuk",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "http-server ./src"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
