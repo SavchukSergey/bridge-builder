@@ -1,12 +1,14 @@
 // Main entry point for the Bridge Builder game
 import { Game } from './game.js';
 
+// @ts-check
+
 /**
  * @returns {HTMLCanvasElement}
  */
 function getCanvas() {
-  /** @type {HTMLCanvasElement | null} */
-  const canvas = /** @type {HTMLCanvasElement | null} */document.getElementById('game-canvas');
+  /** @type {HTMLCanvasElement} */
+  const canvas = document.getElementById('game-canvas');
 
   if (!canvas) {
     throw new Error("canvas is not found");

@@ -1,4 +1,4 @@
-import { RenderCtx } from "./render-ctx.js";
+import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
 
 // @ts-check
@@ -20,7 +20,11 @@ export class Game {
   }
 
   render() {
-    this.ctx.clear(this.canvas.width, this.canvas.height);
+    // this.ctx.zoom = 40 * Math.sin(new Date().valueOf() / 2e3) + 45;
+
+    this.ctx.width = this.canvas.width;
+    this.ctx.height = this.canvas.height;
+    this.ctx.clear();
     this.scene.render(this.ctx);
   }
 

@@ -18,12 +18,13 @@ export class Joint {
 
   /**
    * 
-   * @param {import("../render-ctx.js").RenderCtx} ctx 
+   * @param {import("../render-ctx.mjs").RenderCtx} ctx 
    */
   render(ctx) {
     ctx.beginPath();
-    ctx.circle(this.position.x, this.position.y, 1);
+    ctx.circle(this.position.x, this.position.y, 0.2);
     ctx.strokeStyle = "black";
+    ctx.lineWidth = 0.2;
     ctx.stroke();
   }
 

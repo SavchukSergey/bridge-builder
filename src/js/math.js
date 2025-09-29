@@ -32,7 +32,7 @@ export function vec3flen2(vec) {
  * 
  * @param {Color} a 
  * @param {Color} b 
- * @param {number} k 
+ * @param {number} k - 0 for a-ish color, 1 for b-ish color
  * @returns {Color}
  */
 export function lerpColor(a, b, k) {

@@ -21,7 +21,7 @@ export class Link {
 
   /**
    * 
-   * @param {import("../render-ctx.js").RenderCtx} ctx 
+   * @param {import("../render-ctx.mjs").RenderCtx} ctx 
    */
   render(ctx) {
     ctx.beginPath();
@@ -29,6 +29,7 @@ export class Link {
     ctx.lineTo(this.b.position.x, this.b.position.y);
     const clr = this.stressColor;
     ctx.strokeStyle = `rgb(${clr.r * 255}, ${clr.g * 255}, ${clr.b * 255})`;
+    ctx.lineWidth = Math.sqrt(this.material.crossSectionalArea);
     ctx.stroke();
   }
 
