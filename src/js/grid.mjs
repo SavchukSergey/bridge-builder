@@ -9,9 +9,9 @@ export class Grid {
   render(ctx) {
     const { width, height } = ctx;
 
-    const clientTl = createVec3F(-width / 2, -height / 2, 0);
-    const clientTr = createVec3F(width / 2, -height / 2, 0);
-    const clientBl = createVec3F(-width / 2, height / 2, 0);
+    const clientTl = createVec3F(0, 0, 0);
+    const clientTr = createVec3F(width, 0, 0);
+    const clientBl = createVec3F(0, height, 0);
 
     const globalTl = ctx.clientToGlobal(clientTl);
     const globalTr = ctx.clientToGlobal(clientTr);
@@ -44,13 +44,13 @@ export class Grid {
       ctx.strokeStyle = `rgba(192, 192, 192, ${Math.min(1, steps / GRID_FACTOR)})`;
       // ctx.strokeStyle = `rgba(192, 192, 192, 1)`;
 
-      const ucnt = Math.ceil(globalWidth / step) + 1;
-      const vcnt = Math.ceil(globalHeight / step) + 1;
+      const ucnt = Math.ceil(globalWidth / step) + 2;
+      const vcnt = Math.ceil(globalHeight / step) + 2;
 
       const ustep = vec3fmul(globalUNorm, step);
       const vstep = vec3fmul(globalVNorm, step);
 
-      const globalGridTl = floor(globalTl, step);
+      const globalGridTl = vec3fsub(vec3fsub(floor(globalTl, step), ustep), vstep);
 
       let walkerStart = globalGridTl;
       let walkerEnd = vec3fadd(walkerStart, vec3fmul(vstep, vcnt));

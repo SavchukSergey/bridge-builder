@@ -34,11 +34,11 @@ export class RenderCtx {
    * @returns {import("./math.js").Vec3F} 
    */
   clientToGlobal(vec) {
-    const { shift, zoom } = this;
+    const { shift, zoom, width, height } = this;
 
     return createVec3F(
-      vec.x / zoom + shift.x,
-      vec.y / zoom + shift.y,
+      (vec.x - width / 2) / zoom + shift.x,
+      (height / 2 - vec.y) / zoom + shift.y,
       vec.z / zoom + shift.z,
     );
   }

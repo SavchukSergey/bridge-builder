@@ -117,7 +117,7 @@ export class Game {
   __getPointerClient(ev) {
     const parentRect = this.canvas.getBoundingClientRect();
 
-    return createVec3F(ev.clientX - parentRect.x - parentRect.width / 2, -(ev.clientY - parentRect.y) + parentRect.height / 2, 0);
+    return createVec3F(ev.clientX - parentRect.x, ev.clientY - parentRect.y, 0);
   }
 
   /**
