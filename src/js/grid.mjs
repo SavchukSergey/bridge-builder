@@ -44,8 +44,8 @@ export class Grid {
       ctx.strokeStyle = `rgba(192, 192, 192, ${Math.min(1, steps / GRID_FACTOR)})`;
       // ctx.strokeStyle = `rgba(192, 192, 192, 1)`;
 
-      const ucnt = Math.ceil(globalWidth / step);
-      const vcnt = Math.ceil(globalHeight / step);
+      const ucnt = Math.ceil(globalWidth / step) + 1;
+      const vcnt = Math.ceil(globalHeight / step) + 1;
 
       const ustep = vec3fmul(globalUNorm, step);
       const vstep = vec3fmul(globalVNorm, step);

@@ -16,7 +16,16 @@ export class RenderCtx {
 
   #updateTransform() {
     const { zoom, shift, width, height } = this;
-    this.ctx.setTransform(zoom, 0, 0, -zoom, width / 2 - shift.x * zoom, height / 2 - shift.y * zoom);
+    this.ctx.setTransform(zoom, 0, 0, -zoom, width / 2 - shift.x * zoom, height / 2 + shift.y * zoom);
+  }
+
+  getTransform() {
+    return this.ctx.getTransform();
+  }
+
+  getClientToGlobalMatrix() {
+    //todo: optimize. Inverse is expensive
+    return this.ctx.getTransform().inverse();
   }
 
   /**
