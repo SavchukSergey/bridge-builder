@@ -15,7 +15,8 @@ export class RenderCtx {
   shift = createVec3F(0, 0, 0);
 
   #updateTransform() {
-    this.ctx.setTransform(this.zoom, 0, 0, -this.zoom, this.width / 2, this.height / 2);
+    const { zoom, shift, width, height } = this;
+    this.ctx.setTransform(zoom, 0, 0, -zoom, width / 2 - shift.x * zoom, height / 2 - shift.y * zoom);
   }
 
   /**

@@ -1,4 +1,4 @@
-import { createVec3F } from "./math.js";
+import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fnorm, vec3fsub } from "./math.js";
 
 export class Grid {
 
@@ -10,13 +10,20 @@ export class Grid {
     const { width, height } = ctx;
 
     const clientTl = createVec3F(-width / 2, -height / 2, 0);
-    const clientBr = createVec3F(width / 2, height / 2, 0);
+    const clientTr = createVec3F(width / 2, -height / 2, 0);
+    const clientBl = createVec3F(-width / 2, height / 2, 0);
 
     const globalTl = ctx.clientToGlobal(clientTl);
-    const globalBr = ctx.clientToGlobal(clientBr);
+    const globalTr = ctx.clientToGlobal(clientTr);
+    const globalBl = ctx.clientToGlobal(clientBl);
 
-    const globalWidth = globalBr.x - globalTl.x;
-    const globalHeight = globalBr.y - globalTl.y;
+    const globalU = vec3fsub(globalTr, globalTl);
+    const globalV = vec3fsub(globalBl, globalTl);
+    const globalUNorm = vec3fnorm(globalU);
+    const globalVNorm = vec3fnorm(globalV);
+
+    const globalWidth = vec3flen(globalU);
+    const globalHeight = vec3flen(globalV);
 
     const globalSize = Math.min(globalWidth, globalHeight);
 
@@ -35,21 +42,37 @@ export class Grid {
       ctx.lineWidth = step * 0.001;
       const steps = globalSize / step;
       ctx.strokeStyle = `rgba(192, 192, 192, ${Math.min(1, steps / GRID_FACTOR)})`;
+      // ctx.strokeStyle = `rgba(192, 192, 192, 1)`;
+
+      const ucnt = Math.ceil(globalWidth / step);
+      const vcnt = Math.ceil(globalHeight / step);
+
+      const ustep = vec3fmul(globalUNorm, step);
+      const vstep = vec3fmul(globalVNorm, step);
 
       const globalGridTl = floor(globalTl, step);
-      const globalGridBr = ceil(globalBr, step);
 
-      for (let globalY = globalGridTl.y; globalY < globalGridBr.y; globalY += step) {
+      let walkerStart = globalGridTl;
+      let walkerEnd = vec3fadd(walkerStart, vec3fmul(vstep, vcnt));
+
+      for (let i = 0; i < ucnt; i++) {
         ctx.beginPath();
-        ctx.moveTo(globalGridTl.x, globalY);
-        ctx.lineTo(globalGridBr.x, globalY);
+        ctx.moveTo(walkerStart.x, walkerStart.y);
+        ctx.lineTo(walkerEnd.x, walkerEnd.y);
+        walkerStart = vec3fadd(walkerStart, ustep);
+        walkerEnd = vec3fadd(walkerEnd, ustep);
         ctx.stroke();
       }
 
-      for (let globalX = globalGridTl.x; globalX < globalGridBr.x; globalX += step) {
+      walkerStart = globalGridTl;
+      walkerEnd = vec3fadd(walkerStart, vec3fmul(ustep, ucnt));
+
+      for (let i = 0; i < vcnt; i++) {
         ctx.beginPath();
-        ctx.moveTo(globalX, globalGridTl.y);
-        ctx.lineTo(globalX, globalGridBr.y);
+        ctx.moveTo(walkerStart.x, walkerStart.y);
+        ctx.lineTo(walkerEnd.x, walkerEnd.y);
+        walkerStart = vec3fadd(walkerStart, vstep);
+        walkerEnd = vec3fadd(walkerEnd, vstep);
         ctx.stroke();
       }
     }
@@ -59,6 +82,7 @@ export class Grid {
     renderGrid(majorSize * GRID_FACTOR);
   }
 }
+
 
 /**
  * @param {import("./math.js").Vec3F} vec 

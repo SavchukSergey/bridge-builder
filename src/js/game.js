@@ -21,6 +21,10 @@ export class Game {
 
   render() {
     // this.ctx.zoom = 40 * Math.sin(new Date().valueOf() / 2e3) + 45;
+    const radius = 50;
+    const angle = new Date().valueOf() / 1e3;
+    this.ctx.shift.x = radius * Math.cos(angle);
+    this.ctx.shift.y = radius * Math.sin(angle);
 
     this.ctx.width = this.canvas.width;
     this.ctx.height = this.canvas.height;
