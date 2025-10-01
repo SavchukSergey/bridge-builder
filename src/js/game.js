@@ -1,7 +1,8 @@
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
-import { steel } from "./materials/steel.mjs";
-import { createVec3F, vec3fsub } from "./math.js";
+import { EvalCtx } from "./eval-ctx.mjs";
+import { cable } from "./materials/cable.mjs";
+import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
 
@@ -20,6 +21,7 @@ export class Game {
       throw new Error("Could not create 2d context");
     }
     this.ctx = new RenderCtx(ctx);
+    this.evalCtx = new EvalCtx();
     this.scene = new Scene();
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
@@ -49,7 +51,7 @@ export class Game {
   __dragState = undefined;
 
   /**
- * @type {InteractionState | undefined}
+ * @type {ClickState | undefined}
  */
   __clickState = undefined;
 
@@ -78,15 +80,41 @@ export class Game {
     const globalPoint = this.ctx.clientToGlobal(client);
 
     if (!this.__clickState) {
-      this.__clickState = {
-        startGlobal: globalPoint,
-        startClient: client,
-      };
+      const jointA = this.scene.findJoint(globalPoint, 2);
+      if (jointA) {
+        this.__clickState = {
+          startGlobal: globalPoint,
+          startClient: client,
+          jointA: jointA
+        };
+      }
     } else {
-      const jointA = new Joint(this.__clickState.startGlobal);
-      const jointB = new Joint(globalPoint);
-      this.scene.joints.push(jointA, jointB);
-      this.scene.links.push(new Link(jointA, jointB, steel));
+      const jointA = this.__clickState.jointA;
+      let jointB = this.scene.findJoint(globalPoint, 2);
+      if (!jointB) {
+        jointB = new Joint(globalPoint);
+        this.scene.joints.push(jointB);
+      }
+
+      const dir = vec3fsub(jointB.position, jointA.position);
+      const dist = vec3flen(dir);
+
+      const maxSegLength = 3;
+
+      const partsCount = Math.ceil(dist / maxSegLength);
+      
+      const segLength = dist / partsCount;
+
+      let jointWalker = jointA;
+      const dirN = vec3fmul(dir, 1 / dist);
+      for (let i = 1; i < partsCount; i++) {
+        const point = vec3fadd(jointA.position, vec3fmul(dirN, segLength * i));
+        const midJoint = new Joint(point);
+        this.scene.joints.push(midJoint);
+        this.scene.links.push(new Link(jointWalker, midJoint, cable));
+        jointWalker = midJoint;
+      }
+      this.scene.links.push(new Link(jointWalker, jointB, cable));
       this.__clickState = undefined;
     }
   }
@@ -169,8 +197,10 @@ export class Game {
   }
 
   tick() {
-    for (let i = 0; i < 50; i++) {
-      this.scene.tick();
+    if (this.evalCtx.simulation) {
+      for (let i = 0; i < 50; i++) {
+        this.scene.tick(this.evalCtx);
+      }
     }
   }
 }
@@ -191,4 +221,5 @@ export class Game {
  * @typedef {Object} ClickState
  * @property {import("./math.js").Vec3F} startGlobal 
  * @property {import("./math.js").Vec3F} startClient 
+ * @property {Joint} jointA
  */

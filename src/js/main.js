@@ -19,6 +19,10 @@ function getCanvas() {
 
 document.addEventListener('DOMContentLoaded', function () {
   const canvas = getCanvas();
+  /** @type {HTMLInputElement} */
+  const chkSimulation = document.getElementById('toggle-simluation');
+  /** @type {HTMLDivElement} */
+  const txtTime = document.getElementById('simulation-time-value');
 
   // Initialize canvas dimensions
   function resizeCanvas() {
@@ -33,10 +37,12 @@ document.addEventListener('DOMContentLoaded', function () {
   resizeCanvas();
 
   const game = new Game(canvas);
-  
+
   function tick() {
+    game.evalCtx.simulation = chkSimulation.checked;
     game.tick();
     game.render();
+    txtTime.innerText = game.evalCtx.time.toFixed(2) + 's';
     requestAnimationFrame(tick);
   }
 

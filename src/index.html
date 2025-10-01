@@ -14,7 +14,14 @@
     <canvas id="game-canvas"></canvas>
   </div>
 
-  <div id="feedback"></div>
+  <div id="control-panel">
+    <label>
+      <input type="checkbox" id="toggle-simluation" />
+      Simulation
+    </label>
+
+    <div id="simuluation-time">Time: <span id="simulation-time-value">0.00s</span></div>
+  </div>
 
   <script type="module" src="js/main.js" crossorigin="anonymous"></script>
 </body>
