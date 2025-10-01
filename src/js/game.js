@@ -99,11 +99,13 @@ export class Game {
       const dir = vec3fsub(jointB.position, jointA.position);
       const dist = vec3flen(dir);
 
-      const maxSegLength = 3;
+      const maxSegLength = 5;
 
       const partsCount = Math.ceil(dist / maxSegLength);
-      
+
       const segLength = dist / partsCount;
+
+      const material = cable;
 
       let jointWalker = jointA;
       const dirN = vec3fmul(dir, 1 / dist);
@@ -111,11 +113,13 @@ export class Game {
         const point = vec3fadd(jointA.position, vec3fmul(dirN, segLength * i));
         const midJoint = new Joint(point);
         this.scene.joints.push(midJoint);
-        this.scene.links.push(new Link(jointWalker, midJoint, cable));
+        this.scene.links.push(new Link(jointWalker, midJoint, material));
         jointWalker = midJoint;
       }
-      this.scene.links.push(new Link(jointWalker, jointB, cable));
+      this.scene.links.push(new Link(jointWalker, jointB, material));
       this.__clickState = undefined;
+
+      this.scene.distributeMass();
     }
   }
 

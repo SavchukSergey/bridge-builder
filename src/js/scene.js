@@ -114,10 +114,26 @@ export class Scene {
   render(ctx) {
     this.grid.render(ctx);
     for (const joint of this.joints) {
-      joint.render(ctx);
+      if (joint.fixed || joint.mass) {
+        joint.render(ctx);
+      }
     }
     for (const link of this.links) {
-      link.render(ctx);
+      if (!link.broken) {
+        link.render(ctx);
+      }
+    }
+  }
+
+  distributeMass() {
+    for (const joint of this.joints) {
+      joint.mass = 0;
+    }
+    for (const link of this.links) {
+      if (!link.broken) {
+        link.a.mass += link.mass / 2;
+        link.b.mass += link.mass / 2;
+      }
     }
   }
 
@@ -133,30 +149,36 @@ export class Scene {
       joint.mass = 0;
     }
     for (const link of this.links) {
-      link.a.mass += link.mass / 2;
-      link.b.mass += link.mass / 2;
+      if (!link.broken) {
+        link.a.mass += link.mass / 2;
+        link.b.mass += link.mass / 2;
+      }
     }
     for (const joint of this.joints) {
-      joint.force.y = -9.81 * joint.mass;
+      joint.force.x = evalCtx.gravity.x * joint.mass;
+      joint.force.y = evalCtx.gravity.y * joint.mass;
+      joint.force.z = evalCtx.gravity.z * joint.mass;
     }
     for (const link of this.links) {
-      const actualLength = link.actualLength;
-      const dirX = link.dx;
-      const dirY = link.dy;
-      const dirZ = link.dz;
-      const dirNx = dirX / actualLength;
-      const dirNy = dirY / actualLength;
-      const dirNz = dirZ / actualLength;
-      const force = link.stressForce;
-      const fx = dirNx * force;
-      const fy = dirNy * force;
-      const fz = dirNz * force;
-      link.a.force.x += fx;
-      link.a.force.y += fy;
-      link.a.force.z += fz;
-      link.b.force.x -= fx;
-      link.b.force.y -= fy;
-      link.b.force.z -= fz;
+      if (!link.broken) {
+        const actualLength = link.actualLength;
+        const dirX = link.dx;
+        const dirY = link.dy;
+        const dirZ = link.dz;
+        const dirNx = dirX / actualLength;
+        const dirNy = dirY / actualLength;
+        const dirNz = dirZ / actualLength;
+        const force = link.stressForce;
+        const fx = dirNx * force;
+        const fy = dirNy * force;
+        const fz = dirNz * force;
+        link.a.force.x += fx;
+        link.a.force.y += fy;
+        link.a.force.z += fz;
+        link.b.force.x -= fx;
+        link.b.force.y -= fy;
+        link.b.force.z -= fz;
+      }
     }
 
     let maxAcc2 = 0;
@@ -170,7 +192,7 @@ export class Scene {
 
     const dt = maxAcc ? Math.max(Math.min(50 / maxAcc, 0.0005), 0.00001) : 0.0005;
     evalCtx.time += dt;
-    const viscosity = Math.pow(0.999, dt);
+    const viscosity = Math.pow(0.9, dt);
 
     for (const joint of this.joints) {
       if (!joint.fixed && joint.mass) {
@@ -184,6 +206,12 @@ export class Scene {
         joint.velocity.x *= viscosity;
         joint.velocity.y *= viscosity;
         joint.velocity.z *= viscosity;
+      }
+    }
+
+    for (const link of this.links) {
+      if (!link.broken && link.overStressed) {
+        link.broken = true;
       }
     }
   }

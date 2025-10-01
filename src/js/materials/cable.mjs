@@ -6,5 +6,5 @@ export const cable = new Material({
   crossSectionalArea: 0.001,
   youngModulus: 180000e6,
   tensileStrength: 200e6,
-  compressionStrength: 0
+  compressionStrength: 200e6
 });

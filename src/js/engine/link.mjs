@@ -17,6 +17,8 @@ export class Link {
     const dy = this.a.position.y - this.b.position.y;
     const dz = this.a.position.z - this.b.position.z;
     this.length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    this.broken = false;
   }
 
   /**
@@ -77,6 +79,11 @@ export class Link {
       const rel = stressPressure / this.material.tensileStrength;
       return lerpColor({ r: 0, g: 1, b: 0 }, { r: 0, g: 0, b: 1 }, rel);
     }
+  }
+
+  get overStressed() {
+    const sp = this.stressPressure;
+    return sp < 0 ? -sp > this.material.compressionStrength : sp > this.material.tensileStrength;
   }
 
   get dx() {
