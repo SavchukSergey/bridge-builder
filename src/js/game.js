@@ -1,3 +1,6 @@
+import { Joint } from "./engine/joint.mjs";
+import { Link } from "./engine/link.mjs";
+import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
@@ -23,11 +26,13 @@ export class Game {
     this.__handleMouseMove = this.__handleMouseMove.bind(this);
     this.__handleMouseUp = this.__handleMouseUp.bind(this);
     this.__handleWheel = this.__handleWheel.bind(this);
+    this.__handleClick = this.__handleClick.bind(this);
 
     canvas.addEventListener("pointerdown", this.__handleMouseDown);
     canvas.addEventListener("pointermove", this.__handleMouseMove);
     canvas.addEventListener("pointerup", this.__handleMouseUp);
     canvas.addEventListener("wheel", this.__handleWheel);
+    canvas.addEventListener("click", this.__handleClick);
   }
 
   destroy() {
@@ -35,12 +40,18 @@ export class Game {
     this.canvas.removeEventListener("pointermove", this.__handleMouseMove)
     this.canvas.removeEventListener("pointerup", this.__handleMouseUp)
     this.canvas.removeEventListener("wheel", this.__handleWheel)
+    this.canvas.removeEventListener("click", this.__handleClick)
   }
 
   /**
    * @type {DragState | undefined}
    */
   __dragState = undefined;
+
+  /**
+ * @type {InteractionState | undefined}
+ */
+  __clickState = undefined;
 
   /**
    * 
@@ -56,8 +67,28 @@ export class Game {
       original: this.ctx.shift,
       clientToGlobal
     };
+  }
 
+  /**
+ * 
+ * @param {PointerEvent} ev 
+ */
+  __handleClick(ev) {
+    const client = this.__getPointerClient(ev);
+    const globalPoint = this.ctx.clientToGlobal(client);
 
+    if (!this.__clickState) {
+      this.__clickState = {
+        startGlobal: globalPoint,
+        startClient: client,
+      };
+    } else {
+      const jointA = new Joint(this.__clickState.startGlobal);
+      const jointB = new Joint(globalPoint);
+      this.scene.joints.push(jointA, jointB);
+      this.scene.links.push(new Link(jointA, jointB, steel));
+      this.__clickState = undefined;
+    }
   }
 
   /**
@@ -145,9 +176,19 @@ export class Game {
 }
 
 /**
+ * @typedef {DragState | ClickState | undefined} InteractionState
+ */
+
+/**
  * @typedef {Object} DragState
  * @property {import("./math.js").Vec3F} startGlobal 
  * @property {import("./math.js").Vec3F} startClient 
  * @property {import("./math.js").Vec3F} original 
  * @property {DOMMatrix} clientToGlobal 
+ */
+
+/**
+ * @typedef {Object} ClickState
+ * @property {import("./math.js").Vec3F} startGlobal 
+ * @property {import("./math.js").Vec3F} startClient 
  */
