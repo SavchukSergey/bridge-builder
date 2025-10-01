@@ -3,7 +3,7 @@ import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
 import { cable } from "./materials/cable.mjs";
 import { steel } from "./materials/steel.mjs";
-import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
+import { createVec3F, vec3flen, vec3flen2, vec3fsub } from "./math.js";
 
 export class Scene {
 
@@ -146,14 +146,8 @@ export class Scene {
       joint.force.x = 0;
       joint.force.y = 0;
       joint.force.z = 0;
-      joint.mass = 0;
     }
-    for (const link of this.links) {
-      if (!link.broken) {
-        link.a.mass += link.mass / 2;
-        link.b.mass += link.mass / 2;
-      }
-    }
+    this.distributeMass();
     for (const joint of this.joints) {
       joint.force.x = evalCtx.gravity.x * joint.mass;
       joint.force.y = evalCtx.gravity.y * joint.mass;
@@ -161,24 +155,50 @@ export class Scene {
     }
     for (const link of this.links) {
       if (!link.broken) {
-        const actualLength = link.actualLength;
-        const dirX = link.dx;
-        const dirY = link.dy;
-        const dirZ = link.dz;
-        const dirNx = dirX / actualLength;
-        const dirNy = dirY / actualLength;
-        const dirNz = dirZ / actualLength;
+        const { a, b } = link;
+        link.direction.x = b.position.x - a.position.x;
+        link.direction.y = b.position.y - a.position.y;
+        link.direction.z = b.position.z - a.position.z;
+
+        const length = vec3flen(link.direction);
+        link.actualLength = length;
+
+        link.directionN.x = link.direction.x / length;
+        link.directionN.y = link.direction.y / length;
+        link.directionN.z = link.direction.z / length;
+
         const force = link.stressForce;
-        const fx = dirNx * force;
-        const fy = dirNy * force;
-        const fz = dirNz * force;
-        link.a.force.x += fx;
-        link.a.force.y += fy;
-        link.a.force.z += fz;
-        link.b.force.x -= fx;
-        link.b.force.y -= fy;
-        link.b.force.z -= fz;
+        const fx = link.directionN.x * force;
+        const fy = link.directionN.y * force;
+        const fz = link.directionN.z * force;
+        a.force.x += fx;
+        a.force.y += fy;
+        a.force.z += fz;
+        b.force.x -= fx;
+        b.force.y -= fy;
+        b.force.z -= fz;
       }
+    }
+
+    for (const link of this.links) {
+      if (link.broken) continue;
+        const { a, b } = link;
+        const va = a.velocity;
+        const vb = b.velocity;
+        const rvx = vb.x - va.x;
+        const rvy = vb.y - va.y;
+        const rvz = vb.z - va.z;
+        const vrel = rvx * link.directionN.x + rvy * link.directionN.y + rvz * link.directionN.z;
+        const dampingForce = vrel * 0.1;
+        const dfx = link.directionN.x * dampingForce;
+        const dfy = link.directionN.y * dampingForce;
+        const dfz = link.directionN.z * dampingForce;
+        a.force.x += dfx;
+        a.force.y += dfy;
+        a.force.z += dfz;
+        b.force.x -= dfx;
+        b.force.y -= dfy;
+        b.force.z -= dfz;
     }
 
     let maxAcc2 = 0;
@@ -192,16 +212,21 @@ export class Scene {
 
     const dt = maxAcc ? Math.max(Math.min(50 / maxAcc, 0.0005), 0.00001) : 0.0005;
     evalCtx.time += dt;
-    const viscosity = Math.pow(0.9, dt);
+    const viscosity = Math.pow(0.99, dt);
+
+    const dt2 = dt * dt * 0.5;
 
     for (const joint of this.joints) {
       if (!joint.fixed && joint.mass) {
-        joint.velocity.x += joint.force.x * dt / joint.mass;
-        joint.velocity.y += joint.force.y * dt / joint.mass;
-        joint.velocity.z += joint.force.z * dt / joint.mass;
-        joint.position.x += joint.velocity.x * dt
-        joint.position.y += joint.velocity.y * dt;
-        joint.position.z += joint.velocity.z * dt;
+        const accX = joint.force.x / joint.mass;
+        const accY = joint.force.y / joint.mass;
+        const accZ = joint.force.z / joint.mass;
+        joint.velocity.x += accX * dt;
+        joint.velocity.y += accY * dt;
+        joint.velocity.z += accZ * dt;
+        joint.position.x += joint.velocity.x * dt + accX * dt2;
+        joint.position.y += joint.velocity.y * dt + accY * dt2;
+        joint.position.z += joint.velocity.z * dt + accZ * dt2;
 
         joint.velocity.x *= viscosity;
         joint.velocity.y *= viscosity;

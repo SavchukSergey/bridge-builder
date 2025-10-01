@@ -1,4 +1,4 @@
-import { lerpColor } from "../math.js";
+import { createVec3F, lerpColor, vec3fmul } from "../math.js";
 
 export class Link {
 
@@ -13,10 +13,14 @@ export class Link {
     this.b = b;
     this.material = material;
 
-    const dx = this.a.position.x - this.b.position.x;
-    const dy = this.a.position.y - this.b.position.y;
-    const dz = this.a.position.z - this.b.position.z;
+    const dx = this.b.position.x - this.a.position.x;
+    const dy = this.b.position.y - this.a.position.y;
+    const dz = this.b.position.z - this.a.position.z;
     this.length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    this.actualLength = this.length;
+
+    this.direction = createVec3F(dx, dy, dz);
+    this.directionN = vec3fmul(this.direction, 1 / this.length);
 
     this.broken = false;
   }
@@ -37,13 +41,6 @@ export class Link {
 
   get mass() {
     return this.material.density * this.crossSectionalArea * this.length;
-  }
-
-  get actualLength() {
-    const dx = this.dx;
-    const dy = this.dy;
-    const dz = this.dz;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
   }
 
   get crossSectionalArea() {

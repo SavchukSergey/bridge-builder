@@ -99,7 +99,7 @@ export class Game {
       const dir = vec3fsub(jointB.position, jointA.position);
       const dist = vec3flen(dir);
 
-      const maxSegLength = 5;
+      const maxSegLength = 10;
 
       const partsCount = Math.ceil(dist / maxSegLength);
 
