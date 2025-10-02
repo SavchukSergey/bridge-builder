@@ -3,15 +3,20 @@ import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
 import { cable } from "./materials/cable.mjs";
 import { steel } from "./materials/steel.mjs";
-import { createVec3F, vec3flen, vec3flen2, vec3fsub } from "./math.js";
+import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
 
 export class Scene {
 
-  /** @type {Joint[]} */
-  joints = [];
+  get joints() {
+    return this.content.joints;
+  }
 
-  /** @type {Link[]} */
-  links = [];
+  get links() {
+    return this.content.links;
+  }
+
+  content = new CompositeScene();
+  preview = new CompositeScene();
 
   grid = new Grid();
 
@@ -83,6 +88,8 @@ export class Scene {
     for (let i = 0; i < ropeJoints.length; i++) {
       this.links.push(new Link(ropeJoints[i], bridgeJoints[i], cable));
     }
+
+    this.distributeMass();
   }
 
   /**
@@ -113,28 +120,12 @@ export class Scene {
    */
   render(ctx) {
     this.grid.render(ctx);
-    for (const joint of this.joints) {
-      if (joint.fixed || joint.mass) {
-        joint.render(ctx);
-      }
-    }
-    for (const link of this.links) {
-      if (!link.broken) {
-        link.render(ctx);
-      }
-    }
+    this.content.render(ctx);
+    this.preview.render(ctx);
   }
 
   distributeMass() {
-    for (const joint of this.joints) {
-      joint.mass = 0;
-    }
-    for (const link of this.links) {
-      if (!link.broken) {
-        link.a.mass += link.mass / 2;
-        link.b.mass += link.mass / 2;
-      }
-    }
+    this.content.distributeMass();
   }
 
   /**
@@ -155,17 +146,8 @@ export class Scene {
     }
     for (const link of this.links) {
       if (!link.broken) {
+        link.preEval();
         const { a, b } = link;
-        link.direction.x = b.position.x - a.position.x;
-        link.direction.y = b.position.y - a.position.y;
-        link.direction.z = b.position.z - a.position.z;
-
-        const length = vec3flen(link.direction);
-        link.actualLength = length;
-
-        link.directionN.x = link.direction.x / length;
-        link.directionN.y = link.direction.y / length;
-        link.directionN.z = link.direction.z / length;
 
         const force = link.stressForce;
         const fx = link.directionN.x * force;
@@ -182,23 +164,23 @@ export class Scene {
 
     for (const link of this.links) {
       if (link.broken) continue;
-        const { a, b } = link;
-        const va = a.velocity;
-        const vb = b.velocity;
-        const rvx = vb.x - va.x;
-        const rvy = vb.y - va.y;
-        const rvz = vb.z - va.z;
-        const vrel = rvx * link.directionN.x + rvy * link.directionN.y + rvz * link.directionN.z;
-        const dampingForce = vrel * 0.1;
-        const dfx = link.directionN.x * dampingForce;
-        const dfy = link.directionN.y * dampingForce;
-        const dfz = link.directionN.z * dampingForce;
-        a.force.x += dfx;
-        a.force.y += dfy;
-        a.force.z += dfz;
-        b.force.x -= dfx;
-        b.force.y -= dfy;
-        b.force.z -= dfz;
+      const { a, b } = link;
+      const va = a.velocity;
+      const vb = b.velocity;
+      const rvx = vb.x - va.x;
+      const rvy = vb.y - va.y;
+      const rvz = vb.z - va.z;
+      const vrel = rvx * link.directionN.x + rvy * link.directionN.y + rvz * link.directionN.z;
+      const dampingForce = vrel * 0.1;
+      const dfx = link.directionN.x * dampingForce;
+      const dfy = link.directionN.y * dampingForce;
+      const dfz = link.directionN.z * dampingForce;
+      a.force.x += dfx;
+      a.force.y += dfy;
+      a.force.z += dfz;
+      b.force.x -= dfx;
+      b.force.y -= dfy;
+      b.force.z -= dfz;
     }
 
     let maxAcc2 = 0;
@@ -242,4 +224,40 @@ export class Scene {
   }
 }
 
+export class CompositeScene {
+  /** @type {Joint[]} */
+  joints = [];
 
+  /** @type {Link[]} */
+  links = [];
+
+  /**
+   * 
+ * @param {import("./render-ctx.mjs").RenderCtx} ctx 
+   */
+  render(ctx) {
+    for (const joint of this.joints) {
+      if (joint.fixed || joint.mass) {
+        joint.render(ctx);
+      }
+    }
+    for (const link of this.links) {
+      if (!link.broken) {
+        link.render(ctx);
+      }
+    }
+  }
+
+  distributeMass() {
+    for (const joint of this.joints) {
+      joint.mass = 0;
+    }
+    for (const link of this.links) {
+      if (!link.broken) {
+        link.a.mass += link.mass / 2;
+        link.b.mass += link.mass / 2;
+      }
+    }
+  }
+
+}

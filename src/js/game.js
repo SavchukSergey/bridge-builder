@@ -2,9 +2,10 @@ import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
 import { cable } from "./materials/cable.mjs";
+import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
-import { Scene } from "./scene.js";
+import { CompositeScene, Scene } from "./scene.js";
 
 // @ts-check
 
@@ -82,43 +83,26 @@ export class Game {
     if (!this.__clickState) {
       const jointA = this.scene.findJoint(globalPoint, 2);
       if (jointA) {
+        const preview = new CompositeScene();
         this.__clickState = {
           startGlobal: globalPoint,
           startClient: client,
-          jointA: jointA
+          jointA: jointA,
+          preview: preview,
+          previewBackup: this.scene.preview
         };
+        this.scene.preview = preview;
       }
     } else {
-      const jointA = this.__clickState.jointA;
-      let jointB = this.scene.findJoint(globalPoint, 2);
-      if (!jointB) {
-        jointB = new Joint(globalPoint);
-        this.scene.joints.push(jointB);
+      for (const joint of this.__clickState.preview.joints) {
+        this.scene.joints.push(joint);
       }
-
-      const dir = vec3fsub(jointB.position, jointA.position);
-      const dist = vec3flen(dir);
-
-      const maxSegLength = 10;
-
-      const partsCount = Math.ceil(dist / maxSegLength);
-
-      const segLength = dist / partsCount;
-
-      const material = cable;
-
-      let jointWalker = jointA;
-      const dirN = vec3fmul(dir, 1 / dist);
-      for (let i = 1; i < partsCount; i++) {
-        const point = vec3fadd(jointA.position, vec3fmul(dirN, segLength * i));
-        const midJoint = new Joint(point);
-        this.scene.joints.push(midJoint);
-        this.scene.links.push(new Link(jointWalker, midJoint, material));
-        jointWalker = midJoint;
+      for (const link of this.__clickState.preview.links) {
+        this.scene.links.push(link);
       }
-      this.scene.links.push(new Link(jointWalker, jointB, material));
+      this.scene.preview = this.__clickState.previewBackup;
+
       this.__clickState = undefined;
-
       this.scene.distributeMass();
     }
   }
@@ -128,13 +112,67 @@ export class Game {
    * @param {PointerEvent} ev 
    */
   __handleMouseMove(ev) {
+    const client = this.__getPointerClient(ev);
     if (this.__dragState) {
-      const newClient = this.__getPointerClient(ev);
-      const newGlobal = this.__dragState.clientToGlobal.transformPoint(newClient);
+      const newGlobal = this.__dragState.clientToGlobal.transformPoint(client);
       const deltaGlobal = vec3fsub(newGlobal, this.__dragState.startGlobal);
       const newPos = vec3fsub(this.__dragState.original, deltaGlobal);
       this.ctx.shift = newPos;
+    } else if (this.__clickState) {
+      const material = this.__getCurrentMaterial();
+      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material);
+      this.__clickState.preview.joints = path.joints;
+      this.__clickState.preview.links = path.links;
+      this.__clickState.preview.distributeMass();
     }
+  }
+
+  /**
+   * @param {Joint} jointA
+   * @param {import("./math.js").Vec3F} globalB
+   * @param {import("./materials/material.mjs").Material} material
+   */
+  __buildLink(jointA, globalB, material) {
+    /**
+     * @type {Joint[]}
+     */
+    const joints = [];
+    const links = [];
+
+    let jointB = this.scene.findJoint(globalB, 2);
+    if (!jointB) {
+      jointB = new Joint(globalB);
+      joints.push(jointB);
+    }
+
+    const dir = vec3fsub(jointB.position, jointA.position);
+    const dist = vec3flen(dir);
+
+    const maxSegLength = 10;
+
+    const partsCount = Math.ceil(dist / maxSegLength);
+
+    const segLength = dist / partsCount;
+
+    let jointWalker = jointA;
+    const dirN = vec3fmul(dir, 1 / dist);
+    for (let i = 1; i < partsCount; i++) {
+      const point = vec3fadd(jointA.position, vec3fmul(dirN, segLength * i));
+      const midJoint = new Joint(point);
+      joints.push(midJoint);
+      const midLink = new Link(jointWalker, midJoint, material);
+      midLink.preEval();
+      links.push(midLink);
+      jointWalker = midJoint;
+    }
+    const finalLink = new Link(jointWalker, jointB, material);
+    finalLink.preEval();
+    links.push(finalLink);
+
+    return {
+      joints,
+      links
+    };
   }
 
   /**
@@ -207,6 +245,23 @@ export class Game {
       }
     }
   }
+
+  __getCurrentMaterial() {
+    /**
+     * @type {HTMLInputElement | null}
+     */
+    const node = document.querySelector("input[name=material]:checked");
+    const value = node?.value || "steel";
+
+    switch (value) {
+      case "steel":
+        return steel;
+      case "cable":
+        return cable;
+      default:
+        return steel;
+    }
+  }
 }
 
 /**
@@ -226,4 +281,6 @@ export class Game {
  * @property {import("./math.js").Vec3F} startGlobal 
  * @property {import("./math.js").Vec3F} startClient 
  * @property {Joint} jointA
+ * @property {CompositeScene} preview
+ * @property {CompositeScene} previewBackup
  */

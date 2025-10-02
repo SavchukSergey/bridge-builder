@@ -1,4 +1,4 @@
-import { createVec3F, lerpColor, vec3fmul } from "../math.js";
+import { createVec3F, lerpColor, vec3flen, vec3fmul } from "../math.js";
 
 export class Link {
 
@@ -25,6 +25,20 @@ export class Link {
     this.broken = false;
   }
 
+  preEval() {
+    const { a, b } = this;
+    this.direction.x = b.position.x - a.position.x;
+    this.direction.y = b.position.y - a.position.y;
+    this.direction.z = b.position.z - a.position.z;
+
+    const length = vec3flen(this.direction);
+    this.actualLength = length;
+
+    this.directionN.x = this.direction.x / length;
+    this.directionN.y = this.direction.y / length;
+    this.directionN.z = this.direction.z / length;
+  }
+
   /**
    * 
    * @param {import("../render-ctx.mjs").RenderCtx} ctx 
@@ -39,8 +53,12 @@ export class Link {
     ctx.stroke();
   }
 
+  get volume() {
+    return this.crossSectionalArea * this.length;
+  }
+
   get mass() {
-    return this.material.density * this.crossSectionalArea * this.length;
+    return this.material.density * this.volume;
   }
 
   get crossSectionalArea() {
