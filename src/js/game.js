@@ -94,12 +94,16 @@ export class Game {
         this.scene.preview = preview;
       }
     } else {
-      for (const joint of this.__clickState.preview.joints) {
+      const material = this.__getCurrentMaterial();
+      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material);
+      
+      for (const joint of path.joints) {
         this.scene.joints.push(joint);
       }
-      for (const link of this.__clickState.preview.links) {
+      for (const link of path.links) {
         this.scene.links.push(link);
       }
+      this.scene.distributeMass();
       this.scene.preview = this.__clickState.previewBackup;
 
       this.__clickState = undefined;
