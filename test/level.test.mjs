@@ -72,7 +72,7 @@ describe("level balance", () => {
   for (const [levelId, design] of [
     ["creek", "bare deck"], ["step", "bare ramp"], ["pier", "bare deck + A-frame"],
     ["ledges", "bare deck"], ["heavy", "creek's light suspension"], ["downhill", "bare ramp"],
-    ["long-span", "bare deck"], ["viaduct", "bare deck"], ["gorge", "bare deck"],
+    ["rush", "bare deck"], ["long-span", "bare deck"], ["viaduct", "bare deck"], ["gorge", "bare deck"],
   ]) {
     test(`${levelId}: a ${design} is not enough`, () => {
       const level = findLevel(levelId);
@@ -81,7 +81,7 @@ describe("level balance", () => {
   }
 
   // The obvious answer from an earlier level works, but the budget asks for the new idea.
-  for (const [levelId, design] of [["ledges", "light suspension"], ["gorge", "truss h8 lean"]]) {
+  for (const [levelId, design] of [["ledges", "light suspension"], ["rush", "truss h4 lean"], ["gorge", "truss h8 lean"]]) {
     test(`${levelId}: a ${design} carries the convoy but is over budget`, () => {
       const level = findLevel(levelId);
       const game = play(level, alternatives[levelId][design](level));

@@ -1,6 +1,7 @@
 import { SAVE_FORMAT_VERSION, Scene } from "./scene.js";
 import { Vehicle } from "./vehicle.mjs";
 import { VEHICLE_TYPES } from "./vehicle-types.mjs";
+import { THEMES } from "./themes.mjs";
 import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterFront } from "./scenery.mjs";
 
 /**
@@ -28,6 +29,7 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  *   and three stars
  * @property {{ x0: number, x1: number, y: number }} view - area to fit on screen
  * @property {number} [water] - height of the river surface in the gap, if there is one
+ * @property {import("./themes.mjs").ThemeId} [theme] - scenery look; summer by default
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
  *   instead of bare anchors
  */
@@ -61,6 +63,7 @@ export class Level {
     this.view = opts.view;
     this.example = opts.example;
     this.water = opts.water;
+    this.theme = THEMES[opts.theme ?? "summer"];
   }
 
   /**
@@ -163,11 +166,12 @@ export class Level {
    */
   render(ctx) {
     const { water } = this;
-    renderValley(ctx, Math.min(...this.terrain.filter(t => water === undefined || t.y >= water).map(t => t.y)) - 0.5);
-    if (water !== undefined) renderWater(ctx, water);
-    for (const block of this.terrain) renderGround(ctx, block, water !== undefined && block.y < water);
+    const { theme } = this;
+    renderValley(ctx, Math.min(...this.terrain.filter(t => water === undefined || t.y >= water).map(t => t.y)) - 0.5, theme);
+    if (water !== undefined) renderWater(ctx, water, theme);
+    for (const block of this.terrain) renderGround(ctx, block, water !== undefined && block.y < water, theme);
     const xs = this.anchors.map(a => a.x);
-    renderTrees(ctx, this, { x0: Math.min(...xs) - 5, x1: Math.max(...xs) + 5 }, water);
+    renderTrees(ctx, this, { x0: Math.min(...xs) - 5, x1: Math.max(...xs) + 5 }, water, theme);
     for (const { x, y } of this.anchors) {
       const ground = this.groundAt(x);
       if (ground !== undefined && Math.abs(ground - y) < 0.5) renderAbutment(ctx, x, y);
@@ -180,7 +184,7 @@ export class Level {
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
    */
   renderFront(ctx) {
-    if (this.water !== undefined) renderWaterFront(ctx, this, this.water);
+    if (this.water !== undefined) renderWaterFront(ctx, this, this.water, this.theme);
   }
 }
 
@@ -219,6 +223,7 @@ export const creekLevel = new Level({
  */
 export const canyonLevel = new Level({
   id: "canyon",
+  theme: "desert",
   name: "Canyon",
   description: "80 m and four 40 t trucks. The example bridge works, but costs too much.",
   terrain: cliffs(-40, 40),
@@ -306,6 +311,7 @@ export const ledgesLevel = new Level({
 /** One very heavy truck: members sized for 40 t won't do. */
 export const heavyLevel = new Level({
   id: "heavy",
+  theme: "desert",
   name: "Heavy load",
   description: "A 40 m dry gully and one 200 t heavy hauler carrying a transformer.",
   terrain: cliffs(-20, 20),
@@ -321,6 +327,7 @@ export const heavyLevel = new Level({
 /** The far side is lower, and a long convoy is queued up. */
 export const downhillLevel = new Level({
   id: "downhill",
+  theme: "snow",
   name: "Downhill",
   description: "A 60 m gap down to a far side 10 m lower. Five 40 t trucks.",
   terrain: cliffs(-30, 30, 18, 8),
@@ -334,9 +341,28 @@ export const downhillLevel = new Level({
   water: 2,
 });
 
+/** Mixed traffic packed close together: the whole span is loaded at once. */
+export const rushLevel = new Level({
+  id: "rush",
+  theme: "night",
+  name: "Rush hour",
+  description: "A 60 m river and nine vehicles nose to tail: cars, buses and trucks.",
+  terrain: cliffs(-30, 30),
+  anchors: [{ x: -40, y: 10 }, { x: -30, y: 10 }, { x: 30, y: 10 }, { x: 40, y: 10 }],
+  startX: -36,
+  finishX: 38,
+  convoy: ["car", "truck", "bus", "car", "truck", "car", "bus", "truck", "car"],
+  vehicleGap: 4,
+  budget: 26000, // a light suspension bridge like the creek's: ~$23,600; trusses cost $33,700+
+  stars: { two: 24900, three: 24000 },
+  view: { x0: -55, x1: 55, y: 15 },
+  water: 3,
+});
+
 /** 100 m with nothing in between: hang it from towers. */
 export const longSpanLevel = new Level({
   id: "long-span",
+  theme: "snow",
   name: "Long span",
   description: "100 m across a deep valley, nothing to stand on in between. Two 40 t trucks.",
   terrain: cliffs(-50, 50),
@@ -372,6 +398,7 @@ export const viaductLevel = new Level({
 /** Low ledges deep in the gorge: room for an arch under the road. */
 export const gorgeLevel = new Level({
   id: "gorge",
+  theme: "desert",
   name: "Deep gorge",
   description: "An 80 m gorge with ledges 16 m down. Arch over it from the ledges. Four 40 t trucks.",
   terrain: [...cliffs(-40, 40), { x0: -40, x1: -34, y: -6 }, { x0: 34, x1: 40, y: -6 }],
@@ -391,6 +418,7 @@ export const gorgeLevel = new Level({
 /** The finale: long, uphill, one rock in the river and a long convoy. */
 export const grandLevel = new Level({
   id: "grand",
+  theme: "snow",
   name: "Grand crossing",
   description: "160 m, climbing 6 m, with a rock mid-river. Six 40 t trucks.",
   terrain: [...cliffs(-80, 80, 10, 16), { x0: -4, x1: 4, y: -6 }],
@@ -410,7 +438,7 @@ export const grandLevel = new Level({
 /** All levels, in play order. */
 export const levels = [
   brookLevel, creekLevel, ledgesLevel, canyonLevel, stepLevel, heavyLevel,
-  downhillLevel, pierLevel, longSpanLevel, viaductLevel, gorgeLevel, grandLevel,
+  downhillLevel, rushLevel, pierLevel, longSpanLevel, viaductLevel, gorgeLevel, grandLevel,
 ];
 levels.forEach((level, i) => { level.number = i + 1; });
 

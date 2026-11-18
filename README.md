@@ -1,8 +1,8 @@
 # Bridge Builder
 
 A bridge-building physics puzzle in the browser. Span a gap with steel beams, cables and
-road deck, stay within budget, then press **Test** and watch a convoy of 40-tonne trucks
-find out whether your design holds.
+road deck, stay within budget, then press **Test** and watch the traffic (cars, buses,
+40-tonne trucks, a 200-tonne heavy hauler) find out whether your design holds.
 
 No build step and no dependencies at runtime: plain JavaScript modules and a canvas.
 
@@ -17,7 +17,7 @@ Then open <http://localhost:8080>.
 
 ### Goal
 
-Get every truck to the chequered flag without spending more than the budget. Crossing
+Get every vehicle to the chequered flag without spending more than the budget. Crossing
 within budget earns one star; cheaper bridges earn two or three. Your cheapest win on each
 level is remembered.
 
@@ -52,24 +52,33 @@ Links longer than 10 m are split into 10 m segments.
 
 ### Levels
 
-Twelve levels, each introducing one idea. Open the list from the level button in the
+Thirteen levels, each introducing one idea, in four settings: summer, desert, snow and
+night. Open the list from the level button in the
 toolbar: it shows your stars and best cost on each. A level unlocks once the one before it
 is won within budget.
 
 | # | Level | The idea |
 | --- | --- | --- |
-| 1 | Brook | 20 m: lay a road across |
+| 1 | Brook | 20 m, a car and a bus: lay a road across |
 | 2 | Creek | 40 m: a bare deck sags and snaps, so hold it up |
 | 3 | Ledges | rock ledges below the road to prop the deck from |
 | 4 | Canyon | 80 m: the example bridge works but costs too much |
 | 5 | Step up | the far side is 8 m higher |
-| 6 | Heavy load | one 100 t truck: cables stretch too much |
+| 6 | Heavy load | one 200 t heavy hauler: cables stretch too much |
 | 7 | Downhill | the far side is 10 m lower, five trucks |
-| 8 | River pier | 120 m with a rock in the river for a pier |
-| 9 | Long span | 100 m with nothing to stand on |
-| 10 | Viaduct | 180 m with two rocks: three spans |
-| 11 | Deep gorge | low ledges: an arch is cheaper than a truss |
-| 12 | Grand crossing | 160 m, climbing, six trucks |
+| 8 | Rush hour | nine vehicles nose to tail, at night |
+| 9 | River pier | 120 m with a rock in the river for a pier |
+| 10 | Long span | 100 m with nothing to stand on |
+| 11 | Viaduct | 180 m with two rocks: three spans |
+| 12 | Deep gorge | low ledges: an arch is cheaper than a truss |
+| 13 | Grand crossing | 160 m, climbing, six trucks |
+
+| Vehicle | Mass | Length | Axles |
+| --- | --- | --- | --- |
+| Car | 1.5 t | 4.4 m | 2 |
+| Bus | 18 t | 12 m | 2 |
+| Truck | 40 t | 12 m | 5 |
+| Heavy hauler | 200 t | 22 m | 9 |
 
 Every level has a reference bridge in the tests that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
@@ -80,8 +89,8 @@ The bridge is a mass–spring model: every link is an axial spring with stiffnes
 damped at 10 % of critical, with its mass split between its two joints. The simulation
 uses semi-implicit Euler integration with an adaptive time step derived from the stiffest
 link, and runs in real time. A link breaks when its stress exceeds its material's tensile
-or compressive strength. Trucks are moving point loads that share their weight between the
-joints of the road link under them.
+or compressive strength. Vehicles are moving loads: each axle pushes down on the road link
+under it with its share of the weight, split between that link's two joints.
 
 ```
 src/
@@ -94,7 +103,9 @@ src/
     materials/          material properties and looks
     level.mjs           level definitions, star thresholds
     level-preview.mjs   level thumbnails for the level-select screen
-    vehicle.mjs         trucks
+    vehicle.mjs         driving, falling and axle loads
+    vehicle-types.mjs   cars, buses, trucks, heavy haulers: sizes, axles, drawings
+    themes.mjs          scenery palettes: summer, snow, desert, night
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
     audio.mjs           synthesized sound (Web Audio)

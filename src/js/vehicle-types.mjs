@@ -21,7 +21,7 @@
  * @property {boolean} lost - fell or crashed: drawn greyed out
  * @property {number} paint - index into the paint colours, so a convoy looks varied
  * @property {number} spin - wheel rotation (rad)
- * @property {boolean} lights - headlights on (at night)
+ * @property {boolean} lights - headlights on (at night): the lamps glow brighter
  */
 
 /**
@@ -35,6 +35,7 @@
  * @property {number} speed - m/s, when driving alone
  * @property {number} wheelRadius - m
  * @property {Axle[]} axles
+ * @property {[number, number]} lamp - headlight position in the vehicle's frame
  * @property {(g: CanvasRenderingContext2D, opts: DrawOpts) => void} draw
  */
 
@@ -86,14 +87,12 @@ function wheel(g, x, r, spin) {
 }
 
 /**
- * A headlight beam ahead of the vehicle, from a lamp at (x, y).
+ * A headlight beam ahead of a vehicle, from its lamp at (x, y) in the vehicle's frame.
  * @param {CanvasRenderingContext2D} g
  * @param {number} x
  * @param {number} y
- * @param {boolean} on
  */
-function headlight(g, x, y, on) {
-  if (!on) return;
+export function drawHeadlight(g, x, y) {
   const reach = 14;
   const beam = g.createLinearGradient(x, y, x + reach, y);
   beam.addColorStop(0, "rgba(255, 236, 170, 0.55)");
@@ -124,6 +123,7 @@ const car = {
   speed: 7,
   wheelRadius: 0.32,
   axles: [{ dx: 1.35, share: 0.55 }, { dx: -1.35, share: 0.45 }],
+  lamp: [2.22, 0.68],
   draw(g, o) {
     const paint = o.lost ? LOST_PAINT : PAINTS[(o.paint + 1) % PAINTS.length];
     const glass = o.lost ? LOST_GLASS : GLASS;
@@ -133,8 +133,7 @@ const car = {
     poly(g, [[0.6, 0.92], [0.1, 1.34], [-0.65, 1.36], [-0.65, 0.92]], glass);
     poly(g, [[-0.8, 0.92], [-0.8, 1.36], [-1.65, 1.38], [-1.9, 0.94]], glass);
     poly(g, [[-2.25, 0.28], [2.25, 0.28], [2.25, 0.42], [-2.25, 0.42]], "#2b2d30"); // bumpers
-    poly(g, [[2.1, 0.62], [2.22, 0.62], [2.22, 0.74], [2.1, 0.74]], o.lost ? "#777" : "#ffe08a");
-    headlight(g, 2.22, 0.68, o.lights && !o.lost);
+    poly(g, [[2.1, 0.62], [2.22, 0.62], [2.22, 0.74], [2.1, 0.74]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
     wheels(car, g, o);
   },
 };
@@ -150,6 +149,7 @@ const bus = {
   speed: 5,
   wheelRadius: 0.5,
   axles: [{ dx: 3.6, share: 0.35 }, { dx: -2.9, share: 0.65 }],
+  lamp: [6.04, 1.3],
   draw(g, o) {
     const paint = o.lost ? LOST_PAINT : PAINTS[(o.paint + 2) % PAINTS.length];
     const glass = o.lost ? LOST_GLASS : GLASS;
@@ -161,8 +161,7 @@ const bus = {
     for (let x = -5.5; x < 3.6; x += 1.55) poly(g, [[x, 1.75], [x + 1.35, 1.75], [x + 1.35, 2.75], [x, 2.75]], glass);
     poly(g, [[5.15, 1.6], [5.95, 1.6], [5.95, 2.85], [5.15, 2.85]], glass);
     poly(g, [[4.1, 0.7], [4.95, 0.7], [4.95, 2.85], [4.1, 2.85]], "rgba(0, 0, 0, 0.18)");
-    poly(g, [[5.92, 1.2], [6.04, 1.2], [6.04, 1.4], [5.92, 1.4]], o.lost ? "#777" : "#ffe08a");
-    headlight(g, 6.04, 1.3, o.lights && !o.lost);
+    poly(g, [[5.92, 1.2], [6.04, 1.2], [6.04, 1.4], [5.92, 1.4]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
     wheels(bus, g, o);
   },
 };
@@ -183,6 +182,7 @@ const truck = {
     { dx: 4.8, share: 0.14 }, { dx: 3.1, share: 0.18 }, { dx: 2.05, share: 0.18 },
     { dx: -3.6, share: 0.25 }, { dx: -4.7, share: 0.25 },
   ],
+  lamp: [6.06, 1.61],
   draw(g, o) {
     const cab = o.lost ? LOST_PAINT : PAINTS[o.paint % PAINTS.length];
     const half = 6, top = 3.5;
@@ -209,9 +209,8 @@ const truck = {
     poly(g, [[half - 1.15, 2.25], [half - 0.12, 2.25], [half - 0.36, 3.05], [half - 1.15, 3.05]], o.lost ? LOST_GLASS : GLASS);
     poly(g, [[c0 + 0.25, 1.35], [half - 1.4, 1.35], [half - 1.4, 3.0], [c0 + 0.25, 3.0]], "rgba(0, 0, 0, 0.12)"); // door
     poly(g, [[half - 0.15, 0.85], [half + 0.12, 0.85], [half + 0.12, 1.35], [half - 0.15, 1.35]], "#9aa0a6");
-    poly(g, [[half - 0.05, 1.5], [half + 0.06, 1.5], [half + 0.06, 1.72], [half - 0.05, 1.72]], o.lost ? "#777" : "#ffe08a");
+    poly(g, [[half - 0.05, 1.5], [half + 0.06, 1.5], [half + 0.06, 1.72], [half - 0.05, 1.72]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
     poly(g, [[c0 + 0.2, 0.8], [c0 + 1.3, 0.8], [c0 + 1.3, 1.25], [c0 + 0.2, 1.25]], "#c3c8cc");
-    headlight(g, half + 0.06, 1.61, o.lights && !o.lost);
     wheels(truck, g, o);
   },
 };
@@ -234,6 +233,7 @@ const hauler = {
     { dx: 9.6, share: 0.06 }, { dx: 7.7, share: 0.1 }, { dx: 6.6, share: 0.1 },
     ...[-0.8, -2.0, -3.2, -4.4, -5.6, -6.8].map(dx => ({ dx, share: 0.74 / 6 })),
   ],
+  lamp: [11.05, 1.72],
   draw(g, o) {
     const cab = o.lost ? LOST_PAINT : "#e08e0b";
     // low-loader deck with a gooseneck up to the tractor
@@ -261,9 +261,8 @@ const hauler = {
     poly(g, [[5.4, 1.0], [11, 1.0], [11, 2.3], [9.6, 2.45], [9.4, 3.6], [6.0, 3.6], [5.4, 3.3]], cab);
     poly(g, [[8.1, 2.5], [9.25, 2.5], [9.1, 3.35], [8.1, 3.35]], o.lost ? LOST_GLASS : GLASS);
     poly(g, [[10.85, 0.85], [11.15, 0.85], [11.15, 1.4], [10.85, 1.4]], "#9aa0a6");
-    poly(g, [[10.9, 1.6], [11.05, 1.6], [11.05, 1.85], [10.9, 1.85]], o.lost ? "#777" : "#ffe08a");
+    poly(g, [[10.9, 1.6], [11.05, 1.6], [11.05, 1.85], [10.9, 1.85]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
     poly(g, [[6.3, 3.6], [6.6, 3.6], [6.6, 4.4], [6.3, 4.4]], "#3b3d40"); // exhaust stack
-    headlight(g, 11.05, 1.72, o.lights && !o.lost);
     wheels(hauler, g, o);
   },
 };

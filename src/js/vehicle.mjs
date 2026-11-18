@@ -7,7 +7,7 @@
  * it falls; if it falls far enough, the test is lost.
  */
 
-import { VEHICLE_TYPES } from "./vehicle-types.mjs";
+import { drawHeadlight, VEHICLE_TYPES } from "./vehicle-types.mjs";
 
 /** Seconds to wait before driving: the gravity ramp-up in EvalCtx. */
 export const VEHICLE_START_DELAY = 2;
@@ -229,7 +229,23 @@ export class Vehicle {
     g.restore();
   }
 
-  /** Last drawn tilt, kept when a truck comes to rest after falling. */
+  /**
+   * The headlight beam, drawn after the night darkening so it lights up the scene. Uses
+   * the tilt from the last {@link render}.
+   * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   */
+  renderLights(ctx) {
+    if (this.state === "fell") return;
+    const g = ctx.ctx;
+    g.save();
+    g.translate(this.x, this.y);
+    g.rotate(this.__tilt);
+    g.globalCompositeOperation = "lighter";
+    drawHeadlight(g, ...this.type.lamp);
+    g.restore();
+  }
+
+  /** Last drawn tilt, kept when a vehicle comes to rest after falling. */
   __tilt = 0;
 }
 

@@ -4,13 +4,7 @@
  * cheap to draw whenever the screen opens.
  */
 
-const SKY_TOP = "#7fb0dc";
-const SKY_BOTTOM = "#d3e6f3";
-const EARTH = "#7d5d40";
-const GRASS = "#5d9a3f";
 const ROCK = "#6f6a63";
-const WATER = "rgba(52, 118, 168, 0.88)";
-const VALLEY = "#5b5348";
 const ANCHOR = "#2a3038";
 
 /**
@@ -26,9 +20,10 @@ export function renderLevelPreview(g, level, width, height) {
   const px = (/** @type {number} */ wx) => (wx - x0) * scale;
   const py = (/** @type {number} */ wy) => (top - wy) * scale;
 
+  const { theme } = level;
   const sky = g.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, SKY_TOP);
-  sky.addColorStop(1, SKY_BOTTOM);
+  sky.addColorStop(0, theme.sky[0]);
+  sky.addColorStop(1, theme.sky[2]);
   g.fillStyle = sky;
   g.fillRect(0, 0, width, height);
 
@@ -36,7 +31,7 @@ export function renderLevelPreview(g, level, width, height) {
   const lowest = Math.min(...level.terrain.map(t => t.y));
   if (water === undefined) {
     // a dry valley: its floor somewhat below the lowest ground
-    g.fillStyle = VALLEY;
+    g.fillStyle = theme.valley[2];
     g.fillRect(0, py(lowest - 12), width, height);
   }
 
@@ -46,10 +41,10 @@ export function renderLevelPreview(g, level, width, height) {
     if (right <= left) return;
     const surface = py(block.y);
     const submerged = water !== undefined && block.y < water;
-    g.fillStyle = submerged ? ROCK : EARTH;
+    g.fillStyle = submerged ? ROCK : theme.earth[1];
     g.fillRect(left, surface, right - left, height - surface);
     if (!submerged) {
-      g.fillStyle = GRASS;
+      g.fillStyle = theme.valleyRim; // grass, snow or sand
       g.fillRect(left, surface, right - left, Math.max(2, 0.8 * scale));
     }
   };
@@ -58,8 +53,10 @@ export function renderLevelPreview(g, level, width, height) {
   const under = water === undefined ? [] : level.terrain.filter(t => t.y < water);
   under.forEach(drawBlock);
   if (water !== undefined) {
-    g.fillStyle = WATER;
+    g.fillStyle = theme.water[0];
+    g.globalAlpha = 0.88;
     g.fillRect(0, py(water), width, height - py(water));
+    g.globalAlpha = 1;
   }
   level.terrain.filter(t => !under.includes(t)).forEach(drawBlock);
 

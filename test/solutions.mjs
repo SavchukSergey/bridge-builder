@@ -181,6 +181,8 @@ export const solutions = {
   heavy: (level) => truss(level, -20, 10, 20, 10, { h: 3, diagonal: "steel-light", vertical: "steel-light" }),
   // ~$34,200
   downhill: (level) => truss(level, -30, 18, 30, 8, { h: 3, ...LEAN }),
+  // ~$23,600: the creek's design, stretched to 60 m
+  rush: (level) => suspension(level, 30, 14, 3, { tower: "steel-light", hanger: "cable-thin" }),
   // ~$46,400: deeper sag than the creek's, so the deck isn't stretched as hard
   "long-span": (level) => suspension(level, 50, 26, 10, { hanger: "cable-thin" }),
   // ~$114,500: three 60 m spans, piers on both rocks
@@ -236,6 +238,10 @@ export const alternatives = {
   downhill: {
     "bare ramp": (level) => bareDeck(level, -30, 18, 30, 8),
     "truss h4 lean": (level) => truss(level, -30, 18, 30, 8, { h: 4, ...LEAN }),
+  },
+  rush: {
+    "bare deck": (level) => bareDeck(level, -30, 10, 30, 10),
+    "truss h4 lean": (level) => truss(level, -30, 10, 30, 10, { h: 4, ...LEAN }),
   },
   "long-span": {
     "bare deck": (level) => bareDeck(level, -50, 10, 50, 10),

@@ -17,17 +17,17 @@ function win(game, levelId) {
 describe("progression", () => {
   test("levels are numbered in play order", () => {
     assert.deepEqual(levels.map(l => l.number), levels.map((_, i) => i + 1));
-    assert.equal(levels.length, 12);
+    assert.equal(levels.length, 13);
   });
 
   test("only the first level is open at the start; winning one opens the next", () => {
     const game = createGame("brook");
     assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook"]);
-    assert.deepEqual(game.totalStars, { earned: 0, max: 36 });
+    assert.deepEqual(game.totalStars, { earned: 0, max: 39 });
 
     win(game, "brook");
     assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook", "creek"]);
-    assert.deepEqual(game.totalStars, { earned: 3, max: 36 });
+    assert.deepEqual(game.totalStars, { earned: 3, max: 39 });
     assert.equal(game.isUnlocked("nope"), false);
   });
 
@@ -85,10 +85,11 @@ describe("level previews", () => {
 
   test("rocks under the river are drawn before the water, so it covers them", () => {
     const { g, fills } = recorder();
-    renderLevelPreview(/** @type {any} */(g), findLevel("pier"), 216, 108);
-    const water = fills.findIndex(f => String(f.style).startsWith("rgba(52, 118, 168"));
+    const pier = findLevel("pier");
+    renderLevelPreview(/** @type {any} */(g), pier, 216, 108);
+    const water = fills.findIndex(f => f.style === pier.theme.water[0]);
     const rock = fills.findIndex(f => f.style === "#6f6a63");
     assert.ok(rock >= 0 && water > rock, `rock at ${rock}, water at ${water}`);
-    assert.ok(fills.slice(water + 1).some(f => f.style === "#5d9a3f"), "the banks' grass is drawn over the water");
+    assert.ok(fills.slice(water + 1).some(f => f.style === pier.theme.valleyRim), "the banks' grass is drawn over the water");
   });
 });

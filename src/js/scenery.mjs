@@ -9,11 +9,14 @@
  * and zoom.
  */
 
+import { THEMES } from "./themes.mjs";
+
 /** Ground blocks this far out are "infinite"; their outer edges are never drawn. */
 const FAR_EDGE = 1000;
 
 /**
  * @typedef {import("./render-ctx.mjs").RenderCtx} RenderCtx
+ * @typedef {import("./themes.mjs").Theme} Theme
  * @typedef {{ x0: number, x1: number, y0: number, y1: number }} Bounds
  */
 
@@ -55,11 +58,13 @@ function hash(n) {
 }
 
 /**
- * Sky, sun, clouds and two layers of hills behind everything, in screen space.
+ * Sky, sun (or moon and stars), clouds and two layers of hills behind everything, in
+ * screen space.
  * @param {RenderCtx} ctx
  * @param {number} groundY - typical ground height, where the hills stand
+ * @param {Theme} [theme]
  */
-export function renderBackground(ctx, groundY) {
+export function renderBackground(ctx, groundY, theme = THEMES.summer) {
   const g = ctx.ctx;
   const { width: w, height: h, zoom, shift } = ctx;
   g.save();
@@ -71,21 +76,38 @@ export function renderBackground(ctx, groundY) {
   // sky: deep blue overhead to a pale haze at the horizon
   const horizon = Math.min(h, Math.max(0, sy(groundY, 0.25)));
   const sky = g.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, "#4a86c5");
-  sky.addColorStop(0.65, "#93bfe3");
-  sky.addColorStop(1, "#dcebf4");
+  sky.addColorStop(0, theme.sky[0]);
+  sky.addColorStop(0.65, theme.sky[1]);
+  sky.addColorStop(1, theme.sky[2]);
   g.fillStyle = sky;
   g.fillRect(0, 0, w, h);
 
-  // sun with a soft glow
-  const sunX = w * 0.68 - shift.x * zoom * 0.02, sunY = Math.max(40, horizon * 0.3);
-  const glow = g.createRadialGradient(sunX, sunY, 0, sunX, sunY, 160);
-  glow.addColorStop(0, "rgba(255, 250, 225, 0.95)");
-  glow.addColorStop(0.12, "rgba(255, 246, 210, 0.9)");
-  glow.addColorStop(0.3, "rgba(255, 240, 200, 0.25)");
-  glow.addColorStop(1, "rgba(255, 240, 200, 0)");
-  g.fillStyle = glow;
-  g.fillRect(sunX - 160, sunY - 160, 320, 320);
+  const lightX = w * 0.68 - shift.x * zoom * 0.02, lightY = Math.max(40, horizon * 0.3);
+  if (theme.light === "moon") {
+    // stars, fixed to the sky, fainter towards the horizon
+    for (let i = 0; i < 140; i++) {
+      const x = hash(i * 1.7) * w, y = hash(i * 2.9 + 4) * horizon * 0.9;
+      g.fillStyle = `rgba(255, 255, 255, ${(0.25 + 0.6 * hash(i + 0.3)) * (1 - y / horizon)})`;
+      const r = 0.6 + 1.1 * hash(i * 5.3);
+      g.fillRect(x - r / 2, y - r / 2, r, r);
+    }
+    const glow = g.createRadialGradient(lightX, lightY, 0, lightX, lightY, 110);
+    glow.addColorStop(0, "rgba(235, 240, 255, 0.95)");
+    glow.addColorStop(0.16, "rgba(225, 232, 250, 0.9)");
+    glow.addColorStop(0.2, "rgba(200, 215, 245, 0.2)");
+    glow.addColorStop(1, "rgba(200, 215, 245, 0)");
+    g.fillStyle = glow;
+    g.fillRect(lightX - 110, lightY - 110, 220, 220);
+  } else {
+    // sun with a soft glow
+    const glow = g.createRadialGradient(lightX, lightY, 0, lightX, lightY, 160);
+    glow.addColorStop(0, "rgba(255, 250, 225, 0.95)");
+    glow.addColorStop(0.12, "rgba(255, 246, 210, 0.9)");
+    glow.addColorStop(0.3, "rgba(255, 240, 200, 0.25)");
+    glow.addColorStop(1, "rgba(255, 240, 200, 0)");
+    g.fillStyle = glow;
+    g.fillRect(lightX - 160, lightY - 160, 320, 320);
+  }
 
   // clouds drifting slowly to the right
   const span = w + 600;
@@ -94,14 +116,14 @@ export function renderBackground(ctx, groundY) {
     const speed = 4 + 6 * hash(i + 0.5); // px/s
     const x = ((hash(i) * span + now() * speed - shift.x * zoom * 0.08) % span + span) % span - 300;
     const y = (0.08 + 0.3 * hash(i + 9)) * horizon;
-    renderCloud(g, x, y, (0.6 + 0.6 * hash(i + 3)) * scale);
+    renderCloud(g, x, y, (0.6 + 0.6 * hash(i + 3)) * scale, theme.cloud);
   }
 
   // hills: a hazy far range and nearer wooded slopes
   /** @type {[number, number, number, string, string][]} */
   const layers = [
-    [0.22, 70, 1.7, "#9db4c6", "#b6c9d6"],
-    [0.45, 28, 4.2, "#6f8f68", "#8aa77d"],
+    [0.22, 70, 1.7, ...theme.hills[0]],
+    [0.45, 28, 4.2, ...theme.hills[1]],
   ];
   for (const [p, amplitude, seed, base, top] of layers) {
     let minY = h;
@@ -132,9 +154,10 @@ export function renderBackground(ctx, groundY) {
  * @param {number} x
  * @param {number} y
  * @param {number} s - scale
+ * @param {string} color
  */
-function renderCloud(g, x, y, s) {
-  g.fillStyle = "rgba(255, 255, 255, 0.85)";
+function renderCloud(g, x, y, s, color) {
+  g.fillStyle = color;
   g.beginPath();
   for (const [dx, dy, r] of [[0, 0, 26], [28, -10, 32], [60, 0, 24], [30, 8, 24], [-24, 6, 18], [84, 6, 16]]) {
     g.moveTo(x + dx * s + r * s, y + dy * s);
@@ -148,16 +171,17 @@ function renderCloud(g, x, y, s) {
  * darker with depth, with a grassy rim.
  * @param {RenderCtx} ctx
  * @param {number} rimY - height of the far rim
+ * @param {Theme} [theme]
  */
-export function renderValley(ctx, rimY) {
+export function renderValley(ctx, rimY, theme = THEMES.summer) {
   const g = ctx.ctx;
   const b = visibleBounds(ctx);
   if (b.y0 > rimY) return;
   const bottom = Math.min(b.y0, rimY - 1) - 1;
   const wall = g.createLinearGradient(0, rimY, 0, rimY - 35);
-  wall.addColorStop(0, "#a39886");
-  wall.addColorStop(0.4, "#8a7d6c");
-  wall.addColorStop(1, "#5f5448");
+  wall.addColorStop(0, theme.valley[0]);
+  wall.addColorStop(0.4, theme.valley[1]);
+  wall.addColorStop(1, theme.valley[2]);
   g.fillStyle = wall;
   g.fillRect(b.x0 - 1, bottom, b.x1 - b.x0 + 2, rimY - bottom);
 
@@ -171,7 +195,7 @@ export function renderValley(ctx, rimY) {
     for (let x = Math.floor(b.x0 / 5) * 5; x <= b.x1 + 5; x += 5) g.lineTo(x, y + 0.6 * (hash(x * 0.13 + i) - 0.5));
   }
   g.stroke();
-  g.fillStyle = "#7d9a6c";
+  g.fillStyle = theme.valleyRim;
   g.fillRect(b.x0 - 1, rimY - 0.5, b.x1 - b.x0 + 2, 0.5);
 }
 
@@ -179,19 +203,20 @@ export function renderValley(ctx, rimY) {
  * A river (or lake) filling the gaps up to `level`, drawn before the ground.
  * @param {RenderCtx} ctx
  * @param {number} level - water surface height
+ * @param {Theme} [theme]
  */
-export function renderWater(ctx, level) {
+export function renderWater(ctx, level, theme = THEMES.summer) {
   const g = ctx.ctx;
   const b = visibleBounds(ctx);
   if (b.y0 > level) return;
   const water = g.createLinearGradient(0, level, 0, level - 25);
-  water.addColorStop(0, "#4f8fb0");
-  water.addColorStop(1, "#1d4058");
+  water.addColorStop(0, theme.water[0]);
+  water.addColorStop(1, theme.water[1]);
   g.fillStyle = water;
   g.fillRect(b.x0 - 1, Math.min(b.y0, level - 1) - 1, b.x1 - b.x0 + 2, level - Math.min(b.y0, level - 1) + 1);
 
   // ripples on the surface
-  g.strokeStyle = "rgba(220, 240, 250, 0.6)";
+  g.strokeStyle = theme.ripple;
   g.lineWidth = 1.2 / ctx.zoom;
   const t = now();
   g.beginPath();
@@ -215,8 +240,9 @@ export function renderWater(ctx, level) {
  * @param {RenderCtx} ctx
  * @param {import("./level.mjs").Level} level
  * @param {number} water
+ * @param {Theme} [theme]
  */
-export function renderWaterFront(ctx, level, water) {
+export function renderWaterFront(ctx, level, water, theme = THEMES.summer) {
   const g = ctx.ctx;
   const b = visibleBounds(ctx);
   if (b.y0 > water) return;
@@ -227,8 +253,8 @@ export function renderWaterFront(ctx, level, water) {
   }
   edges.sort((p, q) => p - q);
   const front = g.createLinearGradient(0, water, 0, water - 12);
-  front.addColorStop(0, "rgba(70, 130, 160, 0.55)");
-  front.addColorStop(1, "rgba(25, 60, 85, 0.85)");
+  front.addColorStop(0, theme.waterFront[0]);
+  front.addColorStop(1, theme.waterFront[1]);
   g.fillStyle = front;
   const bottom = Math.min(b.y0, water - 1) - 1;
   for (let i = 0; i + 1 < edges.length; i++) {
@@ -256,8 +282,9 @@ export function renderWaterFront(ctx, level, water) {
  * @param {RenderCtx} ctx
  * @param {import("./level.mjs").TerrainBlock} block
  * @param {boolean} submerged
+ * @param {Theme} [theme]
  */
-export function renderGround(ctx, block, submerged) {
+export function renderGround(ctx, block, submerged, theme = THEMES.summer) {
   const g = ctx.ctx;
   const b = visibleBounds(ctx);
   const x0 = Math.max(block.x0, b.x0 - 1), x1 = Math.min(block.x1, b.x1 + 1);
@@ -270,15 +297,15 @@ export function renderGround(ctx, block, submerged) {
     rock.addColorStop(0, "#77736d");
     rock.addColorStop(1, "#45423e");
   } else {
-    rock.addColorStop(0, "#8c7259");
-    rock.addColorStop(0.5, "#6e5643");
-    rock.addColorStop(1, "#4a3a2e");
+    rock.addColorStop(0, theme.earth[0]);
+    rock.addColorStop(0.5, theme.earth[1]);
+    rock.addColorStop(1, theme.earth[2]);
   }
   g.fillStyle = rock;
   g.fillRect(x0, bottom, x1 - x0, y - bottom);
 
   // rock strata
-  g.strokeStyle = submerged ? "rgba(40, 38, 35, 0.35)" : "rgba(50, 35, 25, 0.3)";
+  g.strokeStyle = submerged ? "rgba(40, 38, 35, 0.35)" : theme.strata;
   g.lineWidth = Math.max(0.08, 1 / ctx.zoom);
   g.beginPath();
   for (let d = 3.2, i = 0; y - d > bottom; d += 2.6 + 1.8 * hash(i + block.x0), i++) {
@@ -300,7 +327,7 @@ export function renderGround(ctx, block, submerged) {
 
   if (submerged) return;
   // embankment: soil, then gravel, then the road surface on top
-  g.fillStyle = "#6b4d33";
+  g.fillStyle = theme.soil;
   g.fillRect(x0, y - 1.4, x1 - x0, 1.4);
   g.fillStyle = "#958b7c";
   g.fillRect(x0, y - 0.45, x1 - x0, 0.25);
@@ -314,8 +341,9 @@ export function renderGround(ctx, block, submerged) {
  * @param {import("./level.mjs").Level} level
  * @param {{ x0: number, x1: number }} keepClear
  * @param {number | undefined} water
+ * @param {Theme} [theme]
  */
-export function renderTrees(ctx, level, keepClear, water) {
+export function renderTrees(ctx, level, keepClear, water, theme = THEMES.summer) {
   const g = ctx.ctx;
   const b = visibleBounds(ctx);
   const STEP = 7;
@@ -327,7 +355,14 @@ export function renderTrees(ctx, level, keepClear, water) {
     if (ground === undefined || (water !== undefined && ground < water)) continue;
     // stay on the block, not overhanging a cliff
     if (level.groundAt(x - 2.5) !== ground || level.groundAt(x + 2.5) !== ground) continue;
-    renderTree(g, x, ground, 4 + 4 * hash(i + 17), hash(i + 5));
+    const height = 4 + 4 * hash(i + 17), variety = hash(i + 5);
+    if (theme.flora === "cacti") {
+      renderCactus(g, x, ground, 2.5 + 3 * hash(i + 23), variety);
+    } else if (theme.flora === "snowy forest") {
+      renderTree(g, x, ground, height, variety * 0.4, true); // all conifers
+    } else {
+      renderTree(g, x, ground, height, variety);
+    }
   }
 }
 
@@ -337,8 +372,9 @@ export function renderTrees(ctx, level, keepClear, water) {
  * @param {number} y - ground
  * @param {number} height
  * @param {number} variety - 0..1: conifer below 0.4, broadleaf above
+ * @param {boolean} [snowy] - snow on the branches
  */
-function renderTree(g, x, y, height, variety) {
+function renderTree(g, x, y, height, variety, snowy = false) {
   const trunk = height * 0.35;
   g.fillStyle = "#5a3f2b";
   g.fillRect(x - 0.18, y, 0.36, trunk + 0.5);
@@ -350,6 +386,20 @@ function renderTree(g, x, y, height, variety) {
     g.lineTo(x, y + height * 1.15);
     g.closePath();
     g.fill();
+    if (snowy) {
+      // snow lying on the upper branches
+      const top = y + height * 1.15, base = y + trunk * 0.6, w = height * 0.28;
+      const at = (/** @type {number} */ f) => top - (top - base) * f;
+      g.fillStyle = "#f3f7fa";
+      g.beginPath();
+      g.moveTo(x, top);
+      g.lineTo(x + w * 0.55, at(0.55));
+      g.lineTo(x + w * 0.2, at(0.48));
+      g.lineTo(x - w * 0.15, at(0.58));
+      g.lineTo(x - w * 0.55, at(0.55));
+      g.closePath();
+      g.fill();
+    }
   } else {
     const r = height * 0.3;
     g.fillStyle = variety < 0.7 ? "#3f7a3a" : "#4f8a3c";
@@ -364,6 +414,39 @@ function renderTree(g, x, y, height, variety) {
     g.arc(x - 0.3 * r, y + trunk + 1.0 * r, 0.5 * r, 0, 2 * Math.PI);
     g.fill();
   }
+}
+
+/**
+ * A saguaro-style cactus: a column, sometimes with an arm or two.
+ * @param {CanvasRenderingContext2D} g
+ * @param {number} x
+ * @param {number} y - ground
+ * @param {number} height
+ * @param {number} variety - 0..1: how many arms
+ */
+function renderCactus(g, x, y, height, variety) {
+  const w = 0.32 + height * 0.05;
+  g.fillStyle = "#5c8a48";
+  /** A column with a rounded top, from (cx, y0) up to y1. */
+  const column = (/** @type {number} */ cx, /** @type {number} */ y0, /** @type {number} */ y1, /** @type {number} */ r) => {
+    g.fillRect(cx - r, y0, 2 * r, y1 - y0);
+    g.beginPath();
+    g.arc(cx, y1, r, 0, Math.PI * 2);
+    g.fill();
+  };
+  column(x, y, y + height, w);
+  if (variety > 0.3) { // an arm to the right
+    const at = y + height * 0.45;
+    g.fillRect(x, at - w * 0.6, w * 2.4, w * 1.2);
+    column(x + w * 2.4, at - w * 0.6, at + height * 0.3, w * 0.7);
+  }
+  if (variety > 0.7) { // and one to the left
+    const at = y + height * 0.6;
+    g.fillRect(x - w * 2.1, at - w * 0.5, w * 2.1, w);
+    column(x - w * 2.1, at - w * 0.5, at + height * 0.22, w * 0.6);
+  }
+  g.fillStyle = "rgba(255, 255, 255, 0.1)";
+  g.fillRect(x - w * 0.15, y + 0.3, w * 0.3, height - 0.3);
 }
 
 /**

@@ -977,7 +977,7 @@ export class Game {
     this.ctx.width = this.canvas.width / this.ctx.pixelRatio;
     this.ctx.height = this.canvas.height / this.ctx.pixelRatio;
     this.ctx.clear();
-    renderBackground(this.ctx, this.level.startY);
+    renderBackground(this.ctx, this.level.startY, this.level.theme);
     this.level.render(this.ctx);
     if (this.isBuildMode) this.scene.grid.render(this.ctx);
     if (this.isBuildMode && this.mirror) {
@@ -1025,10 +1025,24 @@ export class Game {
     // Before the first run, show the convoy lined up at the start.
     this.effects.renderDebris(this.ctx);
     for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
-      vehicle.render(this.ctx);
+      vehicle.render(this.ctx, { lights: this.level.theme.dark > 0 });
     }
     this.level.renderFront(this.ctx);
     this.effects.renderParticles(this.ctx);
+
+    const { dark } = this.level.theme;
+    if (dark > 0) {
+      // night: darken everything drawn so far, then let the headlights shine through
+      const g = this.ctx.ctx;
+      g.save();
+      this.ctx.screenSpace();
+      g.fillStyle = `rgba(4, 10, 28, ${dark})`;
+      g.fillRect(0, 0, this.ctx.width, this.ctx.height);
+      g.restore();
+      for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
+        vehicle.renderLights(this.ctx);
+      }
+    }
   }
 
   /**

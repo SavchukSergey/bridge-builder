@@ -115,6 +115,23 @@ describe("rendering", () => {
     assert.ok(Math.abs(moved.x - 0) < 1e-9 && Math.abs(moved.y - 30) < 1e-9, "the grabbed point stays under the pointer");
   });
 
+  test("at night the scene is darkened and headlights shine through; by day neither", () => {
+    for (const [levelId, night] of [["rush", true], ["creek", false]]) {
+      const game = createGame(levelId);
+      const rec = withRecorder(game);
+      const composites = [];
+      const fills = [];
+      const real = rec.fillRect;
+      rec.fillRect = (...args) => { fills.push(rec.fillStyle); real(...args); };
+      Object.defineProperty(rec, "globalCompositeOperation", { set: v => composites.push(v), get: () => "source-over", configurable: true });
+      game.render();
+      const shade = fills.some(f => String(f).startsWith("rgba(4, 10, 28"));
+      assert.equal(shade, night, `${levelId}: darkened`);
+      assert.equal(composites.filter(c => c === "lighter").length, night ? game.level.vehicleCount : 0, `${levelId}: one beam per vehicle`);
+      assert.equal(rec.stackDepth, 0);
+    }
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);
