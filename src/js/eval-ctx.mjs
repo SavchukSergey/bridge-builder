@@ -2,7 +2,7 @@ import { createVec3F } from "./math.js";
 
 export class EvalCtx {
 
-    simulation = true;
+    simulation = false;
 
     time = 0;
 

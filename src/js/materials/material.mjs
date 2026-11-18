@@ -11,5 +11,6 @@ export class Material {
     this.density = opts.density;
     this.crossSectionalArea = opts.crossSectionalArea;
     this.name = opts.name;
+    this.canCompress = opts.canCompress ?? true;
   }
 }

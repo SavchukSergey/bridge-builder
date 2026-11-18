@@ -9,6 +9,9 @@ import { CompositeScene, Scene } from "./scene.js";
 
 // @ts-check
 
+/** Pointer travel (in screen pixels) after which a press counts as a pan, not a click. */
+const DRAG_THRESHOLD_PX = 4;
+
 export class Game {
 
   /**
@@ -56,6 +59,50 @@ export class Game {
  */
   __clickState = undefined;
 
+  /** Set when the last pointer press was a pan, so the following click is ignored. */
+  __suppressClick = false;
+
+  /**
+   * Structure saved when the simulation was first started. While it exists the
+   * scene shows a simulated (deformed) state and building is disabled.
+   * @type {import("./scene.js").SceneSnapshot | undefined}
+   */
+  __snapshot = undefined;
+
+  /** True while the structure can be edited (no simulation has run since the last reset). */
+  get isBuildMode() {
+    return !this.__snapshot;
+  }
+
+  /**
+   * Starts or pauses the simulation. The first start saves the structure for {@link reset}.
+   * @param {boolean} running
+   */
+  setSimulationRunning(running) {
+    if (running && !this.__snapshot) {
+      this.__cancelLink();
+      this.__snapshot = this.scene.snapshot();
+    }
+    this.evalCtx.simulation = running;
+  }
+
+  /** Stops the simulation and restores the structure as it was built. */
+  reset() {
+    this.evalCtx.simulation = false;
+    if (this.__snapshot) {
+      this.scene.restore(this.__snapshot);
+      this.__snapshot = undefined;
+    }
+    this.evalCtx.time = 0;
+  }
+
+  __cancelLink() {
+    if (this.__clickState) {
+      this.scene.preview = this.__clickState.previewBackup;
+      this.__clickState = undefined;
+    }
+  }
+
   /**
    * 
    * @param {PointerEvent} ev 
@@ -68,7 +115,8 @@ export class Game {
       startGlobal: clientToGlobal.transformPoint(client),
       startClient: client,
       original: this.ctx.shift,
-      clientToGlobal
+      clientToGlobal,
+      moved: false
     };
   }
 
@@ -77,6 +125,13 @@ export class Game {
  * @param {PointerEvent} ev 
  */
   __handleClick(ev) {
+    if (this.__suppressClick) {
+      this.__suppressClick = false;
+      return;
+    }
+    if (!this.isBuildMode) {
+      return;
+    }
     const client = this.__getPointerClient(ev);
     const globalPoint = this.ctx.clientToGlobal(client);
 
@@ -95,18 +150,12 @@ export class Game {
       }
     } else {
       const material = this.__getCurrentMaterial();
-      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material);
-      
-      for (const joint of path.joints) {
-        this.scene.joints.push(joint);
-      }
-      for (const link of path.links) {
-        this.scene.links.push(link);
-      }
-      this.scene.distributeMass();
-      this.scene.preview = this.__clickState.previewBackup;
+      const path = this.__buildLink(this.__clickState.jointA, globalPoint, material);
 
-      this.__clickState = undefined;
+      // An empty path means the second click landed on the start joint: treat it as cancel.
+      this.scene.joints.push(...path.joints);
+      this.scene.links.push(...path.links);
+      this.__cancelLink();
       this.scene.distributeMass();
     }
   }
@@ -118,6 +167,14 @@ export class Game {
   __handleMouseMove(ev) {
     const client = this.__getPointerClient(ev);
     if (this.__dragState) {
+      if (!this.__dragState.moved) {
+        const dx = client.x - this.__dragState.startClient.x;
+        const dy = client.y - this.__dragState.startClient.y;
+        if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+          return;
+        }
+        this.__dragState.moved = true;
+      }
       const newGlobal = this.__dragState.clientToGlobal.transformPoint(client);
       const deltaGlobal = vec3fsub(newGlobal, this.__dragState.startGlobal);
       const newPos = vec3fsub(this.__dragState.original, deltaGlobal);
@@ -146,11 +203,19 @@ export class Game {
     let jointB = this.scene.findJoint(globalB, 2);
     if (!jointB) {
       jointB = new Joint(globalB);
-      joints.push(jointB);
     }
 
     const dir = vec3fsub(jointB.position, jointA.position);
     const dist = vec3flen(dir);
+
+    // Zero-length links would divide by zero in strain and poison the simulation with NaN.
+    const minLinkLength = 0.1;
+    if (jointB === jointA || dist < minLinkLength) {
+      return { joints, links };
+    }
+    if (!this.scene.joints.includes(jointB)) {
+      joints.push(jointB);
+    }
 
     const maxSegLength = 10;
 
@@ -184,6 +249,7 @@ export class Game {
    * @param {PointerEvent} _ev 
    */
   __handleMouseUp(_ev) {
+    this.__suppressClick = this.__dragState?.moved ?? false;
     this.__dragState = undefined;
   }
 
@@ -278,6 +344,7 @@ export class Game {
  * @property {import("./math.js").Vec3F} startClient 
  * @property {import("./math.js").Vec3F} original 
  * @property {DOMMatrix} clientToGlobal 
+ * @property {boolean} moved - pointer travelled past DRAG_THRESHOLD_PX
  */
 
 /**

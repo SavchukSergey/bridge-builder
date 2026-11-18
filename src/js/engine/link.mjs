@@ -74,15 +74,18 @@ export class Link {
    * @returns {number} Negative value if compressed, positive if stretched
    */
   get stressForce() {
-    return this.strain * this.material.youngModulus * this.crossSectionalArea;
+    return this.stressPressure * this.crossSectionalArea;
   }
 
   /**
    * @returns {number} Negative value if compressed, positive if stretched
    */
   get stressPressure() {
-    return this.strain * this.material.youngModulus;
-    // return this.stressForce / this.crossSectionalArea;
+    const strain = this.strain;
+    if (strain < 0 && !this.material.canCompress) {
+      return 0; // slack cable
+    }
+    return strain * this.material.youngModulus;
   }
 
   get stressColor() {

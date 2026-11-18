@@ -129,6 +129,39 @@ export class Scene {
   }
 
   /**
+   * Captures the built structure so it can be restored after a simulation run.
+   * @returns {SceneSnapshot}
+   */
+  snapshot() {
+    return {
+      joints: this.joints.map(joint => ({
+        joint,
+        position: { ...joint.position },
+        velocity: { ...joint.velocity },
+      })),
+      links: this.links.map(link => ({ link, broken: link.broken })),
+    };
+  }
+
+  /**
+   * @param {SceneSnapshot} snapshot
+   */
+  restore(snapshot) {
+    this.content.joints = snapshot.joints.map(({ joint, position, velocity }) => {
+      joint.position = { ...position };
+      joint.velocity = { ...velocity };
+      joint.force = createVec3F(0, 0, 0);
+      return joint;
+    });
+    this.content.links = snapshot.links.map(({ link, broken }) => {
+      link.broken = broken;
+      link.preEval();
+      return link;
+    });
+    this.distributeMass();
+  }
+
+  /**
    * 
    * @param {import("./eval-ctx.mjs").EvalCtx} evalCtx 
    */
@@ -223,6 +256,12 @@ export class Scene {
     }
   }
 }
+
+/**
+ * @typedef {Object} SceneSnapshot
+ * @property {{ joint: Joint, position: import("./math.js").Vec3F, velocity: import("./math.js").Vec3F }[]} joints
+ * @property {{ link: Link, broken: boolean }[]} links
+ */
 
 export class CompositeScene {
   /** @type {Joint[]} */
