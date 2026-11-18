@@ -17,6 +17,38 @@ function getCanvas() {
   return canvas;
 }
 
+/**
+ * @param {number} value
+ */
+function formatMoney(value) {
+  return '$' + Math.round(value).toLocaleString('en-US');
+}
+
+/**
+ * Status line: build/simulation mode and the load test outcome.
+ * @param {Game} game
+ * @returns {{ text: string, kind: '' | 'success' | 'failure' }}
+ */
+function modeText(game) {
+  const paused = game.evalCtx.simulation ? '' : ' (paused)';
+  switch (game.testState) {
+    case 'building':
+      return { text: 'Build mode', kind: '' };
+    case 'waiting':
+      return { text: 'Loading the bridge...' + paused, kind: '' };
+    case 'driving':
+      return { text: 'Truck crossing...' + paused, kind: '' };
+    case 'falling':
+      return { text: 'Truck falling!' + paused, kind: 'failure' };
+    case 'crossed':
+      return game.overBudget
+        ? { text: 'Truck crossed, but over budget. Reset to improve.', kind: 'failure' }
+        : { text: 'Success! The truck crossed.', kind: 'success' };
+    case 'fell':
+      return { text: 'The truck fell. Reset and try again.', kind: 'failure' };
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const canvas = getCanvas();
   /** @type {HTMLInputElement} */
@@ -43,6 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const fileImport = document.getElementById('import-file');
   /** @type {HTMLDivElement} */
   const txtStatus = document.getElementById('status-message');
+  /** @type {HTMLDivElement} */
+  const boxCost = document.getElementById('cost');
+  /** @type {HTMLSpanElement} */
+  const txtCost = document.getElementById('cost-value');
+  /** @type {HTMLSpanElement} */
+  const txtBudget = document.getElementById('budget-value');
 
   /** @type {number | undefined} */
   let statusTimer;
@@ -133,9 +171,12 @@ document.addEventListener('DOMContentLoaded', function () {
     btnReset.disabled = game.isBuildMode;
     btnUndo.disabled = !game.canUndo;
     btnRedo.disabled = !game.canRedo;
-    txtMode.innerText = game.isBuildMode
-      ? 'Build mode'
-      : (game.evalCtx.simulation ? 'Simulating' : 'Paused (Reset to edit)');
+    const mode = modeText(game);
+    txtMode.innerText = mode.text;
+    txtMode.className = mode.kind;
+    txtCost.textContent = formatMoney(game.cost);
+    txtBudget.textContent = formatMoney(game.level.budget);
+    boxCost.classList.toggle('over', game.overBudget);
     requestAnimationFrame(tick);
   }
 

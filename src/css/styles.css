@@ -51,6 +51,17 @@ body {
   font-weight: bold;
 }
 
+#mode-label.success {
+  color: #1e7e34;
+  font-weight: bold;
+}
+
+#mode-label.failure,
+#cost.over {
+  color: #b00020;
+  font-weight: bold;
+}
+
 #help {
   margin-top: auto;
   max-width: 11em;

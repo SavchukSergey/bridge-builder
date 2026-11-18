@@ -18,6 +18,7 @@ function peakSpeedOver(game, seconds) {
 test("the demo bridge survives 15 s, stays finite and settles", () => {
   const game = createGame();
   game.setSimulationRunning(true);
+  game.vehicle = undefined; // the structure on its own, without the load test
   const early = peakSpeedOver(game, 3);   // 0-3 s: gravity ramps up, deck drops and bounces
   peakSpeedOver(game, 9);
   const late = peakSpeedOver(game, 3);    // 12-15 s

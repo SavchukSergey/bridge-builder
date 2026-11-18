@@ -45,16 +45,23 @@
   </div>
 
   <div id="material-panel">
+    <label class="material-option" title="Deck the vehicle drives on">
+      <input type="radio" name="material" value="road" />
+      <span>Road</span> <small>$300/m</small>
+    </label>
     <label class="material-option">
       <input type="radio" name="material" value="steel" checked />
-      <span>Steel</span>
+      <span>Steel</span> <small>$200/m</small>
     </label>
-    <label class="material-option">
+    <label class="material-option" title="Only holds in tension">
       <input type="radio" name="material" value="cable" />
-      <span>Cable</span>
+      <span>Cable</span> <small>$60/m</small>
     </label>
 
+    <div id="cost">Cost: <span id="cost-value"></span><br />Budget: <span id="budget-value"></span></div>
+
     <div id="help">
+      <p>Get the truck to the flag. Start the simulation to test.</p>
       <p>Click a joint, then click to place a link.</p>
       <p>Right-click: delete / cancel</p>
       <p>Esc: cancel</p>

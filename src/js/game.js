@@ -1,11 +1,13 @@
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
+import { demoLevel } from "./level.mjs";
 import { materials } from "./materials/index.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { CompositeScene, Scene } from "./scene.js";
+import { Vehicle } from "./vehicle.mjs";
 
 // @ts-check
 
@@ -41,6 +43,12 @@ export class Game {
     this.ctx = new RenderCtx(ctx);
     this.evalCtx = new EvalCtx();
     this.scene = new Scene();
+    this.level = demoLevel;
+    /**
+     * The load-test vehicle; exists from the first simulation start until reset.
+     * @type {Vehicle | undefined}
+     */
+    this.vehicle = undefined;
     this.__loadAutosave();
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
@@ -117,6 +125,7 @@ export class Game {
     if (running && !this.__snapshot) {
       this.__cancelLink();
       this.__snapshot = this.scene.snapshot();
+      this.vehicle = new Vehicle(this.level);
     }
     this.evalCtx.simulation = running;
   }
@@ -129,7 +138,25 @@ export class Game {
       this.scene.restore(this.__snapshot);
       this.__snapshot = undefined;
     }
+    this.vehicle = undefined;
     this.evalCtx.time = 0;
+  }
+
+  /** Structure cost, counted against {@link Level#budget}. */
+  get cost() {
+    return this.scene.cost;
+  }
+
+  get overBudget() {
+    return this.cost > this.level.budget;
+  }
+
+  /**
+   * Outcome of the load test so far.
+   * @returns {"building" | "waiting" | "driving" | "falling" | "crossed" | "fell"}
+   */
+  get testState() {
+    return this.vehicle?.state ?? "building";
   }
 
   get canUndo() {
@@ -505,7 +532,10 @@ export class Game {
     this.ctx.width = this.canvas.width;
     this.ctx.height = this.canvas.height;
     this.ctx.clear();
-    this.scene.render(this.ctx);
+    this.scene.grid.render(this.ctx);
+    this.level.render(this.ctx);
+    this.scene.renderStructure(this.ctx);
+    (this.vehicle ?? new Vehicle(this.level)).render(this.ctx);
   }
 
   /**
@@ -521,8 +551,11 @@ export class Game {
       // so simulated time doesn't drift from real time.
       const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) + this.__timeCarry;
       let simulated = 0;
+      const vehicle = this.vehicle;
       for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
-        simulated += this.scene.tick(this.evalCtx);
+        const dt = this.scene.tick(this.evalCtx, vehicle?.loads(this.evalCtx));
+        vehicle?.update(this.scene, this.evalCtx, dt);
+        simulated += dt;
       }
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;

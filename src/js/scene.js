@@ -3,6 +3,7 @@ import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
 import { cable } from "./materials/cable.mjs";
 import { materials } from "./materials/index.mjs";
+import { road } from "./materials/road.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
 
@@ -90,14 +91,14 @@ export class Scene {
     ];
 
     const bridgeLinks = [
-      new Link(jointAI, bridgeJoints[0], steel),
-      new Link(bridgeJoints[0], bridgeJoints[1], steel),
-      new Link(bridgeJoints[1], bridgeJoints[2], steel),
-      new Link(bridgeJoints[2], bridgeJoints[3], steel),
-      new Link(bridgeJoints[3], bridgeJoints[4], steel),
-      new Link(bridgeJoints[4], bridgeJoints[5], steel),
-      new Link(bridgeJoints[5], bridgeJoints[6], steel),
-      new Link(bridgeJoints[6], jointBI, steel),
+      new Link(jointAI, bridgeJoints[0], road),
+      new Link(bridgeJoints[0], bridgeJoints[1], road),
+      new Link(bridgeJoints[1], bridgeJoints[2], road),
+      new Link(bridgeJoints[2], bridgeJoints[3], road),
+      new Link(bridgeJoints[3], bridgeJoints[4], road),
+      new Link(bridgeJoints[4], bridgeJoints[5], road),
+      new Link(bridgeJoints[5], bridgeJoints[6], road),
+      new Link(bridgeJoints[6], jointBI, road),
     ]
 
     this.joints.push(...ropeJoints);
@@ -213,8 +214,23 @@ export class Scene {
    */
   render(ctx) {
     this.grid.render(ctx);
+    this.renderStructure(ctx);
+  }
+
+  /**
+   * The structure and the link preview, without the grid.
+   * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   */
+  renderStructure(ctx) {
     this.content.render(ctx);
     this.preview.render(ctx);
+  }
+
+  /** Total price of all links, built from their rest lengths. */
+  get cost() {
+    let cost = 0;
+    for (const link of this.links) cost += link.length * link.material.costPerMeter;
+    return cost;
   }
 
   distributeMass() {
@@ -314,17 +330,15 @@ export class Scene {
    * 
    * @param {import("./eval-ctx.mjs").EvalCtx} evalCtx 
    */
-  tick(evalCtx) {
-    for (const joint of this.joints) {
-      joint.force.x = 0;
-      joint.force.y = 0;
-      joint.force.z = 0;
-    }
+  tick(evalCtx, loads = []) {
     this.distributeMass();
     for (const joint of this.joints) {
       joint.force.x = evalCtx.gravity.x * joint.mass;
       joint.force.y = evalCtx.gravity.y * joint.mass;
       joint.force.z = evalCtx.gravity.z * joint.mass;
+    }
+    for (const load of loads) {
+      load.joint.force.y += load.fy;
     }
     for (const link of this.links) {
       if (!link.broken) {

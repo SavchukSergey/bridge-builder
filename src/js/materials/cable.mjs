@@ -8,4 +8,5 @@ export const cable = new Material({
   tensileStrength: 200e6,
   compressionStrength: 200e6,
   canCompress: false,
+  costPerMeter: 60,
 });

@@ -12,5 +12,7 @@ export class Material {
     this.crossSectionalArea = opts.crossSectionalArea;
     this.name = opts.name;
     this.canCompress = opts.canCompress ?? true;
+    this.costPerMeter = opts.costPerMeter;
+    this.drivable = opts.drivable ?? false;
   }
 }

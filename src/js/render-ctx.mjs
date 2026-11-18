@@ -96,6 +96,21 @@ export class RenderCtx {
   }
 
   /**
+   * @param {string} val
+   */
+  set fillStyle(val) {
+    this.ctx.fillStyle = val;
+  }
+
+  fill() {
+    this.ctx.fill();
+  }
+
+  closePath() {
+    this.ctx.closePath();
+  }
+
+  /**
    * @param {number} val
    */
   set lineWidth(val) {

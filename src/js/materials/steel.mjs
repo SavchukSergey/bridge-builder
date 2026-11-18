@@ -7,4 +7,5 @@ export const steel = new Material({
   youngModulus: 200000e6,
   tensileStrength: 400e6,
   compressionStrength: 250e6,
+  costPerMeter: 200,
 });
