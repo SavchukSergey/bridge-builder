@@ -49,21 +49,22 @@ function formatMoney(value) {
  */
 function modeText(game) {
   const paused = game.evalCtx.simulation ? '' : ' (paused)';
+  const { one, many } = game.level.vehicleNoun;
   switch (game.testState) {
     case 'building':
       return { text: 'Build mode', kind: '' };
     case 'waiting':
       return { text: 'Loading the bridge...' + paused, kind: '' };
     case 'driving':
-      return { text: 'Trucks crossing...' + paused, kind: '' };
+      return { text: `${capitalize(many)} crossing...` + paused, kind: '' };
     case 'falling':
-      return { text: 'A truck is falling!' + paused, kind: 'failure' };
+      return { text: `A ${one} is falling!` + paused, kind: 'failure' };
     case 'crossed':
       return game.overBudget
-        ? { text: 'All trucks crossed, but over budget. Reset and make it cheaper.', kind: 'failure' }
-        : { text: 'Success! All trucks crossed.', kind: 'success' };
+        ? { text: `All ${many} crossed, but over budget. Reset and make it cheaper.`, kind: 'failure' }
+        : { text: `Success! All ${many} crossed.`, kind: 'success' };
     case 'fell':
-      return { text: 'A truck fell. Reset and try again.', kind: 'failure' };
+      return { text: `A ${one} fell. Reset and try again.`, kind: 'failure' };
   }
 }
 
@@ -290,13 +291,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const over = result.cost - result.budget;
     if (result.kind === 'success') {
       dlg.title.textContent = ['', 'Bridge holds!', 'Great bridge!', 'Perfect bridge!'][result.stars];
-      dlg.text.textContent = `All ${game.level.vehicleCount} trucks crossed.`;
+      const n = game.level.vehicleCount;
+      dlg.text.textContent = n === 1 ? 'It made it across.' : n === 2 ? 'Both made it across.' : `All ${n} made it across.`;
     } else if (result.kind === 'over-budget') {
       dlg.title.textContent = 'Over budget';
-      dlg.text.textContent = `All trucks crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
+      dlg.text.textContent = `All ${game.level.vehicleNoun.many} crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
     } else {
       dlg.title.textContent = 'Bridge failed';
-      const how = { fell: 'A truck fell into the gap.', crashed: 'A truck crashed into the cliff.', 'hard landing': 'A truck landed too hard.' };
+      const a = `A ${game.level.vehicleNoun.one}`;
+      const how = { fell: `${a} fell into the gap.`, crashed: `${a} crashed into the cliff.`, 'hard landing': `${a} landed too hard.` };
       const broke = result.broken ? ` ${result.broken} member${result.broken === 1 ? '' : 's'} broke.` : '';
       dlg.text.textContent = (how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
@@ -537,7 +540,7 @@ document.addEventListener('DOMContentLoaded', function () {
     txtMode.className = mode.kind;
     txtCost.textContent = formatMoney(game.cost);
     txtBudget.textContent = formatMoney(game.level.budget);
-    txtLoad.textContent = `${game.level.vehicleCount} × ${game.level.vehicleMass / 1000} t trucks`;
+    txtLoad.textContent = game.level.convoySummary;
     if (!game.result && !dlg.root.hidden) hideResult();
     boxCost.classList.toggle('over', game.overBudget);
     goals.two.classList.toggle('met', !game.overBudget && game.cost <= game.level.stars.two);

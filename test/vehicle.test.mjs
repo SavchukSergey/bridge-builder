@@ -5,6 +5,7 @@ import { EvalCtx } from "../src/js/eval-ctx.mjs";
 import { canyonLevel as demoLevel } from "../src/js/level.mjs";
 import { SAVE_FORMAT_VERSION, Scene } from "../src/js/scene.js";
 import { findRoad, Vehicle, VEHICLE_START_DELAY } from "../src/js/vehicle.mjs";
+import { VEHICLE_TYPES } from "../src/js/vehicle-types.mjs";
 
 /** A straight deck from (-40,10) to (40,10) in 10 m segments, both ends anchored. */
 function deck(material = "road", { skip = -1 } = {}) {
@@ -62,33 +63,70 @@ describe("findRoad", () => {
 });
 
 describe("vehicle loads", () => {
-  test("the vehicle's weight is split between the link's joints by position", () => {
+  /** Each joint's total load (N), by joint index. */
+  const byJoint = (scene, loads) => {
+    const sums = new Map();
+    for (const { joint, fy } of loads) sums.set(scene.joints.indexOf(joint), (sums.get(scene.joints.indexOf(joint)) ?? 0) + fy);
+    return sums;
+  };
+
+  test("each axle pushes on the road link under it; the shares add up to the weight", () => {
     const scene = new Scene();
     scene.load(deck());
-    const vehicle = new Vehicle(demoLevel);
     const evalCtx = new EvalCtx();
     evalCtx.time = 5;
-    const link = scene.links[2]; // -20 .. -10
-    vehicle.contact = { link, t: 0.25, y: 10 };
+    const truck = new Vehicle(demoLevel, -5, 0, VEHICLE_TYPES.truck);
+    truck.state = "driving";
+    truck.y = 10;
 
-    const loads = vehicle.loads(evalCtx);
-    const weight = demoLevel.vehicleMass * evalCtx.gravity.y;
-    assert.deepEqual(loads.map(l => l.joint), [link.a, link.b]);
-    assert.ok(Math.abs(loads[0].fy - weight * 0.75) < 1e-6);
-    assert.ok(Math.abs(loads[1].fy - weight * 0.25) < 1e-6);
+    const loads = truck.loads(evalCtx, scene);
+    const weight = truck.mass * evalCtx.gravity.y;
+    const total = loads.reduce((sum, l) => sum + l.fy, 0);
+    assert.ok(Math.abs(total - weight) < 1e-6, "all of it on the deck");
+    // axles at -0.2, -1.9, -2.95 (on the link from -10 to 0) and -8.6, -9.7 (also on it)
+    const sums = byJoint(scene, loads);
+    const at = (x) => sums.get(scene.joints.findIndex(j => j.position.x === x)) ?? 0;
+    const expectedAt0 = weight * (0.14 * 0.98 + 0.18 * 0.81 + 0.18 * 0.705 + 0.25 * 0.14 + 0.25 * 0.03);
+    assert.ok(Math.abs(at(0) - expectedAt0) < 1e-6, `${at(0)} vs ${expectedAt0}`);
+    assert.ok(Math.abs(at(-10) + at(0) - weight) < 1e-6);
   });
 
-  test("no load while on solid ground or once the link has broken", () => {
+  test("a long vehicle spreads its weight over several links", () => {
     const scene = new Scene();
     scene.load(deck());
-    const vehicle = new Vehicle(demoLevel);
     const evalCtx = new EvalCtx();
-    assert.deepEqual(vehicle.loads(evalCtx), []);
-    vehicle.contact = { link: scene.links[0], t: 0.5, y: 10 };
-    scene.links[0].broken = true;
-    assert.deepEqual(vehicle.loads(evalCtx), []);
+    const hauler = new Vehicle(demoLevel, 0, 0, VEHICLE_TYPES.hauler);
+    hauler.state = "driving";
+    hauler.y = 10;
+    const loaded = [...byJoint(scene, hauler.loads(evalCtx, scene)).keys()];
+    assert.ok(loaded.length >= 3, `joints loaded: ${loaded}`); // two links, three joints
   });
 
+  test("axles on the bank put their weight on the ground; none while falling or once a link breaks", () => {
+    const scene = new Scene();
+    scene.load(deck());
+    const evalCtx = new EvalCtx();
+    const truck = new Vehicle(demoLevel, -42, 0, VEHICLE_TYPES.truck); // straddling the left edge at -40
+    truck.state = "driving";
+    truck.y = 10;
+    const weight = truck.mass * evalCtx.gravity.y;
+    const onDeck = truck.loads(evalCtx, scene).reduce((sum, l) => sum + l.fy, 0);
+    assert.ok(Math.abs(onDeck - weight * (0.14 + 0.18 + 0.18)) < 1e-6, "only the tractor's axles are past the edge");
+
+    truck.state = "waiting";
+    truck.x = -60;
+    assert.deepEqual(truck.loads(evalCtx, scene), [], "all on the ground");
+
+    truck.x = -5;
+    truck.state = "falling";
+    assert.deepEqual(truck.loads(evalCtx, scene), []);
+    truck.state = "driving";
+    for (const link of scene.links) link.broken = true;
+    assert.deepEqual(truck.loads(evalCtx, scene), []);
+  });
+});
+
+describe("scene loads", () => {
   test("external loads are added on top of gravity in Scene.tick", () => {
     const scene = new Scene();
     scene.load(deck());
@@ -107,8 +145,9 @@ describe("load test", () => {
     game.setSimulationRunning(true);
     const { vehicles } = game;
     assert.equal(vehicles.length, demoLevel.vehicleCount);
-    assert.deepEqual(vehicles.map(v => v.x), vehicles.map((_, i) => demoLevel.startX - i * demoLevel.vehicleSpacing));
-    assert.ok(vehicles.every(v => v.mass === demoLevel.vehicleMass));
+    // 12 m trucks, 8 m apart: centres 20 m apart, the first at the start
+    assert.deepEqual(vehicles.map(v => v.x), vehicles.map((_, i) => demoLevel.startX - i * 20));
+    assert.ok(vehicles.every(v => v.mass === 40000));
 
     while (game.evalCtx.time < VEHICLE_START_DELAY - 0.1) game.tick();
     assert.equal(game.testState, "waiting");
@@ -123,7 +162,7 @@ describe("load test", () => {
     const [first, second] = game.vehicles;
     const expected = demoLevel.startX + first.speed * (game.evalCtx.time - VEHICLE_START_DELAY);
     assert.ok(Math.abs(first.x - expected) < 0.05, `x ${first.x} vs ${expected}`);
-    assert.ok(Math.abs(first.x - second.x - demoLevel.vehicleSpacing) < 1e-9);
+    assert.ok(Math.abs(first.x - second.x - 20) < 1e-9);
   });
 
   test("the demo bridge carries the whole convoy across without breaking", () => {

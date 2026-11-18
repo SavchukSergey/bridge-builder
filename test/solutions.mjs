@@ -153,7 +153,7 @@ function aFrame(b, rockX0, rockX1, rockY, deckJoint) {
  * (lightly loaded towers, hangers and verticals use the light/thin sizes).
  */
 export const solutions = {
-  // $6,000: two links of road are enough for one 20 t truck
+  // $6,000: two links of road are enough for a car and an 18 t bus
   brook: (level) => bareDeck(level, -10, 10, 10, 10),
   // ~$16,400
   creek: (level) => suspension(level, 20, 14, 3, { tower: "steel-light", hanger: "cable-thin" }),
@@ -177,10 +177,10 @@ export const solutions = {
   },
   // ~$17,500: one light strut from each ledge to the deck joint nearest mid-span
   ledges: (level) => ledgeStruts(level, [[-20, 0], [20, 0]], [-5, 5]),
-  // ~$22,300: a shallow truss; light diagonals, since cables stretch too much under 100 t
+  // ~$22,300: a shallow truss; light diagonals, since cables stretch too much under 200 t
   heavy: (level) => truss(level, -20, 10, 20, 10, { h: 3, diagonal: "steel-light", vertical: "steel-light" }),
-  // ~$36,000 (a 4 m truss is ~$34,700, but runs the road at 93% of its strength)
-  downhill: (level) => truss(level, -30, 18, 30, 8, { h: 6, ...LEAN }),
+  // ~$34,200
+  downhill: (level) => truss(level, -30, 18, 30, 8, { h: 3, ...LEAN }),
   // ~$46,400: deeper sag than the creek's, so the deck isn't stretched as hard
   "long-span": (level) => suspension(level, 50, 26, 10, { hanger: "cable-thin" }),
   // ~$114,500: three 60 m spans, piers on both rocks
@@ -191,12 +191,13 @@ export const solutions = {
     aFrame(b, 26, 34, -4, mid.at(-1));
     return b.build();
   },
-  // ~$42,200
-  gorge: (level) => bracedArch(level, { post: "cable" }),
-  // ~$107,100: two 80 m spans meeting over the rock
+  // ~$40,700: thin cables are enough for the posts, as the light X-bracing carries the
+  // deck's load down to the ring
+  gorge: (level) => bracedArch(level, { post: "cable-thin" }),
+  // ~$105,200: two 80 m spans meeting over the rock
   grand: (level) => {
     const b = new Builder(level);
-    const [left] = trussSpans(b, [[-80, 10], [0, 13], [80, 16]], 8);
+    const [left] = trussSpans(b, [[-80, 10], [0, 13], [80, 16]], 7);
     aFrame(b, -4, 4, -6, left.at(-1));
     return b.build();
   },

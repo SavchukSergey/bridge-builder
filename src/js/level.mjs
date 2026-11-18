@@ -1,5 +1,6 @@
 import { SAVE_FORMAT_VERSION, Scene } from "./scene.js";
 import { Vehicle } from "./vehicle.mjs";
+import { VEHICLE_TYPES } from "./vehicle-types.mjs";
 import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterFront } from "./scenery.mjs";
 
 /**
@@ -16,11 +17,12 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @property {string} description
  * @property {TerrainBlock[]} terrain
  * @property {{ x: number, y: number }[]} anchors - fixed joints the player builds from
- * @property {number} startX - where the first truck starts
- * @property {number} finishX - a truck has crossed once it reaches this x
- * @property {number} vehicleMass - kg, per truck
- * @property {number} [vehicleCount] - trucks in the convoy
- * @property {number} [vehicleSpacing] - m between the fronts of consecutive trucks
+ * @property {number} startX - where the first vehicle starts: the centre of a 12 m truck
+ *   (so the first vehicle's front is 6 m ahead of it, whatever its length)
+ * @property {number} finishX - a 12 m truck has crossed once its centre reaches this x; any
+ *   vehicle, once its rear is where that truck's rear is then
+ * @property {import("./vehicle-types.mjs").VehicleTypeId[]} convoy - the vehicles, in order
+ * @property {number} [vehicleGap] - m between one vehicle's rear and the next one's front
  * @property {number} budget - maximum structure cost: crossing within it earns one star
  * @property {{ two: number, three: number }} stars - cost at or under which a win earns two
  *   and three stars
@@ -34,6 +36,9 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * A level: terrain with a gap, anchors to build from, a convoy of trucks that must drive
  * from the start to the flag, and a budget for the structure.
  */
+/** The first vehicle's front starts this far ahead of the level's startX. */
+const FIRST_FRONT_AHEAD = 6;
+
 export class Level {
   /** Position in {@link levels}, from 1. */
   number = 0;
@@ -49,9 +54,8 @@ export class Level {
     this.anchors = opts.anchors;
     this.startX = opts.startX;
     this.finishX = opts.finishX;
-    this.vehicleMass = opts.vehicleMass;
-    this.vehicleCount = opts.vehicleCount ?? 1;
-    this.vehicleSpacing = opts.vehicleSpacing ?? 10;
+    this.convoy = opts.convoy;
+    this.vehicleGap = opts.vehicleGap ?? 8;
     this.budget = opts.budget;
     this.stars = opts.stars;
     this.view = opts.view;
@@ -107,12 +111,50 @@ export class Level {
     };
   }
 
+  get vehicleCount() {
+    return this.convoy.length;
+  }
+
+  /** What to call the convoy's vehicles: their kind if all alike ("truck"), else "vehicle". */
+  get vehicleNoun() {
+    const kinds = new Set(this.convoy);
+    if (kinds.size !== 1) return { one: "vehicle", many: "vehicles" };
+    const type = VEHICLE_TYPES[this.convoy[0]];
+    return { one: type.label, many: type.plural };
+  }
+
   /**
-   * The trucks for one load test, queued with the first at startX.
+   * The vehicles for one load test, queued nose to tail behind the start. They all drive
+   * at the slowest one's speed, so nobody runs into the vehicle ahead.
    * @returns {Vehicle[]}
    */
   createConvoy() {
-    return Array.from({ length: this.vehicleCount }, (_, i) => new Vehicle(this, this.startX - i * this.vehicleSpacing, i));
+    const types = this.convoy.map(id => VEHICLE_TYPES[id]);
+    const speed = Math.min(...types.map(t => t.speed));
+    let front = this.startX + FIRST_FRONT_AHEAD;
+    return types.map((type, i) => {
+      const vehicle = new Vehicle(this, front - type.length / 2, i, type);
+      vehicle.speed = speed;
+      front -= type.length + this.vehicleGap;
+      return vehicle;
+    });
+  }
+
+  /**
+   * The convoy in words: "2 × 40 t trucks" for one kind of vehicle, else a count of each
+   * kind in order, e.g. "1 car · 1 bus".
+   */
+  get convoySummary() {
+    /** @type {Map<string, number>} */
+    const counts = new Map();
+    for (const id of this.convoy) counts.set(id, (counts.get(id) ?? 0) + 1);
+    const name = (/** @type {import("./vehicle-types.mjs").VehicleType} */ t, /** @type {number} */ n) => n === 1 ? t.label : t.plural;
+    if (counts.size === 1) {
+      const [[id, n]] = counts;
+      const type = VEHICLE_TYPES[/** @type {import("./vehicle-types.mjs").VehicleTypeId} */ (id)];
+      return `${n} × ${type.mass / 1000} t ${name(type, n)}`;
+    }
+    return [...counts].map(([id, n]) => `${n} ${name(VEHICLE_TYPES[/** @type {import("./vehicle-types.mjs").VehicleTypeId} */ (id)], n)}`).join(" · ");
   }
 
   /**
@@ -144,6 +186,9 @@ export class Level {
 
 const FAR = 10000;
 
+/** @param {number} n */
+const trucks = (n) => /** @type {import("./vehicle-types.mjs").VehicleTypeId[]} */ (Array(n).fill("truck"));
+
 /** Two cliffs either side of a gap from x0 to x1. */
 const cliffs = (/** @type {number} */ x0, /** @type {number} */ x1, leftY = 10, rightY = 10) => [
   { x0: -FAR, x1: x0, y: leftY },
@@ -159,9 +204,7 @@ export const creekLevel = new Level({
   anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
   startX: -26,
   finishX: 28,
-  vehicleMass: 40000,
-  vehicleCount: 2,
-  vehicleSpacing: 20,
+  convoy: trucks(2),
   budget: 18000, // a small suspension bridge with light towers and thin hangers: ~$16,400
   stars: { two: 17200, three: 16600 },
   view: { x0: -45, x1: 45, y: 15 },
@@ -182,9 +225,7 @@ export const canyonLevel = new Level({
   anchors: [{ x: -50, y: 10 }, { x: -40, y: 10 }, { x: 40, y: 10 }, { x: 50, y: 10 }],
   startX: -46,
   finishX: 48,
-  vehicleMass: 40000,
-  vehicleCount: 4,
-  vehicleSpacing: 20,
+  convoy: trucks(4),
   budget: 38000,
   stars: { two: 36800, three: 35600 },
   view: { x0: -65, x1: 65, y: 15 },
@@ -201,9 +242,7 @@ export const stepLevel = new Level({
   anchors: [{ x: -40, y: 10 }, { x: -30, y: 10 }, { x: 30, y: 18 }, { x: 40, y: 18 }],
   startX: -36,
   finishX: 38,
-  vehicleMass: 40000,
-  vehicleCount: 3,
-  vehicleSpacing: 20,
+  convoy: trucks(3),
   budget: 37500, // a Pratt truss over the ramp with light verticals: ~$34,600
   stars: { two: 36000, three: 34900 },
   view: { x0: -55, x1: 55, y: 18 },
@@ -222,9 +261,7 @@ export const pierLevel = new Level({
   ],
   startX: -66,
   finishX: 68,
-  vehicleMass: 40000,
-  vehicleCount: 4,
-  vehicleSpacing: 20,
+  convoy: trucks(4),
   budget: 81000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
   stars: { two: 78000, three: 75800 },
   view: { x0: -85, x1: 85, y: 8 },
@@ -235,12 +272,12 @@ export const pierLevel = new Level({
 export const brookLevel = new Level({
   id: "brook",
   name: "Brook",
-  description: "A 20 m brook and one 20 t truck. Lay a road across: click an anchor, then the other bank.",
+  description: "A 20 m brook, a car and a bus. Lay a road across: click an anchor, then the other bank.",
   terrain: cliffs(-10, 10),
   anchors: [{ x: -20, y: 10 }, { x: -10, y: 10 }, { x: 10, y: 10 }, { x: 20, y: 10 }],
   startX: -16,
   finishX: 18,
-  vehicleMass: 20000,
+  convoy: ["car", "bus"],
   budget: 6600, // plain road: $6,000
   stars: { two: 6300, three: 6000 },
   view: { x0: -30, x1: 30, y: 12 },
@@ -259,9 +296,7 @@ export const ledgesLevel = new Level({
   ],
   startX: -31,
   finishX: 33,
-  vehicleMass: 40000,
-  vehicleCount: 2,
-  vehicleSpacing: 20,
+  convoy: trucks(2),
   budget: 19500, // a light strut from each ledge: ~$17,500
   stars: { two: 18600, three: 17800 },
   view: { x0: -48, x1: 48, y: 8 },
@@ -272,13 +307,13 @@ export const ledgesLevel = new Level({
 export const heavyLevel = new Level({
   id: "heavy",
   name: "Heavy load",
-  description: "A 40 m dry gully and a single 100 t heavy haulage truck.",
+  description: "A 40 m dry gully and one 200 t heavy hauler carrying a transformer.",
   terrain: cliffs(-20, 20),
   anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
   startX: -26,
   finishX: 28,
-  vehicleMass: 100000,
-  budget: 24500, // a 3 m truss with light diagonals and verticals: ~$22,300
+  convoy: ["hauler"],
+  budget: 24500, // a 3 m truss with light diagonals and verticals: ~$22,300; cables stretch too much
   stars: { two: 23400, three: 22600 },
   view: { x0: -45, x1: 45, y: 15 },
 });
@@ -292,11 +327,9 @@ export const downhillLevel = new Level({
   anchors: [{ x: -40, y: 18 }, { x: -30, y: 18 }, { x: 30, y: 8 }, { x: 40, y: 8 }],
   startX: -36,
   finishX: 38,
-  vehicleMass: 40000,
-  vehicleCount: 5,
-  vehicleSpacing: 20,
-  budget: 39000, // a truss with cable diagonals: ~$34,700 (4 m) to $36,000 (6 m)
-  stars: { two: 37700, three: 36500 },
+  convoy: trucks(5),
+  budget: 38000, // a 3 m truss with cable diagonals: ~$34,200
+  stars: { two: 36000, three: 34700 },
   view: { x0: -55, x1: 55, y: 16 },
   water: 2,
 });
@@ -310,11 +343,9 @@ export const longSpanLevel = new Level({
   anchors: [{ x: -60, y: 10 }, { x: -50, y: 10 }, { x: 50, y: 10 }, { x: 60, y: 10 }],
   startX: -56,
   finishX: 58,
-  vehicleMass: 40000,
-  vehicleCount: 2,
-  vehicleSpacing: 20,
+  convoy: trucks(2),
   budget: 51500, // a suspension bridge, towers 16 m, sag 10 m: ~$46,400
-  stars: { two: 48500, three: 47000 },
+  stars: { two: 48500, three: 46500 },
   view: { x0: -75, x1: 75, y: 15 },
   water: -18,
 });
@@ -331,9 +362,7 @@ export const viaductLevel = new Level({
   ],
   startX: -96,
   finishX: 98,
-  vehicleMass: 40000,
-  vehicleCount: 5,
-  vehicleSpacing: 20,
+  convoy: trucks(5),
   budget: 126000, // three trussed spans on A-frame piers: ~$114,500
   stars: { two: 120000, three: 116000 },
   view: { x0: -115, x1: 115, y: 6 },
@@ -352,11 +381,9 @@ export const gorgeLevel = new Level({
   ],
   startX: -46,
   finishX: 48,
-  vehicleMass: 40000,
-  vehicleCount: 4,
-  vehicleSpacing: 20,
-  budget: 47000, // a braced light-steel arch: ~$42,200; trusses cost $49,000+
-  stars: { two: 44000, three: 42800 },
+  convoy: trucks(4),
+  budget: 45000, // a braced light-steel arch on thin hangers: ~$40,700; trusses cost $49,000+
+  stars: { two: 43000, three: 41200 },
   view: { x0: -65, x1: 65, y: 4 },
   water: -20,
 });
@@ -373,11 +400,9 @@ export const grandLevel = new Level({
   ],
   startX: -86,
   finishX: 88,
-  vehicleMass: 40000,
-  vehicleCount: 6,
-  vehicleSpacing: 20,
-  budget: 118000, // two 8 m trusses on an A-frame pier: ~$107,100
-  stars: { two: 112000, three: 108500 },
+  convoy: trucks(6),
+  budget: 118000, // two 7 m trusses on an A-frame pier: ~$105,200
+  stars: { two: 110000, three: 106600 },
   view: { x0: -105, x1: 105, y: 8 },
   water: -2,
 });

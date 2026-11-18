@@ -1047,7 +1047,7 @@ export class Game {
       const vehicles = this.vehicles;
       const before = vehicles.map(v => ({ y: v.y, state: v.state }));
       for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
-        const loads = vehicles.flatMap(v => v.loads(this.evalCtx));
+        const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
         const dt = this.scene.tick(this.evalCtx, loads);
         for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
         simulated += dt;

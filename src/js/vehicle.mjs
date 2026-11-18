@@ -1,10 +1,13 @@
 /**
- * The test vehicle: a moving point load that drives along road links.
+ * A test vehicle: a moving load that drives along road links.
  *
- * It isn't a rigid body. Each substep it finds the road link under it and pushes that
- * link's two joints down with its weight, split by where along the link it is. If no
- * road is under it, it falls; if it falls far enough, the test is lost.
+ * It isn't a rigid body. Each substep every axle finds the road link under it and pushes
+ * that link's two joints down with its share of the weight, split by where along the link
+ * it is. Driving, falling and crashing follow the vehicle's centre: if no road is under it,
+ * it falls; if it falls far enough, the test is lost.
  */
+
+import { VEHICLE_TYPES } from "./vehicle-types.mjs";
 
 /** Seconds to wait before driving: the gravity ramp-up in EvalCtx. */
 export const VEHICLE_START_DELAY = 2;
@@ -34,12 +37,13 @@ export const MAX_SAFE_DROP = 4;
  * @property {number} fy - vertical force (N), negative is down
  */
 
+/**
+ * A vehicle has crossed once its rear is this far short of the level's finish line: where
+ * a 12 m truck's rear is when its centre reaches the line.
+ */
+const FINISH_REAR_OFFSET = 6;
+
 export class Vehicle {
-  /** Drawn size (m); the vehicle acts on the structure as a single point load. */
-  length = 12;
-  height = 3.5;
-  /** m/s */
-  speed = 5;
   /** @type {VehicleState} */
   state = "waiting";
   vy = 0;
@@ -55,13 +59,20 @@ export class Vehicle {
 
   /**
    * @param {import("./level.mjs").Level} level
-   * @param {number} [startX] - defaults to the level's start; convoys queue up behind it
-   * @param {number} [paint] - picks the cab colour, so trucks in a convoy look different
+   * @param {number} [startX] - centre; defaults to the level's start
+   * @param {number} [paint] - picks the paint colour, so vehicles in a convoy look different
+   * @param {import("./vehicle-types.mjs").VehicleType} [type]
    */
-  constructor(level, startX = level.startX, paint = 0) {
+  constructor(level, startX = level.startX, paint = 0, type = VEHICLE_TYPES.truck) {
     this.level = level;
     this.paint = paint;
-    this.mass = level.vehicleMass;
+    this.type = type;
+    this.mass = type.mass;
+    /** Drawn size (m), bumper to bumper. */
+    this.length = type.length;
+    this.height = type.height;
+    /** m/s */
+    this.speed = type.speed;
     this.x = startX;
     this.y = level.groundAt(startX) ?? 0;
   }
@@ -71,18 +82,30 @@ export class Vehicle {
   }
 
   /**
-   * Forces the vehicle applies to the structure during the next substep.
+   * Forces the vehicle applies to the structure during the next substep: each axle on a
+   * road link pushes that link's joints down with its share of the weight. Axles on the
+   * banks put theirs on the ground.
    * @param {import("./eval-ctx.mjs").EvalCtx} evalCtx
+   * @param {import("./scene.js").Scene} scene
    * @returns {JointLoad[]}
    */
-  loads(evalCtx) {
-    if (!this.contact || this.contact.link.broken) return [];
+  loads(evalCtx, scene) {
+    if (this.state === "falling" || this.finished) return [];
     const weight = this.mass * evalCtx.gravity.y;
-    const { link, t } = this.contact;
-    return [
-      { joint: link.a, fy: weight * (1 - t) },
-      { joint: link.b, fy: weight * t },
-    ];
+    /** @type {JointLoad[]} */
+    const out = [];
+    for (const { dx, share } of this.type.axles) {
+      const x = this.x + dx;
+      // the road under this axle, near the height the vehicle is at (allowing for slopes)
+      const reach = STEP_UP + Math.abs(dx) * 0.3;
+      const road = findRoad(scene, x, this.y + reach);
+      if (!road || road.y < this.y - reach - STEP_DOWN) continue;
+      const ground = this.level.groundAt(x);
+      if (ground !== undefined && ground > road.y + 1e-6) continue; // on the bank
+      const { link, t } = road;
+      out.push({ joint: link.a, fy: weight * share * (1 - t) }, { joint: link.b, fy: weight * share * t });
+    }
+    return out;
   }
 
   /**
@@ -144,7 +167,7 @@ export class Vehicle {
     this.y = support.y;
     this.contact = support.road;
 
-    if (this.x >= this.level.finishX) {
+    if (this.x - this.length / 2 >= this.level.finishX - FINISH_REAR_OFFSET) {
       this.contact = undefined;
       this.state = "crossed";
     }
@@ -175,11 +198,12 @@ export class Vehicle {
   }
 
   /**
-   * A semi-trailer truck: tractor unit on the right (it drives to the right), box trailer
-   * behind. It tilts with the road, noses down while falling, and its wheels turn as it moves.
+   * Draws the vehicle facing right (the way it drives), tilted with the road; it noses down
+   * while falling, and its wheels turn as it moves.
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   * @param {{ lights?: boolean }} [opts] - lights: headlights on
    */
-  render(ctx) {
+  render(ctx, opts = {}) {
     const g = ctx.ctx;
     let angle = this.__tilt;
     if (this.contact) {
@@ -196,70 +220,12 @@ export class Vehicle {
     g.save();
     g.translate(this.x, this.y);
     g.rotate(angle);
-    const lost = this.state === "fell";
-    const cab = lost ? "#5e5e5e" : CAB_COLORS[this.paint % CAB_COLORS.length];
-
-    /** @param {[number, number][]} pts @param {string} fill */
-    const poly = (pts, fill) => {
-      g.beginPath();
-      g.moveTo(pts[0][0], pts[0][1]);
-      for (const [x, y] of pts.slice(1)) g.lineTo(x, y);
-      g.closePath();
-      g.fillStyle = fill;
-      g.fill();
-    };
-    const half = this.length / 2;
-    const top = this.height;
-
-    // chassis
-    poly([[-half + 0.2, 0.75], [half - 0.1, 0.75], [half - 0.1, 1.15], [-half + 0.2, 1.15]], "#26282b");
-
-    // trailer box with panel seams and a stripe
-    const t0 = -half, t1 = half - 2.9;
-    poly([[t0, 1.2], [t1, 1.2], [t1, top], [t0, top]], lost ? "#8a8a8a" : "#eceeef");
-    g.strokeStyle = "rgba(0, 0, 0, 0.12)";
-    g.lineWidth = 0.05;
-    g.beginPath();
-    for (let x = t0 + 1.2; x < t1 - 0.2; x += 1.2) {
-      g.moveTo(x, 1.25);
-      g.lineTo(x, top - 0.05);
-    }
-    g.stroke();
-    poly([[t0, 1.65], [t1, 1.65], [t1, 1.95], [t0, 1.95]], cab);
-    poly([[t0, top - 0.12], [t1, top - 0.12], [t1, top], [t0, top]], "rgba(0, 0, 0, 0.15)");
-
-    // tractor: cab with a sloped front, window, bumper, headlight and fuel tank
-    const c0 = half - 2.7;
-    poly([[c0, 1.0], [half, 1.0], [half, 2.3], [half - 0.3, 3.25], [c0, 3.3]], cab);
-    poly([[c0, 3.3], [half - 1.6, 3.3], [half - 1.9, 3.75], [c0, 3.75]], cab); // roof fairing
-    poly([[half - 1.15, 2.25], [half - 0.12, 2.25], [half - 0.36, 3.05], [half - 1.15, 3.05]], lost ? "#3d4247" : "#a9cde2");
-    poly([[c0 + 0.25, 1.35], [half - 1.4, 1.35], [half - 1.4, 3.0], [c0 + 0.25, 3.0]], "rgba(0, 0, 0, 0.12)"); // door
-    poly([[half - 0.15, 0.85], [half + 0.12, 0.85], [half + 0.12, 1.35], [half - 0.15, 1.35]], "#9aa0a6");
-    poly([[half - 0.05, 1.5], [half + 0.06, 1.5], [half + 0.06, 1.72], [half - 0.05, 1.72]], lost ? "#777" : "#ffe08a");
-    poly([[c0 + 0.2, 0.8], [c0 + 1.3, 0.8], [c0 + 1.3, 1.25], [c0 + 0.2, 1.25]], "#c3c8cc");
-
-    // wheels: steer axle, two drive axles under the fifth wheel, two trailer axles
-    const R = 0.5;
-    const spin = -this.x / R;
-    for (const x of [half - 1.2, c0 - 0.2, c0 - 1.25, -half + 2.4, -half + 1.3]) {
-      g.beginPath();
-      g.arc(x, R, R, 0, 2 * Math.PI);
-      g.fillStyle = "#1b1c1e";
-      g.fill();
-      g.beginPath();
-      g.arc(x, R, R * 0.48, 0, 2 * Math.PI);
-      g.fillStyle = "#8e959c";
-      g.fill();
-      g.strokeStyle = "#4b5056";
-      g.lineWidth = 0.06;
-      g.beginPath();
-      for (let k = 0; k < 3; k++) {
-        const a = spin + k * Math.PI / 3;
-        g.moveTo(x + Math.cos(a) * R * 0.45, R + Math.sin(a) * R * 0.45);
-        g.lineTo(x - Math.cos(a) * R * 0.45, R - Math.sin(a) * R * 0.45);
-      }
-      g.stroke();
-    }
+    this.type.draw(g, {
+      lost: this.state === "fell",
+      paint: this.paint,
+      spin: -this.x / this.type.wheelRadius,
+      lights: opts.lights ?? false,
+    });
     g.restore();
   }
 
@@ -267,8 +233,6 @@ export class Vehicle {
   __tilt = 0;
 }
 
-/** Cab paint colours, one per truck in a convoy. */
-const CAB_COLORS = ["#c0392b", "#1f6fb2", "#e08e0b", "#1e8449", "#7d3c98"];
 
 /**
  * The highest drivable road surface under x that is no higher than maxY.

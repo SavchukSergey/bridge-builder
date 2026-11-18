@@ -28,8 +28,11 @@ describe("level definitions", () => {
       }
       assert.notEqual(level.groundAt(level.startX), undefined, `${level.id}: start on ground`);
       assert.notEqual(level.groundAt(level.finishX), undefined, `${level.id}: finish on ground`);
-      const queueEnd = level.startX - (level.vehicleCount - 1) * level.vehicleSpacing;
-      assert.notEqual(level.groundAt(queueEnd), undefined, `${level.id}: the whole convoy starts on ground`);
+      for (const v of level.createConvoy()) {
+        for (const x of [v.x - v.length / 2, v.x + v.length / 2]) {
+          assert.equal(level.groundAt(x), level.startY, `${level.id}: the whole convoy starts on the level ground (${v.type.id} end at ${x})`);
+        }
+      }
     }
   });
 
