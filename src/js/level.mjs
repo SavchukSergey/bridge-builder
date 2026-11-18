@@ -143,15 +143,15 @@ export const creekLevel = new Level({
   vehicleMass: 40000,
   vehicleCount: 2,
   vehicleSpacing: 20,
-  budget: 20000, // a small suspension bridge costs ~$17,600
+  budget: 18000, // a small suspension bridge with light towers and thin hangers: ~$16,400
   view: { x0: -45, x1: 45, y: 15 },
 });
 
 /**
  * An 80 m canyon crossed by a jam of four 40 t trucks (the usual maximum for a heavy goods
  * vehicle). It starts from the demo suspension bridge, which carries them but costs more
- * than the budget: cheaper designs exist (~$36,900 with lower towers and cable backstays),
- * so the puzzle is to economise.
+ * than the budget: cheaper designs exist (~$35,300 with lower towers, cable backstays and
+ * thin hangers), so the puzzle is to economise.
  */
 export const canyonLevel = new Level({
   id: "canyon",
@@ -164,7 +164,7 @@ export const canyonLevel = new Level({
   vehicleMass: 40000,
   vehicleCount: 4,
   vehicleSpacing: 20,
-  budget: 40000,
+  budget: 38000,
   view: { x0: -65, x1: 65, y: 15 },
   example: () => new Scene().serialize(), // the default scene is the demo bridge
 });
@@ -181,7 +181,7 @@ export const stepLevel = new Level({
   vehicleMass: 40000,
   vehicleCount: 3,
   vehicleSpacing: 20,
-  budget: 41000, // a Pratt truss over the ramp costs ~$37,200-39,700
+  budget: 37500, // a Pratt truss over the ramp with light verticals: ~$34,600
   view: { x0: -55, x1: 55, y: 18 },
 });
 
@@ -200,7 +200,7 @@ export const pierLevel = new Level({
   vehicleMass: 40000,
   vehicleCount: 4,
   vehicleSpacing: 20,
-  budget: 88000, // two trussed spans on an A-frame pier cost ~$80,400
+  budget: 81000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
   view: { x0: -85, x1: 85, y: 8 },
 });
 

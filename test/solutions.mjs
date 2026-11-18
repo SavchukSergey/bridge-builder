@@ -38,7 +38,7 @@ class Builder {
  * it: top chord and verticals in steel, diagonals (in tension, Pratt layout) in `diagonal`.
  * Returns the builder and the deck/top joint indices.
  */
-function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel" } = {}) {
+function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel", vertical = "steel" } = {}) {
   const n = Math.round((x1 - x0) / step);
   const yAt = (x) => y0 + (y1 - y0) * (x - x0) / (x1 - x0);
   const xs = Array.from({ length: n + 1 }, (_, i) => x0 + i * step);
@@ -49,7 +49,7 @@ function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel" } =
   b.link(deck[0], top[1], "steel");
   b.link(deck[n], top[n - 1], "steel");
   b.chain(top.slice(1, n), "steel");
-  for (let i = 1; i < n; i++) b.link(deck[i], top[i], "steel");
+  for (let i = 1; i < n; i++) b.link(deck[i], top[i], vertical);
   // Pratt diagonals slope down towards mid-span
   for (let i = 1; i < n - 1; i++) {
     if (i < n / 2) b.link(top[i], deck[i + 1], diagonal);
@@ -59,15 +59,15 @@ function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel" } =
 }
 
 /** Suspension bridge between anchors at ±half (deck y = 10), towers to `top`, cable sag `sag`. */
-function suspension(level, half, top, sag, { backstay = "cable" } = {}) {
+function suspension(level, half, top, sag, { backstay = "cable", tower = "steel", hanger = "cable" } = {}) {
   const b = new Builder(level);
   const xs = [];
   for (let x = -half; x <= half; x += 10) xs.push(x);
   const deck = xs.map(x => b.joint(x, 10));
   b.chain(deck, "road");
   const towerL = b.joint(-half, top), towerR = b.joint(half, top);
-  b.link(deck[0], towerL, "steel");
-  b.link(deck.at(-1), towerR, "steel");
+  b.link(deck[0], towerL, tower);
+  b.link(deck.at(-1), towerR, tower);
   b.link(towerL, b.joint(-half - 10, 10), backstay);
   b.link(towerR, b.joint(half + 10, 10), backstay);
   const rope = [towerL];
@@ -75,7 +75,7 @@ function suspension(level, half, top, sag, { backstay = "cable" } = {}) {
     const x = xs[i];
     const r = b.joint(x, top - sag * (1 - (x / half) ** 2));
     rope.push(r);
-    b.link(r, deck[i], "cable");
+    b.link(r, deck[i], hanger);
   }
   rope.push(towerR);
   b.chain(rope, "cable");
@@ -90,19 +90,26 @@ function bareDeck(level, x0, y0, x1, y1) {
   return b.build();
 }
 
+/**
+ * The cheapest designs found, with members right-sized from their peak loads in simulation
+ * (lightly loaded towers, hangers and verticals use the light/thin sizes).
+ */
 export const solutions = {
-  creek: (level) => suspension(level, 20, 16, 4),
-  canyon: (level) => suspension(level, 40, 20, 6),
+  // ~$16,400
+  creek: (level) => suspension(level, 20, 14, 3, { tower: "steel-light", hanger: "cable-thin" }),
+  // ~$35,300
+  canyon: (level) => suspension(level, 40, 20, 6, { hanger: "cable-thin" }),
+  // ~$34,600
   step: (level) => {
     const b = new Builder(level);
-    trussDeck(b, -30, 10, 30, 18, { h: 6, diagonal: "cable" });
+    trussDeck(b, -30, 10, 30, 18, { h: 4, diagonal: "cable", vertical: "steel-light" });
     return b.build();
   },
+  // ~$75,200: two trussed spans meeting over an A-frame pier on the rock
   pier: (level) => {
     const b = new Builder(level);
-    // two trussed spans meeting over an A-frame pier on the rock
-    const left = trussDeck(b, -60, 10, 0, 10, { h: 6, diagonal: "cable" });
-    trussDeck(b, 0, 10, 60, 10, { h: 6, diagonal: "cable" });
+    const left = trussDeck(b, -60, 10, 0, 10, { h: 4, diagonal: "cable", vertical: "steel-light" });
+    trussDeck(b, 0, 10, 60, 10, { h: 4, diagonal: "cable", vertical: "steel-light" });
     const mid = left.deck.at(-1);
     b.link(b.joint(-4, -6), mid, "steel");
     b.link(b.joint(4, -6), mid, "steel");
@@ -132,7 +139,14 @@ export const alternatives = {
     "truss h6 steel": (level) => { const b = new Builder(level); trussDeck(b, -30, 10, 30, 18, { h: 6 }); return b.build(); },
   },
   pier: {
-    "two trusses h6 + A-frame": (level) => solutions.pier(level),
+    "two trusses h6 + A-frame": (level) => {
+      const b = new Builder(level);
+      const left = trussDeck(b, -60, 10, 0, 10, { h: 6, diagonal: "cable" });
+      trussDeck(b, 0, 10, 60, 10, { h: 6, diagonal: "cable" });
+      b.link(b.joint(-4, -6), left.deck.at(-1), "steel");
+      b.link(b.joint(4, -6), left.deck.at(-1), "steel");
+      return b.build();
+    },
     "two trusses h4 + A-frame": (level) => {
       const b = new Builder(level);
       const left = trussDeck(b, -60, 10, 0, 10, { h: 4, diagonal: "cable" });

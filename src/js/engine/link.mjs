@@ -54,7 +54,10 @@ export class Link {
     ctx.lineTo(this.b.position.x, this.b.position.y);
     const clr = this.stressColor;
     ctx.strokeStyle = `rgb(${clr.r * 255}, ${clr.g * 255}, ${clr.b * 255})`;
-    ctx.lineWidth = Math.sqrt(this.material.crossSectionalArea);
+    // True to scale when zoomed in; otherwise a minimum on-screen width that still shows
+    // thick and thin members apart.
+    const size = Math.sqrt(this.material.crossSectionalArea);
+    ctx.lineWidth = Math.max(size, (1 + 12 * size) / ctx.zoom);
     ctx.stroke();
   }
 

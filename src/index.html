@@ -51,13 +51,21 @@
       <input type="radio" name="material" value="road" />
       <span>Road</span> <small>$300/m</small>
     </label>
-    <label class="material-option">
+    <label class="material-option" title="20 x 20 cm section">
       <input type="radio" name="material" value="steel" checked />
       <span>Steel</span> <small>$200/m</small>
+    </label>
+    <label class="material-option" title="10 x 10 cm section: a quarter of the strength">
+      <input type="radio" name="material" value="steel-light" />
+      <span>Light steel</span> <small>$70/m</small>
     </label>
     <label class="material-option" title="Only holds in tension">
       <input type="radio" name="material" value="cable" />
       <span>Cable</span> <small>$60/m</small>
+    </label>
+    <label class="material-option" title="Only holds in tension; a fifth of the strength">
+      <input type="radio" name="material" value="cable-thin" />
+      <span>Thin cable</span> <small>$20/m</small>
     </label>
 
     <div id="cost">Cost: <span id="cost-value"></span><br />Budget: <span id="budget-value"></span></div>

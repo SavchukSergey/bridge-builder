@@ -6,6 +6,7 @@ import { Material } from "./material.mjs";
  */
 export const road = new Material({
   name: "road",
+  label: "Road",
   density: 2500,
   crossSectionalArea: 0.2, // e.g. 1 m wide x 20 cm slab
   youngModulus: 30000e6,

@@ -78,7 +78,7 @@ function updateTooltip(el, info, canvas) {
     return;
   }
   el.root.hidden = false;
-  el.title.textContent = `${capitalize(info.material)} \u00b7 ${info.length.toFixed(1)} m \u00b7 ${formatMoney(info.cost)}`;
+  el.title.textContent = `${info.label} \u00b7 ${info.length.toFixed(1)} m \u00b7 ${formatMoney(info.cost)}`;
   el.force.textContent = info.state === 'slack' ? 'Slack (cables only pull)'
     : info.state === 'unloaded' ? 'Unloaded'
       : `${capitalize(info.state)}: ${Math.round(info.forceKN).toLocaleString('en-US')} kN`;

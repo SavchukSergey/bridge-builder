@@ -11,6 +11,7 @@ export class Material {
     this.density = opts.density;
     this.crossSectionalArea = opts.crossSectionalArea;
     this.name = opts.name;
+    this.label = opts.label ?? opts.name;
     this.canCompress = opts.canCompress ?? true;
     this.costPerMeter = opts.costPerMeter;
     this.drivable = opts.drivable ?? false;

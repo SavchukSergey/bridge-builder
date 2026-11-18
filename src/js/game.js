@@ -593,6 +593,7 @@ export class Game {
     return {
       client: this.__hoverClient,
       material: link.material.name,
+      label: link.material.label,
       length: link.length,
       cost: link.length * link.material.costPerMeter,
       state,
@@ -737,7 +738,8 @@ export class Game {
 /**
  * @typedef {Object} LinkInfo
  * @property {import("./math.js").Vec3F} client - pointer position, client pixels
- * @property {string} material
+ * @property {string} material - material id
+ * @property {string} label - material name to show
  * @property {number} length - rest length, m
  * @property {number} cost
  * @property {"tension" | "compression" | "slack" | "unloaded"} state
