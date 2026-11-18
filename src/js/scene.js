@@ -38,6 +38,12 @@ export class Scene {
   content = new CompositeScene();
   preview = new CompositeScene();
 
+  /**
+   * Links that broke since the caller last emptied this list (for effects and sound).
+   * @type {Link[]}
+   */
+  breaks = [];
+
   grid = new Grid();
 
   constructor() {
@@ -419,7 +425,10 @@ export class Scene {
       if (link.broken) continue;
       const utilization = link.utilization;
       if (utilization > link.peakUtilization) link.peakUtilization = utilization;
-      if (utilization > 1) link.broken = true;
+      if (utilization > 1) {
+        link.broken = true;
+        this.breaks.push(link);
+      }
     }
     return dt;
   }

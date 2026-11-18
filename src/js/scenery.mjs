@@ -209,18 +209,46 @@ export function renderWater(ctx, level) {
 }
 
 /**
- * Translucent water over ground that is under the surface (a rock in the river), so it reads
- * as submerged but stays visible.
+ * Translucent water in front of everything in the river (a submerged rock, sunken trucks
+ * and debris), so it reads as under water but stays visible. Only over the gaps: the banks
+ * are solid in front of it.
  * @param {RenderCtx} ctx
- * @param {import("./level.mjs").TerrainBlock[]} blocks
- * @param {number} level
+ * @param {import("./level.mjs").Level} level
+ * @param {number} water
  */
-export function renderWaterOver(ctx, blocks, level) {
+export function renderWaterFront(ctx, level, water) {
   const g = ctx.ctx;
-  g.fillStyle = "rgba(60, 120, 150, 0.45)";
-  for (const { x0, x1, y } of blocks) {
-    if (y < level) g.fillRect(x0, y - 0.01, x1 - x0, level - y + 0.01);
+  const b = visibleBounds(ctx);
+  if (b.y0 > water) return;
+  const edges = [b.x0 - 1, b.x1 + 1];
+  for (const { x0, x1 } of level.terrain) {
+    if (x0 > b.x0 && x0 < b.x1) edges.push(x0);
+    if (x1 > b.x0 && x1 < b.x1) edges.push(x1);
   }
+  edges.sort((p, q) => p - q);
+  const front = g.createLinearGradient(0, water, 0, water - 12);
+  front.addColorStop(0, "rgba(70, 130, 160, 0.55)");
+  front.addColorStop(1, "rgba(25, 60, 85, 0.85)");
+  g.fillStyle = front;
+  const bottom = Math.min(b.y0, water - 1) - 1;
+  for (let i = 0; i + 1 < edges.length; i++) {
+    const x0 = edges[i], x1 = edges[i + 1];
+    if (x1 - x0 < 1e-6) continue;
+    const ground = level.groundAt((x0 + x1) / 2);
+    if (ground !== undefined && ground >= water) continue;
+    g.fillRect(x0, bottom, x1 - x0, water - bottom);
+  }
+  // bright surface line
+  g.strokeStyle = "rgba(215, 238, 248, 0.7)";
+  g.lineWidth = 1.5 / ctx.zoom;
+  g.beginPath();
+  for (let i = 0; i + 1 < edges.length; i++) {
+    const ground = level.groundAt((edges[i] + edges[i + 1]) / 2);
+    if (ground !== undefined && ground >= water) continue;
+    g.moveTo(edges[i], water);
+    g.lineTo(edges[i + 1], water);
+  }
+  g.stroke();
 }
 
 /**

@@ -208,6 +208,12 @@ input:checked + .btn.primary {
   color: var(--muted);
 }
 
+#toggle-sound:checked + .btn.toggle {
+  color: var(--text);
+  border-color: var(--glass-border);
+  background: var(--raised);
+}
+
 input:checked + .btn.toggle {
   color: var(--accent);
   border-color: rgba(242, 178, 51, 0.55);

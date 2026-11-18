@@ -1,6 +1,6 @@
 import { SAVE_FORMAT_VERSION, Scene } from "./scene.js";
 import { Vehicle } from "./vehicle.mjs";
-import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterOver } from "./scenery.mjs";
+import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterFront } from "./scenery.mjs";
 
 /**
  * @typedef {Object} TerrainBlock - solid ground with a flat top, extending far downwards
@@ -123,12 +123,19 @@ export class Level {
     for (const block of this.terrain) renderGround(ctx, block, water !== undefined && block.y < water);
     const xs = this.anchors.map(a => a.x);
     renderTrees(ctx, this, { x0: Math.min(...xs) - 5, x1: Math.max(...xs) + 5 }, water);
-    if (water !== undefined) renderWaterOver(ctx, this.terrain, water);
     for (const { x, y } of this.anchors) {
       const ground = this.groundAt(x);
       if (ground !== undefined && Math.abs(ground - y) < 0.5) renderAbutment(ctx, x, y);
     }
     renderFlag(ctx, this.finishX, this.groundAt(this.finishX) ?? 0);
+  }
+
+  /**
+   * The water surface in front of what is in the river; drawn after the structure and trucks.
+   * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   */
+  renderFront(ctx) {
+    if (this.water !== undefined) renderWaterFront(ctx, this, this.water);
   }
 }
 

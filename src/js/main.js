@@ -1,6 +1,9 @@
 // Main entry point for the Bridge Builder game
 import { Game } from './game.js';
 import { levels } from './level.mjs';
+import { Sound } from './audio.mjs';
+
+const SOUND_KEY = 'bridge-builder:sound';
 
 // @ts-check
 
@@ -332,7 +335,52 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.root.hidden = true;
   }
 
-  game.onResult = showResult;
+  // ---- sound
+  const sound = new Sound();
+  /** @type {HTMLInputElement} */
+  const chkSound = document.getElementById('toggle-sound');
+  try {
+    chkSound.checked = localStorage.getItem(SOUND_KEY) !== 'off';
+  } catch { /* storage blocked: default on */ }
+  sound.setMuted(!chkSound.checked);
+  chkSound.addEventListener('change', () => {
+    sound.setMuted(!chkSound.checked);
+    try { localStorage.setItem(SOUND_KEY, chkSound.checked ? 'on' : 'off'); } catch { /* ignore */ }
+    chkSound.blur();
+  });
+  // audio may only start from a user gesture
+  const unlock = () => sound.unlock();
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+
+  /** Plays what happened since the last frame, and keeps the engines and creaks going. */
+  function updateSound() {
+    for (const ev of game.drainEvents()) {
+      if (ev.type === 'break') sound.snap(ev.kind, ev.size);
+      else if (ev.type === 'splash') sound.splash(ev.size);
+      else if (ev.type === 'thud') sound.thud(ev.size);
+      else if (ev.type === 'crossed') sound.horn();
+    }
+    const running = game.evalCtx.simulation;
+    sound.engines(running ? game.vehicles.filter(v => v.state === 'driving').length : 0);
+    if (running) {
+      let load = 0;
+      for (const link of game.scene.links) if (!link.broken) load = Math.max(load, Math.min(1, link.utilization));
+      sound.creak(load);
+    }
+    const water = game.level.water !== undefined ? 1 : 0;
+    if (water !== lastWater) {
+      sound.setWater(water);
+      lastWater = water;
+    }
+  }
+  /** @type {number | undefined} */
+  let lastWater;
+
+  game.onResult = (result) => {
+    showResult(result);
+    sound.jingle(result.kind === 'success');
+  };
   dlg.close.addEventListener('click', hideResult);
   dlg.retry.addEventListener('click', () => {
     hideResult();
@@ -411,6 +459,7 @@ document.addEventListener('DOMContentLoaded', function () {
     barBudget.style.width = `${Math.min(1, share) * 100}%`;
     barBudget.classList.toggle('near', share > 0.85 && !game.overBudget);
     updateTooltip(tooltip, game.hoverInfo, canvas);
+    updateSound();
     requestAnimationFrame(tick);
   }
 

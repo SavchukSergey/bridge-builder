@@ -20,6 +20,8 @@
       <symbol id="icon-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5m5 5H10a6 6 0 0 0 0 12h3" /></symbol>
       <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M4 15h16M10 4v16m5-16v16" /></symbol>
       <symbol id="icon-mirror" viewBox="0 0 24 24"><path d="M12 3v18M9 7 3 17h6zm6 0 6 10h-6z" /></symbol>
+      <symbol id="icon-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12.5-.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /></symbol>
+      <symbol id="icon-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12 1 5 5m0-5-5 5" /></symbol>
       <symbol id="icon-stress" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></symbol>
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
@@ -82,6 +84,11 @@
       <label for="toggle-stress" class="btn toggle"
         title="Colour members by load: green relaxed, blue in tension, red in compression">
         <svg class="icon"><use href="#icon-stress" /></svg><span>Stress view</span>
+      </label>
+      <input type="checkbox" id="toggle-sound" class="visually-hidden" checked />
+      <label for="toggle-sound" class="btn toggle icon-only" title="Sound on/off">
+        <svg class="icon when-on"><use href="#icon-sound" /></svg>
+        <svg class="icon when-off"><use href="#icon-mute" /></svg>
       </label>
     </div>
 

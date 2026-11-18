@@ -7,6 +7,7 @@ import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { renderBackground } from "./scenery.mjs";
+import { Effects } from "./effects.mjs";
 import { CompositeScene, Scene } from "./scene.js";
 /** @typedef {import("./vehicle.mjs").Vehicle} Vehicle */
 
@@ -104,6 +105,17 @@ export class Game {
  */
   __clickState = undefined;
 
+  /** Debris, dust, sparks, splashes and camera shake. */
+  effects = new Effects(levels[0]);
+
+  /**
+   * Events since the last call, for sound: breaks, splashes, thuds and trucks reaching the flag.
+   * @returns {import("./effects.mjs").EffectEvent[]}
+   */
+  drainEvents() {
+    return this.effects.drainEvents();
+  }
+
   /** Whether new joints snap to the {@link SNAP_STEP} grid (hold Alt to place freely). */
   snapToGrid = true;
 
@@ -166,6 +178,8 @@ export class Game {
     this.vehicles = [];
     this.evalCtx.time = 0;
     this.result = undefined;
+    this.scene.breaks = [];
+    this.effects.clear();
   }
 
   /** Structure cost, counted against {@link Level#budget}. */
@@ -255,6 +269,7 @@ export class Game {
     this.reset();
     this.__cancelLink();
     this.level = findLevel(id) ?? levels[0];
+    this.effects.level = this.level;
     this.__undoStack = [];
     this.__redoStack = [];
     this.__convoyPreviewCache = undefined;
@@ -925,6 +940,20 @@ export class Game {
   }
 
   render() {
+    const shift = this.ctx.shift;
+    const shake = this.effects.shake;
+    if (shake > 0.01) {
+      // shake the camera for this frame only, without moving the view
+      this.ctx.shift = createVec3F(shift.x + (Math.random() - 0.5) * shake, shift.y + (Math.random() - 0.5) * shake, 0);
+    }
+    try {
+      this.__render();
+    } finally {
+      this.ctx.shift = shift;
+    }
+  }
+
+  __render() {
     this.ctx.width = this.canvas.width / this.ctx.pixelRatio;
     this.ctx.height = this.canvas.height / this.ctx.pixelRatio;
     this.ctx.clear();
@@ -974,9 +1003,12 @@ export class Game {
           : this.__clickState ? "crosshair" : "";
     }
     // Before the first run, show the convoy lined up at the start.
+    this.effects.renderDebris(this.ctx);
     for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
       vehicle.render(this.ctx);
     }
+    this.level.renderFront(this.ctx);
+    this.effects.renderParticles(this.ctx);
   }
 
   /**
@@ -993,12 +1025,15 @@ export class Game {
       const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) + this.__timeCarry;
       let simulated = 0;
       const vehicles = this.vehicles;
+      const before = vehicles.map(v => ({ y: v.y, state: v.state }));
       for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
         const loads = vehicles.flatMap(v => v.loads(this.evalCtx));
         const dt = this.scene.tick(this.evalCtx, loads);
         for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
         simulated += dt;
       }
+      this.__emitEffects(before);
+      this.effects.step(simulated);
       if (!this.result && this.testFinished) {
         this.result = this.__finishTest();
         this.onResult(this.result);
@@ -1006,6 +1041,29 @@ export class Game {
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
+  }
+
+  /**
+   * Turns what happened this frame into effects: breaks, a truck hitting the water or the
+   * ground, a truck reaching the flag.
+   * @param {{ y: number, state: string }[]} before - each vehicle at the start of the frame
+   */
+  __emitEffects(before) {
+    for (const link of this.scene.breaks) this.effects.breakLink(link);
+    this.scene.breaks = [];
+    const water = this.level.water;
+    this.vehicles.forEach((v, i) => {
+      const was = before[i];
+      if (!was) return;
+      const ground = this.level.groundAt(v.x);
+      const overWater = water !== undefined && (ground === undefined || ground < water);
+      if (overWater && was.y > /** @type {number} */ (water) && v.y <= /** @type {number} */ (water)) {
+        this.effects.splash(v.x, 1);
+      }
+      const landed = was.state === "falling" && v.state !== "falling" && v.lostReason !== "fell";
+      if (landed && !(overWater && v.y < /** @type {number} */ (water))) this.effects.thud(v.x, v.y, v.lostReason ? 1.4 : 0.8);
+      if (was.state !== "crossed" && v.state === "crossed") this.effects.events.push({ type: "crossed" });
+    });
   }
 
   /** @type {Vehicle[] | undefined} */
