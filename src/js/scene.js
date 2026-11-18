@@ -5,6 +5,10 @@ import { cable } from "./materials/cable.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
 
+const MAX_DT = 0.0005;
+/** Fraction of the theoretical stability limit actually used. */
+const STABILITY_SAFETY = 0.5;
+
 export class Scene {
 
   get joints() {
@@ -90,6 +94,79 @@ export class Scene {
     }
 
     this.distributeMass();
+  }
+
+  /**
+   * Nearest unbroken link whose segment passes within maxDist of pos.
+   * @param {import("./math.js").Vec3F} pos
+   * @param {number} maxDist
+   * @returns {Link | undefined}
+   */
+  findLink(pos, maxDist) {
+    let result = undefined;
+    let resultDist2 = maxDist * maxDist;
+    for (const link of this.links) {
+      if (link.broken) continue;
+      const ab = vec3fsub(link.b.position, link.a.position);
+      const ap = vec3fsub(pos, link.a.position);
+      const len2 = vec3flen2(ab);
+      const t = len2 ? Math.max(0, Math.min(1, (ap.x * ab.x + ap.y * ab.y + ap.z * ab.z) / len2)) : 0;
+      const closest = createVec3F(ab.x * t, ab.y * t, ab.z * t);
+      const dist2 = vec3flen2(vec3fsub(ap, closest));
+      if (dist2 < resultDist2) {
+        result = link;
+        resultDist2 = dist2;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * @param {Joint} a
+   * @param {Joint} b
+   */
+  hasLink(a, b) {
+    return this.links.some(l => (l.a === a && l.b === b) || (l.a === b && l.b === a));
+  }
+
+  /**
+   * Removes a link, plus any non-fixed joints left without links.
+   * @param {Link} link
+   */
+  removeLink(link) {
+    this.content.links = this.links.filter(l => l !== link);
+    this.__removeOrphans([link.a, link.b]);
+    this.distributeMass();
+  }
+
+  /**
+   * Removes a non-fixed joint with all its links (and joints orphaned by that).
+   * Fixed anchors cannot be removed.
+   * @param {Joint} joint
+   * @returns {boolean} true if removed
+   */
+  removeJoint(joint) {
+    if (joint.fixed) return false;
+    const neighbours = [];
+    this.content.links = this.links.filter(l => {
+      if (l.a === joint) { neighbours.push(l.b); return false; }
+      if (l.b === joint) { neighbours.push(l.a); return false; }
+      return true;
+    });
+    this.content.joints = this.joints.filter(j => j !== joint);
+    this.__removeOrphans(neighbours);
+    this.distributeMass();
+    return true;
+  }
+
+  /**
+   * @param {Joint[]} candidates
+   */
+  __removeOrphans(candidates) {
+    const orphans = candidates.filter(j => !j.fixed && !this.links.some(l => l.a === j || l.b === j));
+    if (orphans.length) {
+      this.content.joints = this.joints.filter(j => !orphans.includes(j));
+    }
   }
 
   /**
@@ -225,23 +302,23 @@ export class Scene {
     }
     const maxAcc = Math.sqrt(maxAcc2);
 
-    const dt = maxAcc ? Math.max(Math.min(50 / maxAcc, 0.0005), 0.00001) : 0.0005;
+    const accDt = maxAcc ? Math.max(50 / maxAcc, 0.00001) : MAX_DT;
+    const dt = Math.min(MAX_DT, accDt, this.stableDt());
     evalCtx.time += dt;
     const viscosity = Math.pow(0.99, dt);
-
-    const dt2 = dt * dt * 0.5;
 
     for (const joint of this.joints) {
       if (!joint.fixed && joint.mass) {
         const accX = joint.force.x / joint.mass;
         const accY = joint.force.y / joint.mass;
         const accZ = joint.force.z / joint.mass;
+        // Semi-implicit (symplectic) Euler: update velocity, then move with the new velocity.
         joint.velocity.x += accX * dt;
         joint.velocity.y += accY * dt;
         joint.velocity.z += accZ * dt;
-        joint.position.x += joint.velocity.x * dt + accX * dt2;
-        joint.position.y += joint.velocity.y * dt + accY * dt2;
-        joint.position.z += joint.velocity.z * dt + accZ * dt2;
+        joint.position.x += joint.velocity.x * dt;
+        joint.position.y += joint.velocity.y * dt;
+        joint.position.z += joint.velocity.z * dt;
 
         joint.velocity.x *= viscosity;
         joint.velocity.y *= viscosity;
@@ -254,6 +331,24 @@ export class Scene {
         link.broken = true;
       }
     }
+    return dt;
+  }
+
+  /**
+   * Largest timestep for which explicit integration of the stiffest link stays stable.
+   * A link is a spring k = E*A/L between two masses; symplectic Euler is stable for
+   * dt < 2/omega with omega = sqrt(k * (1/ma + 1/mb)). Short or light links are stiffer.
+   */
+  stableDt() {
+    let maxOmega2 = 0;
+    for (const link of this.links) {
+      if (link.broken) continue;
+      const invMassA = link.a.fixed || !link.a.mass ? 0 : 1 / link.a.mass;
+      const invMassB = link.b.fixed || !link.b.mass ? 0 : 1 / link.b.mass;
+      const k = link.material.youngModulus * link.crossSectionalArea / link.length;
+      maxOmega2 = Math.max(maxOmega2, k * (invMassA + invMassB));
+    }
+    return maxOmega2 ? STABILITY_SAFETY * 2 / Math.sqrt(maxOmega2) : MAX_DT;
   }
 }
 

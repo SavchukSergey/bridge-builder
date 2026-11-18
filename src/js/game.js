@@ -11,6 +11,11 @@ import { CompositeScene, Scene } from "./scene.js";
 
 /** Pointer travel (in screen pixels) after which a press counts as a pan, not a click. */
 const DRAG_THRESHOLD_PX = 4;
+/** Simulated seconds per rendered frame (real time at 60 fps). */
+const SIM_TIME_PER_FRAME = 1 / 60;
+const MAX_SUBSTEPS = 400;
+/** Hit radius (in screen pixels) for snapping to joints and picking links. */
+const PICK_RADIUS_PX = 12;
 
 export class Game {
 
@@ -33,12 +38,16 @@ export class Game {
     this.__handleMouseUp = this.__handleMouseUp.bind(this);
     this.__handleWheel = this.__handleWheel.bind(this);
     this.__handleClick = this.__handleClick.bind(this);
+    this.__handleContextMenu = this.__handleContextMenu.bind(this);
+    this.__handleKeyDown = this.__handleKeyDown.bind(this);
 
     canvas.addEventListener("pointerdown", this.__handleMouseDown);
     canvas.addEventListener("pointermove", this.__handleMouseMove);
     canvas.addEventListener("pointerup", this.__handleMouseUp);
     canvas.addEventListener("wheel", this.__handleWheel);
     canvas.addEventListener("click", this.__handleClick);
+    canvas.addEventListener("contextmenu", this.__handleContextMenu);
+    window.addEventListener("keydown", this.__handleKeyDown);
   }
 
   destroy() {
@@ -47,6 +56,8 @@ export class Game {
     this.canvas.removeEventListener("pointerup", this.__handleMouseUp)
     this.canvas.removeEventListener("wheel", this.__handleWheel)
     this.canvas.removeEventListener("click", this.__handleClick)
+    this.canvas.removeEventListener("contextmenu", this.__handleContextMenu)
+    window.removeEventListener("keydown", this.__handleKeyDown)
   }
 
   /**
@@ -136,7 +147,7 @@ export class Game {
     const globalPoint = this.ctx.clientToGlobal(client);
 
     if (!this.__clickState) {
-      const jointA = this.scene.findJoint(globalPoint, 2);
+      const jointA = this.scene.findJoint(globalPoint, this.__pickRadius());
       if (jointA) {
         const preview = new CompositeScene();
         this.__clickState = {
@@ -200,7 +211,7 @@ export class Game {
     const joints = [];
     const links = [];
 
-    let jointB = this.scene.findJoint(globalB, 2);
+    let jointB = this.scene.findJoint(globalB, this.__pickRadius());
     if (!jointB) {
       jointB = new Joint(globalB);
     }
@@ -218,8 +229,12 @@ export class Game {
     }
 
     const maxSegLength = 10;
-
     const partsCount = Math.ceil(dist / maxSegLength);
+
+    // A single-segment link between two existing joints may already exist.
+    if (partsCount === 1 && this.scene.hasLink(jointA, jointB)) {
+      return { joints: [], links };
+    }
 
     const segLength = dist / partsCount;
 
@@ -242,6 +257,48 @@ export class Game {
       joints,
       links
     };
+  }
+
+  /**
+   * Right click: cancels the link being built, otherwise deletes the joint or link under the cursor.
+   * @param {MouseEvent} ev
+   */
+  __handleContextMenu(ev) {
+    ev.preventDefault();
+    if (this.__suppressClick) {
+      // released after a right-button pan
+      this.__suppressClick = false;
+      return;
+    }
+    if (!this.isBuildMode) return;
+    if (this.__clickState) {
+      this.__cancelLink();
+      return;
+    }
+    const globalPoint = this.ctx.clientToGlobal(this.__getPointerClient(ev));
+    const radius = this.__pickRadius();
+    const joint = this.scene.findJoint(globalPoint, radius);
+    if (joint) {
+      // Fixed anchors are not removable; don't fall through to deleting a link attached to one.
+      this.scene.removeJoint(joint);
+      return;
+    }
+    const link = this.scene.findLink(globalPoint, radius);
+    if (link) this.scene.removeLink(link);
+  }
+
+  /**
+   * @param {KeyboardEvent} ev
+   */
+  __handleKeyDown(ev) {
+    if (ev.key === "Escape") {
+      this.__cancelLink();
+    }
+  }
+
+  /** Pick radius in world units, constant on screen regardless of zoom. */
+  __pickRadius() {
+    return PICK_RADIUS_PX / this.ctx.zoom;
   }
 
   /**
@@ -282,7 +339,7 @@ export class Game {
 
   /**
    * 
-   * @param {PointerEvent|WheelEvent} ev 
+   * @param {MouseEvent} ev 
    * @returns {import("./math.js").Vec3F}
    */
   __getPointerClient(ev) {
@@ -310,8 +367,12 @@ export class Game {
 
   tick() {
     if (this.evalCtx.simulation) {
-      for (let i = 0; i < 50; i++) {
-        this.scene.tick(this.evalCtx);
+      // Advance a fixed amount of simulated time per frame; stiff structures need
+      // more (smaller) substeps. The cap keeps the page responsive and slows the
+      // simulation down instead of freezing when the budget is exceeded.
+      let simulated = 0;
+      for (let i = 0; i < MAX_SUBSTEPS && simulated < SIM_TIME_PER_FRAME; i++) {
+        simulated += this.scene.tick(this.evalCtx);
       }
     }
   }
