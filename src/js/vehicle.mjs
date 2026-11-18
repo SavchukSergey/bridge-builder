@@ -56,9 +56,11 @@ export class Vehicle {
   /**
    * @param {import("./level.mjs").Level} level
    * @param {number} [startX] - defaults to the level's start; convoys queue up behind it
+   * @param {number} [paint] - picks the cab colour, so trucks in a convoy look different
    */
-  constructor(level, startX = level.startX) {
+  constructor(level, startX = level.startX, paint = 0) {
     this.level = level;
+    this.paint = paint;
     this.mass = level.vehicleMass;
     this.x = startX;
     this.y = level.groundAt(startX) ?? 0;
@@ -173,38 +175,100 @@ export class Vehicle {
   }
 
   /**
+   * A semi-trailer truck: tractor unit on the right (it drives to the right), box trailer
+   * behind. It tilts with the road, noses down while falling, and its wheels turn as it moves.
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
    */
   render(ctx) {
-    // Tilt with the road it is on.
-    let angle = 0;
+    const g = ctx.ctx;
+    let angle = this.__tilt;
     if (this.contact) {
       const { a, b } = this.contact.link;
       angle = Math.atan2(b.position.y - a.position.y, b.position.x - a.position.x);
       if (Math.abs(angle) > Math.PI / 2) angle += Math.PI; // link drawn right-to-left
+    } else if (this.state === "falling") {
+      angle = Math.max(-0.8, Math.min(0.3, this.vy * 0.04));
+    } else if (this.state !== "fell") {
+      angle = 0;
     }
-    const cos = Math.cos(angle), sin = Math.sin(angle);
-    const point = (/** @type {number} */ dx, /** @type {number} */ dy) =>
-      [this.x + dx * cos - dy * sin, this.y + dx * sin + dy * cos];
+    this.__tilt = angle;
 
+    g.save();
+    g.translate(this.x, this.y);
+    g.rotate(angle);
+    const lost = this.state === "fell";
+    const cab = lost ? "#5e5e5e" : CAB_COLORS[this.paint % CAB_COLORS.length];
+
+    /** @param {[number, number][]} pts @param {string} fill */
+    const poly = (pts, fill) => {
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (const [x, y] of pts.slice(1)) g.lineTo(x, y);
+      g.closePath();
+      g.fillStyle = fill;
+      g.fill();
+    };
     const half = this.length / 2;
-    const corners = [point(-half, 0.3), point(half, 0.3), point(half, this.height), point(-half, this.height)];
-    ctx.beginPath();
-    ctx.moveTo(corners[0][0], corners[0][1]);
-    for (const [x, y] of corners.slice(1)) ctx.lineTo(x, y);
-    ctx.closePath();
-    ctx.fillStyle = this.state === "fell" ? "#7f8c8d" : "#f1c40f";
-    ctx.fill();
+    const top = this.height;
 
-    ctx.fillStyle = "#222";
-    for (const dx of [-half * 0.6, half * 0.6]) {
-      const [x, y] = point(dx, 0.3);
-      ctx.beginPath();
-      ctx.circle(x, y, 0.35);
-      ctx.fill();
+    // chassis
+    poly([[-half + 0.2, 0.75], [half - 0.1, 0.75], [half - 0.1, 1.15], [-half + 0.2, 1.15]], "#26282b");
+
+    // trailer box with panel seams and a stripe
+    const t0 = -half, t1 = half - 2.9;
+    poly([[t0, 1.2], [t1, 1.2], [t1, top], [t0, top]], lost ? "#8a8a8a" : "#eceeef");
+    g.strokeStyle = "rgba(0, 0, 0, 0.12)";
+    g.lineWidth = 0.05;
+    g.beginPath();
+    for (let x = t0 + 1.2; x < t1 - 0.2; x += 1.2) {
+      g.moveTo(x, 1.25);
+      g.lineTo(x, top - 0.05);
     }
+    g.stroke();
+    poly([[t0, 1.65], [t1, 1.65], [t1, 1.95], [t0, 1.95]], cab);
+    poly([[t0, top - 0.12], [t1, top - 0.12], [t1, top], [t0, top]], "rgba(0, 0, 0, 0.15)");
+
+    // tractor: cab with a sloped front, window, bumper, headlight and fuel tank
+    const c0 = half - 2.7;
+    poly([[c0, 1.0], [half, 1.0], [half, 2.3], [half - 0.3, 3.25], [c0, 3.3]], cab);
+    poly([[c0, 3.3], [half - 1.6, 3.3], [half - 1.9, 3.75], [c0, 3.75]], cab); // roof fairing
+    poly([[half - 1.15, 2.25], [half - 0.12, 2.25], [half - 0.36, 3.05], [half - 1.15, 3.05]], lost ? "#3d4247" : "#a9cde2");
+    poly([[c0 + 0.25, 1.35], [half - 1.4, 1.35], [half - 1.4, 3.0], [c0 + 0.25, 3.0]], "rgba(0, 0, 0, 0.12)"); // door
+    poly([[half - 0.15, 0.85], [half + 0.12, 0.85], [half + 0.12, 1.35], [half - 0.15, 1.35]], "#9aa0a6");
+    poly([[half - 0.05, 1.5], [half + 0.06, 1.5], [half + 0.06, 1.72], [half - 0.05, 1.72]], lost ? "#777" : "#ffe08a");
+    poly([[c0 + 0.2, 0.8], [c0 + 1.3, 0.8], [c0 + 1.3, 1.25], [c0 + 0.2, 1.25]], "#c3c8cc");
+
+    // wheels: steer axle, two drive axles under the fifth wheel, two trailer axles
+    const R = 0.5;
+    const spin = -this.x / R;
+    for (const x of [half - 1.2, c0 - 0.2, c0 - 1.25, -half + 2.4, -half + 1.3]) {
+      g.beginPath();
+      g.arc(x, R, R, 0, 2 * Math.PI);
+      g.fillStyle = "#1b1c1e";
+      g.fill();
+      g.beginPath();
+      g.arc(x, R, R * 0.48, 0, 2 * Math.PI);
+      g.fillStyle = "#8e959c";
+      g.fill();
+      g.strokeStyle = "#4b5056";
+      g.lineWidth = 0.06;
+      g.beginPath();
+      for (let k = 0; k < 3; k++) {
+        const a = spin + k * Math.PI / 3;
+        g.moveTo(x + Math.cos(a) * R * 0.45, R + Math.sin(a) * R * 0.45);
+        g.lineTo(x - Math.cos(a) * R * 0.45, R - Math.sin(a) * R * 0.45);
+      }
+      g.stroke();
+    }
+    g.restore();
   }
+
+  /** Last drawn tilt, kept when a truck comes to rest after falling. */
+  __tilt = 0;
 }
+
+/** Cab paint colours, one per truck in a convoy. */
+const CAB_COLORS = ["#c0392b", "#1f6fb2", "#e08e0b", "#1e8449", "#7d3c98"];
 
 /**
  * The highest drivable road surface under x that is no higher than maxY.

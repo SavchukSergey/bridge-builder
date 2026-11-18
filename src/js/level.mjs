@@ -1,5 +1,6 @@
 import { SAVE_FORMAT_VERSION, Scene } from "./scene.js";
 import { Vehicle } from "./vehicle.mjs";
+import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterOver } from "./scenery.mjs";
 
 /**
  * @typedef {Object} TerrainBlock - solid ground with a flat top, extending far downwards
@@ -22,6 +23,7 @@ import { Vehicle } from "./vehicle.mjs";
  * @property {number} [vehicleSpacing] - m between the fronts of consecutive trucks
  * @property {number} budget - maximum structure cost
  * @property {{ x0: number, x1: number, y: number }} view - area to fit on screen
+ * @property {number} [water] - height of the river surface in the gap, if there is one
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
  *   instead of bare anchors
  */
@@ -48,6 +50,7 @@ export class Level {
     this.budget = opts.budget;
     this.view = opts.view;
     this.example = opts.example;
+    this.water = opts.water;
   }
 
   /**
@@ -86,40 +89,26 @@ export class Level {
    * @returns {Vehicle[]}
    */
   createConvoy() {
-    return Array.from({ length: this.vehicleCount }, (_, i) => new Vehicle(this, this.startX - i * this.vehicleSpacing));
+    return Array.from({ length: this.vehicleCount }, (_, i) => new Vehicle(this, this.startX - i * this.vehicleSpacing, i));
   }
 
   /**
+   * Scenery in front of the background: water, ground, trees, abutments and the flag.
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
    */
   render(ctx) {
-    const depth = 10000;
-    ctx.fillStyle = "#5b4636";
-    for (const { x0, x1, y } of this.terrain) {
-      ctx.beginPath();
-      ctx.moveTo(x0, y);
-      ctx.lineTo(x1, y);
-      ctx.lineTo(x1, y - depth);
-      ctx.lineTo(x0, y - depth);
-      ctx.closePath();
-      ctx.fill();
+    const { water } = this;
+    renderValley(ctx, Math.min(...this.terrain.filter(t => water === undefined || t.y >= water).map(t => t.y)) - 0.5);
+    if (water !== undefined) renderWater(ctx, water);
+    for (const block of this.terrain) renderGround(ctx, block, water !== undefined && block.y < water);
+    const xs = this.anchors.map(a => a.x);
+    renderTrees(ctx, this, { x0: Math.min(...xs) - 5, x1: Math.max(...xs) + 5 }, water);
+    if (water !== undefined) renderWaterOver(ctx, this.terrain, water);
+    for (const { x, y } of this.anchors) {
+      const ground = this.groundAt(x);
+      if (ground !== undefined && Math.abs(ground - y) < 0.5) renderAbutment(ctx, x, y);
     }
-
-    // finish flag
-    const flagY = this.groundAt(this.finishX) ?? 0;
-    ctx.beginPath();
-    ctx.moveTo(this.finishX, flagY);
-    ctx.lineTo(this.finishX, flagY + 4);
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 0.15;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(this.finishX, flagY + 4);
-    ctx.lineTo(this.finishX + 1.6, flagY + 3.4);
-    ctx.lineTo(this.finishX, flagY + 2.8);
-    ctx.closePath();
-    ctx.fillStyle = "#e74c3c";
-    ctx.fill();
+    renderFlag(ctx, this.finishX, this.groundAt(this.finishX) ?? 0);
   }
 }
 
@@ -145,6 +134,7 @@ export const creekLevel = new Level({
   vehicleSpacing: 20,
   budget: 18000, // a small suspension bridge with light towers and thin hangers: ~$16,400
   view: { x0: -45, x1: 45, y: 15 },
+  water: 4,
 });
 
 /**
@@ -166,6 +156,7 @@ export const canyonLevel = new Level({
   vehicleSpacing: 20,
   budget: 38000,
   view: { x0: -65, x1: 65, y: 15 },
+  water: -14,
   example: () => new Scene().serialize(), // the default scene is the demo bridge
 });
 
@@ -183,6 +174,7 @@ export const stepLevel = new Level({
   vehicleSpacing: 20,
   budget: 37500, // a Pratt truss over the ramp with light verticals: ~$34,600
   view: { x0: -55, x1: 55, y: 18 },
+  water: 3,
 });
 
 /** 120 m is a long way; a rock in the river can carry a pier. */
@@ -202,6 +194,7 @@ export const pierLevel = new Level({
   vehicleSpacing: 20,
   budget: 81000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
   view: { x0: -85, x1: 85, y: 8 },
+  water: -2,
 });
 
 /** All levels, in play order. */

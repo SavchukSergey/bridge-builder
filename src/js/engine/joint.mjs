@@ -21,11 +21,18 @@ export class Joint {
    * @param {import("../render-ctx.mjs").RenderCtx} ctx 
    */
   render(ctx) {
-    ctx.beginPath();
-    ctx.circle(this.position.x, this.position.y, 0.2);
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 0.2;
-    ctx.stroke();
+    // a gusset plate with a bolt; anchors get a bigger pin
+    const g = ctx.ctx;
+    const { x, y } = this.position;
+    const r = Math.max(this.fixed ? 0.45 : 0.3, (this.fixed ? 4 : 2.6) / ctx.zoom);
+    g.beginPath();
+    g.arc(x, y, r, 0, 2 * Math.PI);
+    g.fillStyle = this.fixed ? "#23272c" : "#353b42";
+    g.fill();
+    g.beginPath();
+    g.arc(x, y, r * 0.42, 0, 2 * Math.PI);
+    g.fillStyle = "#a9b2ba";
+    g.fill();
   }
 
 }

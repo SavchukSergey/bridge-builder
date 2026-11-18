@@ -41,7 +41,7 @@ export class Grid {
     function renderGrid(step) {
       ctx.lineWidth = step * 0.001;
       const steps = globalSize / step;
-      ctx.strokeStyle = `rgba(192, 192, 192, ${Math.min(1, steps / GRID_FACTOR)})`;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.45 * Math.min(1, steps / GRID_FACTOR)})`;
       // ctx.strokeStyle = `rgba(192, 192, 192, 1)`;
 
       const ucnt = Math.ceil(globalWidth / step) + 2;

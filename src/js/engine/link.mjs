@@ -45,20 +45,49 @@ export class Link {
   }
 
   /**
-   * 
-   * @param {import("../render-ctx.mjs").RenderCtx} ctx 
+   * Width as drawn (m): true to scale when zoomed in, with a minimum size on screen.
+   * @param {number} zoom - pixels per metre
    */
-  render(ctx) {
-    ctx.beginPath();
-    ctx.moveTo(this.a.position.x, this.a.position.y);
-    ctx.lineTo(this.b.position.x, this.b.position.y);
-    const clr = this.stressColor;
-    ctx.strokeStyle = `rgb(${clr.r * 255}, ${clr.g * 255}, ${clr.b * 255})`;
-    // True to scale when zoomed in; otherwise a minimum on-screen width that still shows
-    // thick and thin members apart.
-    const size = Math.sqrt(this.material.crossSectionalArea);
-    ctx.lineWidth = Math.max(size, (1 + 12 * size) / ctx.zoom);
-    ctx.stroke();
+  drawnWidth(zoom) {
+    const { width, minPx } = this.material.look;
+    return Math.max(width, minPx / zoom);
+  }
+
+  /**
+   * Draws the member as what it is made of. With `stress`, it is coloured by its load instead
+   * (green relaxed; towards red in compression, blue in tension); otherwise only members
+   * close to breaking glow, amber to red.
+   * @param {import("../render-ctx.mjs").RenderCtx} ctx
+   * @param {{ stress?: boolean }} [opts]
+   */
+  render(ctx, { stress = false } = {}) {
+    const g = ctx.ctx;
+    const { a, b } = this;
+    const look = this.material.look;
+    const width = this.drawnWidth(ctx.zoom);
+    g.lineCap = "round";
+
+    if (stress) {
+      const clr = this.stressColor;
+      strokeLine(g, a, b, `rgb(${clr.r * 255}, ${clr.g * 255}, ${clr.b * 255})`, width);
+      return;
+    }
+
+    if (look.kind === "deck") {
+      renderDeck(g, a.position, b.position, width, look, ctx.zoom);
+    } else {
+      strokeLine(g, a, b, look.color, width);
+      if (look.kind === "beam" && look.highlight && width * ctx.zoom >= 3) {
+        strokeLine(g, a, b, look.highlight, width * 0.35);
+      }
+    }
+
+    const warning = (this.utilization - 0.6) / 0.4;
+    if (warning > 0) {
+      const hue = 45 * (1 - Math.min(1, warning));
+      const glow = look.kind === "deck" ? width * 0.6 : width;
+      strokeLine(g, a, b, `hsla(${hue}, 100%, 50%, ${0.35 + 0.5 * Math.min(1, warning)})`, glow + 3 / ctx.zoom);
+    }
   }
 
   get volume() {
@@ -150,3 +179,71 @@ export class Link {
   }
 }
 
+
+/**
+ * @param {CanvasRenderingContext2D} g
+ * @param {import("./joint.mjs").Joint} a
+ * @param {import("./joint.mjs").Joint} b
+ * @param {string} color
+ * @param {number} width
+ */
+function strokeLine(g, a, b, color, width) {
+  g.beginPath();
+  g.moveTo(a.position.x, a.position.y);
+  g.lineTo(b.position.x, b.position.y);
+  g.strokeStyle = color;
+  g.lineWidth = width;
+  g.stroke();
+}
+
+/**
+ * A concrete deck slab hanging below the road line, with the road surface on top and a
+ * guard rail above it.
+ * @param {CanvasRenderingContext2D} g
+ * @param {import("../math.js").Vec3F} a
+ * @param {import("../math.js").Vec3F} b
+ * @param {number} depth - slab depth (m)
+ * @param {import("../materials/material.types.mjs").MaterialLook} look
+ * @param {number} zoom
+ */
+function renderDeck(g, a, b, depth, look, zoom) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return;
+  // upward normal
+  let nx = -dy / len, ny = dx / len;
+  if (ny < 0) { nx = -nx; ny = -ny; }
+
+  const quad = (/** @type {number} */ top, /** @type {number} */ bottom, /** @type {string} */ fill) => {
+    g.beginPath();
+    g.moveTo(a.x + nx * top, a.y + ny * top);
+    g.lineTo(b.x + nx * top, b.y + ny * top);
+    g.lineTo(b.x + nx * bottom, b.y + ny * bottom);
+    g.lineTo(a.x + nx * bottom, a.y + ny * bottom);
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+  };
+  quad(0, -depth, look.color);
+  quad(-depth * 0.85, -depth, "rgba(0, 0, 0, 0.18)"); // shadowed underside
+  quad(0, -Math.min(0.2, depth * 0.25), look.surface ?? "#444");
+
+  // guard rail: posts every ~2 m and a rail 1 m above the road
+  if (zoom < 3) return;
+  const RAIL = 1.0;
+  g.strokeStyle = "#c3c7cc";
+  g.lineWidth = Math.max(0.06, 1 / zoom);
+  g.lineCap = "butt";
+  g.beginPath();
+  g.moveTo(a.x + nx * RAIL, a.y + ny * RAIL);
+  g.lineTo(b.x + nx * RAIL, b.y + ny * RAIL);
+  const posts = Math.max(1, Math.round(len / 2));
+  for (let i = 0; i <= posts; i++) {
+    const t = i / posts;
+    const x = a.x + dx * t, y = a.y + dy * t;
+    g.moveTo(x, y);
+    g.lineTo(x + nx * RAIL, y + ny * RAIL);
+  }
+  g.stroke();
+  g.lineCap = "round";
+}

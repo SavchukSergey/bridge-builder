@@ -1,0 +1,101 @@
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
+import { at, createGame, runFrames } from "./helpers.mjs";
+import { levels } from "../src/js/level.mjs";
+
+/**
+ * A stand-in for CanvasRenderingContext2D that accepts every call, checks the numbers it
+ * is given are finite, and counts what was drawn.
+ */
+function recordingContext(real) {
+  const counts = { fill: 0, stroke: 0, fillRect: 0, arc: 0 };
+  const stack = [];
+  const gradient = { addColorStop(offset, color) {
+    assert.ok(offset >= 0 && offset <= 1, `colour stop ${offset}`);
+    assert.equal(typeof color, "string");
+  } };
+  const target = {
+    counts,
+    setTransform: real.setTransform,
+    getTransform: real.getTransform,
+    save() { stack.push(real.getTransform()); },
+    restore() {
+      const m = stack.pop();
+      assert.ok(m, "restore without save");
+      real.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
+    },
+    createLinearGradient: (...args) => { assertFinite(args); return gradient; },
+    createRadialGradient: (...args) => { assertFinite(args); return gradient; },
+    get stackDepth() { return stack.length; },
+  };
+  return new Proxy(target, {
+    get(t, key) {
+      if (key in t) return t[key];
+      return (...args) => {
+        assertFinite(args);
+        if (key in counts) counts[key]++;
+      };
+    },
+    set(t, key, value) {
+      if (key === "lineWidth") assert.ok(Number.isFinite(value) && value > 0, `lineWidth ${value}`);
+      t[key] = value;
+      return true;
+    },
+  });
+}
+
+function assertFinite(args) {
+  for (const a of args) if (typeof a === "number") assert.ok(Number.isFinite(a), `non-finite argument ${a}`);
+}
+
+function withRecorder(game) {
+  const rec = recordingContext(game.ctx.ctx);
+  game.ctx.ctx = rec;
+  return rec;
+}
+
+describe("rendering", () => {
+  for (const level of levels) {
+    test(`${level.name} draws in build mode, while trucks cross, and in stress view`, () => {
+      const game = createGame(level.id);
+      game.importStructure(level.initialStructure());
+      const rec = withRecorder(game);
+
+      game.render();
+      assert.ok(rec.counts.fill > 20, "scenery, trucks and joints are filled");
+      assert.ok(rec.counts.fillRect > 5, "sky, ground and water");
+      assert.equal(rec.stackDepth, 0, "every save is restored");
+
+      runFrames(game, 400);
+      game.render();
+      game.showStress = true;
+      game.render();
+      assert.equal(rec.stackDepth, 0);
+    });
+  }
+
+  test("a crossing convoy, a falling truck, hover and a link preview all draw", () => {
+    const game = createGame("creek"); // bare anchors: the trucks fall in
+    const rec = withRecorder(game);
+    game.__handleMouseMove(at(game, -20, 10));
+    game.render();
+    game.__handleClick(at(game, -20, 10));
+    game.__handleMouseMove(at(game, -12, 10));
+    game.render();
+    game.__handleKeyDown({ key: "Escape", preventDefault() { } });
+
+    runFrames(game, 60 * 12);
+    assert.ok(game.vehicles.some(v => v.state === "falling" || v.state === "fell"));
+    game.render();
+    assert.equal(rec.stackDepth, 0);
+  });
+
+  test("zoomed far out and far in", () => {
+    const game = createGame();
+    withRecorder(game);
+    for (const zoom of [0.5, 2, 40, 200]) {
+      game.ctx.zoom = zoom;
+      game.render();
+    }
+  });
+});

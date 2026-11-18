@@ -11,6 +11,7 @@ export const cable = new Material({
   compressionStrength: 1500e6, // unused: cables go slack instead
   canCompress: false,
   costPerMeter: 60,
+  look: { kind: "cable", color: "#25282c", width: 0.14, minPx: 2 },
 });
 
 /** A fifth of the section of {@link cable} (~25 mm rope), for hangers and light stays. */
@@ -24,4 +25,5 @@ export const thinCable = new Material({
   compressionStrength: 1500e6,
   canCompress: false,
   costPerMeter: 20,
+  look: { kind: "cable", color: "#474d55", width: 0.07, minPx: 1.2 },
 });

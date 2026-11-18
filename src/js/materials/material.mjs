@@ -15,5 +15,7 @@ export class Material {
     this.canCompress = opts.canCompress ?? true;
     this.costPerMeter = opts.costPerMeter;
     this.drivable = opts.drivable ?? false;
+    /** @type {import("./material.types.mjs").MaterialLook} */
+    this.look = opts.look ?? { kind: "beam", color: "#666", highlight: "#888", width: 0.3, minPx: 2 };
   }
 }

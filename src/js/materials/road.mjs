@@ -14,4 +14,5 @@ export const road = new Material({
   compressionStrength: 30e6,
   costPerMeter: 300,
   drivable: true,
+  look: { kind: "deck", color: "#b5afa4", surface: "#3d4045", width: 0.9, minPx: 6 },
 });

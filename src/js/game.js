@@ -6,6 +6,7 @@ import { materials } from "./materials/index.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
+import { renderBackground } from "./scenery.mjs";
 import { CompositeScene, Scene } from "./scene.js";
 /** @typedef {import("./vehicle.mjs").Vehicle} Vehicle */
 
@@ -97,6 +98,9 @@ export class Game {
 
   /** Whether new joints snap to the {@link SNAP_STEP} grid (hold Alt to place freely). */
   snapToGrid = true;
+
+  /** Colour members by their load instead of drawing their material. */
+  showStress = false;
 
   /** Called after every change to the built structure (edit, undo, load). */
   onChange = () => { };
@@ -669,19 +673,22 @@ export class Game {
     this.ctx.width = this.canvas.width;
     this.ctx.height = this.canvas.height;
     this.ctx.clear();
-    this.scene.grid.render(this.ctx);
+    renderBackground(this.ctx, this.level.startY);
     this.level.render(this.ctx);
+    if (this.isBuildMode) this.scene.grid.render(this.ctx);
     const hovered = this.hoveredLink;
     if (hovered) {
       // halo under the hovered link
-      this.ctx.beginPath();
-      this.ctx.moveTo(hovered.a.position.x, hovered.a.position.y);
-      this.ctx.lineTo(hovered.b.position.x, hovered.b.position.y);
-      this.ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-      this.ctx.lineWidth = Math.sqrt(hovered.material.crossSectionalArea) + 8 / this.ctx.zoom;
-      this.ctx.stroke();
+      const g = this.ctx.ctx;
+      g.beginPath();
+      g.moveTo(hovered.a.position.x, hovered.a.position.y);
+      g.lineTo(hovered.b.position.x, hovered.b.position.y);
+      g.strokeStyle = "rgba(255, 214, 64, 0.85)";
+      g.lineCap = "round";
+      g.lineWidth = hovered.drawnWidth(this.ctx.zoom) * (hovered.material.look.kind === "deck" ? 2 : 1) + 8 / this.ctx.zoom;
+      g.stroke();
     }
-    this.scene.renderStructure(this.ctx);
+    this.scene.renderStructure(this.ctx, { stress: this.showStress });
     // Before the first run, show the convoy lined up at the start.
     for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
       vehicle.render(this.ctx);

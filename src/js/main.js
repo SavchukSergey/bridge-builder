@@ -195,6 +195,14 @@ document.addEventListener('DOMContentLoaded', function () {
   btnUndo.addEventListener('click', () => game.undo());
   btnRedo.addEventListener('click', () => game.redo());
 
+  /** @type {HTMLInputElement} */
+  const chkStress = document.getElementById('toggle-stress');
+  game.showStress = chkStress.checked;
+  chkStress.addEventListener('change', () => {
+    game.showStress = chkStress.checked;
+    chkStress.blur();
+  });
+
   game.snapToGrid = chkSnap.checked;
   chkSnap.addEventListener('change', () => {
     game.snapToGrid = chkSnap.checked;

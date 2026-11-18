@@ -214,9 +214,17 @@ export class Scene {
    * The structure and the link preview, without the grid.
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
    */
-  renderStructure(ctx) {
-    this.content.render(ctx);
-    this.preview.render(ctx);
+  /**
+   * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   * @param {{ stress?: boolean }} [opts]
+   */
+  renderStructure(ctx, opts) {
+    this.content.render(ctx, opts);
+    // the link being placed, see-through
+    ctx.ctx.save();
+    ctx.ctx.globalAlpha = 0.6;
+    this.preview.render(ctx, opts);
+    ctx.ctx.restore();
   }
 
   /** Total price of all links, built from their rest lengths. */
@@ -454,6 +462,9 @@ export class Scene {
  * @property {{ link: Link, broken: boolean }[]} links
  */
 
+/** Drawing order of member kinds, back to front. */
+const LAYERS = ["deck", "beam", "cable"];
+
 export class CompositeScene {
   /** @type {Joint[]} */
   joints = [];
@@ -465,15 +476,20 @@ export class CompositeScene {
    * 
  * @param {import("./render-ctx.mjs").RenderCtx} ctx 
    */
-  render(ctx) {
+  /**
+   * Decks first, then steel, then cables, with the joints on top.
+   * @param {import("./render-ctx.mjs").RenderCtx} ctx
+   * @param {{ stress?: boolean }} [opts]
+   */
+  render(ctx, opts) {
+    for (const kind of LAYERS) {
+      for (const link of this.links) {
+        if (!link.broken && link.material.look.kind === kind) link.render(ctx, opts);
+      }
+    }
     for (const joint of this.joints) {
       if (joint.fixed || joint.mass) {
         joint.render(ctx);
-      }
-    }
-    for (const link of this.links) {
-      if (!link.broken) {
-        link.render(ctx);
       }
     }
   }
