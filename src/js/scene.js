@@ -2,12 +2,16 @@ import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
 import { cable } from "./materials/cable.mjs";
+import { materials } from "./materials/index.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
 
 const MAX_DT = 0.0005;
 /** Fraction of the theoretical stability limit actually used. */
 const STABILITY_SAFETY = 0.5;
+
+/** Version of the saved-structure JSON format produced by {@link Scene#serialize}. */
+export const SAVE_FORMAT_VERSION = 1;
 
 export class Scene {
 
@@ -25,6 +29,12 @@ export class Scene {
   grid = new Grid();
 
   constructor() {
+    this.loadDefault();
+  }
+
+  /** Replaces the structure with the built-in demo suspension bridge. */
+  loadDefault() {
+    this.content = new CompositeScene();
     const jointAO = new Joint(createVec3F(-50, 10, 0), true);
     const jointAI = new Joint(createVec3F(-40, 10, 0), true);
     this.joints.push(jointAO, jointAI);
@@ -206,6 +216,62 @@ export class Scene {
   }
 
   /**
+   * Converts the structure to plain JSON. Positions come from the snapshot, so pass the
+   * pre-simulation snapshot to save the structure as built rather than as deformed.
+   * @param {SceneSnapshot} [snapshot]
+   * @returns {SavedStructure}
+   */
+  serialize(snapshot = this.snapshot()) {
+    /** @type {Map<Joint, number>} */
+    const index = new Map();
+    const joints = snapshot.joints.map(({ joint, position }, i) => {
+      index.set(joint, i);
+      /** @type {SavedJoint} */
+      const saved = { x: position.x, y: position.y };
+      if (joint.fixed) saved.fixed = true;
+      return saved;
+    });
+    const links = snapshot.links.map(({ link }) => ({
+      a: /** @type {number} */ (index.get(link.a)),
+      b: /** @type {number} */ (index.get(link.b)),
+      material: link.material.name,
+    }));
+    return { version: SAVE_FORMAT_VERSION, joints, links };
+  }
+
+  /**
+   * Replaces the structure with a saved one. Validates fully before changing anything.
+   * @param {unknown} data
+   * @throws {Error} if the data is not a valid saved structure
+   */
+  load(data) {
+    const fail = (/** @type {string} */ msg) => { throw new Error(`Invalid structure: ${msg}`); };
+    const d = /** @type {any} */ (data);
+    if (!d || typeof d !== "object") fail("not an object");
+    if (d.version !== SAVE_FORMAT_VERSION) fail(`unsupported version ${d.version}`);
+    if (!Array.isArray(d.joints) || !Array.isArray(d.links)) fail("missing joints or links");
+
+    const joints = d.joints.map((/** @type {any} */ j, /** @type {number} */ i) => {
+      if (!j || !Number.isFinite(j.x) || !Number.isFinite(j.y)) fail(`joint ${i} has bad coordinates`);
+      return new Joint(createVec3F(j.x, j.y, 0), j.fixed === true);
+    });
+    const links = d.links.map((/** @type {any} */ l, /** @type {number} */ i) => {
+      const a = joints[l?.a], b = joints[l?.b];
+      if (!Number.isInteger(l?.a) || !Number.isInteger(l?.b) || !a || !b) fail(`link ${i} references a missing joint`);
+      if (a === b) fail(`link ${i} connects a joint to itself`);
+      const material = Object.hasOwn(materials, l.material) ? materials[l.material] : undefined;
+      if (!material) fail(`link ${i} has unknown material "${l.material}"`);
+      if (vec3flen2(vec3fsub(a.position, b.position)) === 0) fail(`link ${i} has zero length`);
+      return new Link(a, b, /** @type {import("./materials/material.mjs").Material} */ (material));
+    });
+
+    this.content = new CompositeScene();
+    this.content.joints = joints;
+    this.content.links = links;
+    this.distributeMass();
+  }
+
+  /**
    * Captures the built structure so it can be restored after a simulation run.
    * @returns {SceneSnapshot}
    */
@@ -351,6 +417,20 @@ export class Scene {
     return maxOmega2 ? STABILITY_SAFETY * 2 / Math.sqrt(maxOmega2) : MAX_DT;
   }
 }
+
+/**
+ * @typedef {Object} SavedJoint
+ * @property {number} x
+ * @property {number} y
+ * @property {boolean} [fixed]
+ */
+
+/**
+ * @typedef {Object} SavedStructure
+ * @property {number} version
+ * @property {SavedJoint[]} joints
+ * @property {{ a: number, b: number, material: string }[]} links - a/b are indices into joints
+ */
 
 /**
  * @typedef {Object} SceneSnapshot

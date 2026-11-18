@@ -1,7 +1,7 @@
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
-import { cable } from "./materials/cable.mjs";
+import { materials } from "./materials/index.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
@@ -16,6 +16,10 @@ const SIM_TIME_PER_FRAME = 1 / 60;
 const MAX_SUBSTEPS = 400;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */
 const PICK_RADIUS_PX = 12;
+/** Grid step (in metres) that new joints snap to. */
+const SNAP_STEP = 1;
+const MAX_UNDO = 100;
+const AUTOSAVE_KEY = "bridge-builder:structure";
 
 export class Game {
 
@@ -32,6 +36,7 @@ export class Game {
     this.ctx = new RenderCtx(ctx);
     this.evalCtx = new EvalCtx();
     this.scene = new Scene();
+    this.__loadAutosave();
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
     this.__handleMouseMove = this.__handleMouseMove.bind(this);
@@ -70,6 +75,17 @@ export class Game {
  */
   __clickState = undefined;
 
+  /** Whether new joints snap to the {@link SNAP_STEP} grid (hold Alt to place freely). */
+  snapToGrid = true;
+
+  /** Called after every change to the built structure (edit, undo, load). */
+  onChange = () => { };
+
+  /** @type {import("./scene.js").SavedStructure[]} */
+  __undoStack = [];
+  /** @type {import("./scene.js").SavedStructure[]} */
+  __redoStack = [];
+
   /** Set when the last pointer press was a pan, so the following click is ignored. */
   __suppressClick = false;
 
@@ -105,6 +121,97 @@ export class Game {
       this.__snapshot = undefined;
     }
     this.evalCtx.time = 0;
+  }
+
+  get canUndo() {
+    return this.isBuildMode && this.__undoStack.length > 0;
+  }
+
+  get canRedo() {
+    return this.isBuildMode && this.__redoStack.length > 0;
+  }
+
+  undo() {
+    this.__stepHistory(this.__undoStack, this.__redoStack);
+  }
+
+  redo() {
+    this.__stepHistory(this.__redoStack, this.__undoStack);
+  }
+
+  /**
+   * @param {import("./scene.js").SavedStructure[]} from
+   * @param {import("./scene.js").SavedStructure[]} to
+   */
+  __stepHistory(from, to) {
+    if (!this.isBuildMode) return;
+    const state = from.pop();
+    if (!state) return;
+    this.__cancelLink();
+    to.push(this.scene.serialize());
+    this.scene.load(state);
+    this.__afterChange();
+  }
+
+  /**
+   * Applies a change to the built structure as one undoable step.
+   * @param {() => boolean | void} change - return false if nothing changed
+   */
+  __edit(change) {
+    const before = this.scene.serialize();
+    if (change() === false) return;
+    this.__undoStack.push(before);
+    if (this.__undoStack.length > MAX_UNDO) this.__undoStack.shift();
+    this.__redoStack = [];
+    this.__afterChange();
+  }
+
+  __afterChange() {
+    this.__saveAutosave();
+    this.onChange();
+  }
+
+  /**
+   * The structure as built (pre-simulation positions), as plain JSON.
+   * @returns {import("./scene.js").SavedStructure}
+   */
+  exportStructure() {
+    return this.scene.serialize(this.__snapshot);
+  }
+
+  /**
+   * Replaces the structure (undoable). Resets any running simulation first.
+   * @param {unknown} data
+   * @throws {Error} if data is not a valid structure; the scene is left unchanged
+   */
+  importStructure(data) {
+    this.reset();
+    this.__cancelLink();
+    this.__edit(() => this.scene.load(data));
+  }
+
+  /** Replaces the structure with the built-in demo bridge (undoable). */
+  loadDefault() {
+    this.reset();
+    this.__cancelLink();
+    this.__edit(() => this.scene.loadDefault());
+  }
+
+  __saveAutosave() {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(this.scene.serialize(this.__snapshot)));
+    } catch {
+      // storage unavailable (private mode, quota, blocked): autosave is best effort
+    }
+  }
+
+  __loadAutosave() {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (raw) this.scene.load(JSON.parse(raw));
+    } catch (err) {
+      console.warn("Ignoring unreadable autosave:", err);
+    }
   }
 
   __cancelLink() {
@@ -161,13 +268,17 @@ export class Game {
       }
     } else {
       const material = this.__getCurrentMaterial();
-      const path = this.__buildLink(this.__clickState.jointA, globalPoint, material);
+      const path = this.__buildLink(this.__clickState.jointA, globalPoint, material, !ev.altKey);
+      this.__cancelLink();
 
       // An empty path means the second click landed on the start joint: treat it as cancel.
-      this.scene.joints.push(...path.joints);
-      this.scene.links.push(...path.links);
-      this.__cancelLink();
-      this.scene.distributeMass();
+      if (path.links.length) {
+        this.__edit(() => {
+          this.scene.joints.push(...path.joints);
+          this.scene.links.push(...path.links);
+          this.scene.distributeMass();
+        });
+      }
     }
   }
 
@@ -192,7 +303,7 @@ export class Game {
       this.ctx.shift = newPos;
     } else if (this.__clickState) {
       const material = this.__getCurrentMaterial();
-      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material);
+      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material, !ev.altKey);
       this.__clickState.preview.joints = path.joints;
       this.__clickState.preview.links = path.links;
       this.__clickState.preview.distributeMass();
@@ -203,15 +314,25 @@ export class Game {
    * @param {Joint} jointA
    * @param {import("./math.js").Vec3F} globalB
    * @param {import("./materials/material.mjs").Material} material
+   * @param {boolean} [allowSnap] - snap a new end joint to the grid if snapping is enabled
    */
-  __buildLink(jointA, globalB, material) {
+  __buildLink(jointA, globalB, material, allowSnap = true) {
     /**
      * @type {Joint[]}
      */
     const joints = [];
     const links = [];
 
+    // Existing joints near the cursor win over grid snapping.
     let jointB = this.scene.findJoint(globalB, this.__pickRadius());
+    if (!jointB && allowSnap && this.snapToGrid) {
+      const snapped = createVec3F(
+        Math.round(globalB.x / SNAP_STEP) * SNAP_STEP,
+        Math.round(globalB.y / SNAP_STEP) * SNAP_STEP,
+        0,
+      );
+      jointB = this.scene.findJoint(snapped, 1e-6) ?? new Joint(snapped);
+    }
     if (!jointB) {
       jointB = new Joint(globalB);
     }
@@ -280,19 +401,32 @@ export class Game {
     const joint = this.scene.findJoint(globalPoint, radius);
     if (joint) {
       // Fixed anchors are not removable; don't fall through to deleting a link attached to one.
-      this.scene.removeJoint(joint);
+      this.__edit(() => this.scene.removeJoint(joint));
       return;
     }
     const link = this.scene.findLink(globalPoint, radius);
-    if (link) this.scene.removeLink(link);
+    if (link) this.__edit(() => this.scene.removeLink(link));
   }
 
   /**
    * @param {KeyboardEvent} ev
    */
   __handleKeyDown(ev) {
+    const target = /** @type {HTMLElement | null} */ (ev.target);
+    if (target?.closest?.("input[type=text], input[type=number], textarea, [contenteditable]")) return;
+
     if (ev.key === "Escape") {
       this.__cancelLink();
+      return;
+    }
+    const mod = ev.ctrlKey || ev.metaKey;
+    const key = ev.key.toLowerCase();
+    if (mod && key === "z" && !ev.shiftKey) {
+      ev.preventDefault();
+      this.undo();
+    } else if (mod && (key === "y" || (key === "z" && ev.shiftKey))) {
+      ev.preventDefault();
+      this.redo();
     }
   }
 
@@ -383,15 +517,7 @@ export class Game {
      */
     const node = document.querySelector("input[name=material]:checked");
     const value = node?.value || "steel";
-
-    switch (value) {
-      case "steel":
-        return steel;
-      case "cable":
-        return cable;
-      default:
-        return steel;
-    }
+    return Object.hasOwn(materials, value) ? materials[value] : steel;
   }
 }
 
