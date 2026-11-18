@@ -1,7 +1,7 @@
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
-import { demoLevel } from "./level.mjs";
+import { findLevel, levels } from "./level.mjs";
 import { materials } from "./materials/index.mjs";
 import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
@@ -26,7 +26,10 @@ const PICK_RADIUS_PX = 12;
 /** Grid step (in metres) that new joints snap to. */
 const SNAP_STEP = 1;
 const MAX_UNDO = 100;
+/** Per-level autosave: `${AUTOSAVE_KEY}:${level.id}`. */
 const AUTOSAVE_KEY = "bridge-builder:structure";
+const LEVEL_KEY = "bridge-builder:level";
+const COMPLETED_KEY = "bridge-builder:completed";
 
 export class Game {
 
@@ -43,13 +46,14 @@ export class Game {
     this.ctx = new RenderCtx(ctx);
     this.evalCtx = new EvalCtx();
     this.scene = new Scene();
-    this.level = demoLevel;
+    /** @type {import("./level.mjs").Level} */
+    this.level = levels[0];
     /**
      * The load-test convoy; exists from the first simulation start until reset.
      * @type {Vehicle[]}
      */
     this.vehicles = [];
-    this.__loadAutosave();
+    this.selectLevel(storageGet(LEVEL_KEY) ?? levels[0].id);
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
     this.__handleMouseMove = this.__handleMouseMove.bind(this);
@@ -221,45 +225,115 @@ export class Game {
   }
 
   /**
-   * The structure as built (pre-simulation positions), as plain JSON.
-   * @returns {import("./scene.js").SavedStructure}
+   * Switches to a level: stops any simulation, clears undo history, and loads that level's
+   * autosaved structure (or its starting structure). Unknown ids fall back to the first level.
+   * @param {string} id
    */
-  exportStructure() {
-    return this.scene.serialize(this.__snapshot);
+  selectLevel(id) {
+    this.reset();
+    this.__cancelLink();
+    this.level = findLevel(id) ?? levels[0];
+    this.__undoStack = [];
+    this.__redoStack = [];
+    this.__convoyPreviewCache = undefined;
+    if (!this.__loadAutosave()) {
+      this.scene.load(this.level.initialStructure());
+    }
+    storageSet(LEVEL_KEY, this.level.id);
+    this.fitView();
+    this.onChange();
   }
 
   /**
-   * Replaces the structure (undoable). Resets any running simulation first.
+   * Screen pixels covered by UI panels drawn over the canvas, so {@link fitView} centres
+   * the level in the part of the canvas that is actually visible.
+   */
+  viewInsets = { top: 0, right: 0 };
+
+  /** Centres and zooms the view on the current level, inside {@link viewInsets}. */
+  fitView() {
+    const { x0, x1, y } = this.level.view;
+    const { top, right } = this.viewInsets;
+    const visibleWidth = Math.max(100, (this.canvas.width || 800) - right);
+    const zoom = Math.max(1, visibleWidth / (x1 - x0));
+    this.ctx.zoom = zoom;
+    // The visible area's centre is offset from the canvas centre by half of each inset.
+    this.ctx.shift = createVec3F((x0 + x1) / 2 + right / 2 / zoom, y + top / 2 / zoom, 0);
+  }
+
+  /** Whether the level has been won within budget (ever, on this browser). */
+  isCompleted(id = this.level.id) {
+    return this.__completed().includes(id);
+  }
+
+  /** @returns {string[]} */
+  __completed() {
+    try {
+      const list = JSON.parse(storageGet(COMPLETED_KEY) ?? "[]");
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  __markCompleted() {
+    if (this.isCompleted()) return;
+    storageSet(COMPLETED_KEY, JSON.stringify([...this.__completed(), this.level.id]));
+    this.onChange();
+  }
+
+  /**
+   * The structure as built (pre-simulation positions), as plain JSON, tagged with the level.
+   * @returns {import("./scene.js").SavedStructure}
+   */
+  exportStructure() {
+    return { ...this.scene.serialize(this.__snapshot), level: this.level.id };
+  }
+
+  /**
+   * Replaces the structure (undoable). Resets any running simulation first. A structure
+   * exported from another level switches to that level first.
    * @param {unknown} data
    * @throws {Error} if data is not a valid structure; the scene is left unchanged
    */
   importStructure(data) {
+    const levelId = /** @type {any} */ (data)?.level;
+    const target = findLevel(levelId);
+    if (target && target !== this.level) {
+      // Validate before switching, so a bad file doesn't change the level either.
+      new Scene().load(data);
+      this.selectLevel(target.id);
+    }
     this.reset();
     this.__cancelLink();
     this.__edit(() => this.scene.load(data));
   }
 
-  /** Replaces the structure with the built-in demo bridge (undoable). */
-  loadDefault() {
+  /** Starts the current level over from its starting structure (undoable). */
+  restartLevel() {
     this.reset();
     this.__cancelLink();
-    this.__edit(() => this.scene.loadDefault());
+    this.__edit(() => this.scene.load(this.level.initialStructure()));
+  }
+
+  get __autosaveKey() {
+    return `${AUTOSAVE_KEY}:${this.level.id}`;
   }
 
   __saveAutosave() {
-    try {
-      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(this.scene.serialize(this.__snapshot)));
-    } catch {
-      // storage unavailable (private mode, quota, blocked): autosave is best effort
-    }
+    storageSet(this.__autosaveKey, JSON.stringify(this.scene.serialize(this.__snapshot)));
   }
 
+  /** @returns {boolean} whether a saved structure was loaded */
   __loadAutosave() {
+    const raw = storageGet(this.__autosaveKey);
+    if (!raw) return false;
     try {
-      const raw = localStorage.getItem(AUTOSAVE_KEY);
-      if (raw) this.scene.load(JSON.parse(raw));
+      this.scene.load(JSON.parse(raw));
+      return true;
     } catch (err) {
       console.warn("Ignoring unreadable autosave:", err);
+      return false;
     }
   }
 
@@ -574,6 +648,7 @@ export class Game {
         for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
         simulated += dt;
       }
+      if (this.testState === "crossed" && !this.overBudget) this.__markCompleted();
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
@@ -617,3 +692,28 @@ export class Game {
  * @property {CompositeScene} preview
  * @property {CompositeScene} previewBackup
  */
+
+/**
+ * localStorage access that never throws (private mode, blocked storage, quota).
+ * @param {string} key
+ * @returns {string | null}
+ */
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ */
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // best effort
+  }
+}

@@ -15,6 +15,8 @@
   </div>
 
   <div id="control-panel">
+    <select id="level-select" title="Level"></select>
+
     <label>
       <input type="checkbox" id="toggle-simulation" />
       Simulation
@@ -36,7 +38,7 @@
 
     <span class="separator"></span>
 
-    <button type="button" id="new-structure" title="Replace with the demo bridge">New</button>
+    <button type="button" id="new-structure" title="Start this level over (Undo to go back)">Restart</button>
     <button type="button" id="export-structure" title="Download the structure as JSON">Export</button>
     <button type="button" id="import-structure" title="Load a structure from a JSON file">Import</button>
     <input type="file" id="import-file" accept=".json,application/json" hidden />
@@ -60,6 +62,8 @@
 
     <div id="cost">Cost: <span id="cost-value"></span><br />Budget: <span id="budget-value"></span></div>
     <div id="load">Load: <span id="load-value"></span></div>
+
+    <div id="level-description"></div>
 
     <div id="help">
       <p>Get every truck to the flag, within budget. Start the simulation to test.</p>

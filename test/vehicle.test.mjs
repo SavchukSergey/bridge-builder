@@ -2,7 +2,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { createGame } from "./helpers.mjs";
 import { EvalCtx } from "../src/js/eval-ctx.mjs";
-import { demoLevel } from "../src/js/level.mjs";
+import { canyonLevel as demoLevel } from "../src/js/level.mjs";
 import { SAVE_FORMAT_VERSION, Scene } from "../src/js/scene.js";
 import { findRoad, Vehicle, VEHICLE_START_DELAY } from "../src/js/vehicle.mjs";
 
@@ -132,12 +132,12 @@ describe("load test", () => {
     game.setSimulationRunning(true);
     while (!game.testFinished && game.evalCtx.time < 60) {
       game.tick();
-      for (const v of game.vehicles) if (!demoLevel.isGround(v.x)) lowest = Math.min(lowest, v.y);
+      for (const v of game.vehicles) if (demoLevel.groundAt(v.x) === undefined) lowest = Math.min(lowest, v.y);
     }
     assert.equal(game.testState, "crossed");
     assert.ok(game.vehicles.every(v => v.state === "crossed" && v.x >= demoLevel.finishX));
     assert.equal(game.scene.links.filter(l => l.broken).length, 0);
-    assert.ok(lowest < demoLevel.groundY - 0.3, `the deck visibly sags under the trucks (lowest y ${lowest})`);
+    assert.ok(lowest < demoLevel.startY - 0.3, `the deck visibly sags under the trucks (lowest y ${lowest})`);
   });
 
   test("the test is not won until the last truck has crossed", () => {
@@ -167,8 +167,8 @@ describe("load test", () => {
     }
     assert.equal(game.testState, "fell");
     assert.equal(first.state, "fell");
-    assert.ok(Math.abs(fallStartX - demoLevel.gapLeftX) < 0.2, `starts falling at the cliff edge (x = ${fallStartX})`);
-    assert.ok(first.y < demoLevel.groundY - 19);
+    assert.ok(Math.abs(fallStartX - -40) < 0.2, `starts falling at the cliff edge (x = ${fallStartX})`);
+    assert.ok(first.y < demoLevel.startY - 19);
   });
 
   test("a missing deck section makes the trucks fall", () => {

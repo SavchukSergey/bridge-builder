@@ -302,9 +302,9 @@ describe("saving and loading", () => {
     const saved = game.scene.serialize();
 
     // simulate a page reload: new Game, same storage
-    const raw = localStorage.getItem("bridge-builder:structure");
+    const raw = localStorage.getItem("bridge-builder:structure:canyon");
     const reloaded = createGame();
-    localStorage.setItem("bridge-builder:structure", raw);
+    localStorage.setItem("bridge-builder:structure:canyon", raw);
     reloaded.__loadAutosave();
     assert.deepEqual(reloaded.scene.serialize(), saved);
   });
@@ -312,7 +312,7 @@ describe("saving and loading", () => {
   test("a corrupt autosave is ignored and the demo bridge loads", (t) => {
     t.mock.method(console, "warn", () => { });
     const game = createGame();
-    localStorage.setItem("bridge-builder:structure", "{not json");
+    localStorage.setItem("bridge-builder:structure:canyon", "{not json");
     game.__loadAutosave();
     assert.equal(game.scene.links.length, 27);
   });
@@ -329,7 +329,7 @@ describe("saving and loading", () => {
     const built = game.scene.serialize();
     runFrames(game, 60);
     assert.notDeepEqual(game.scene.serialize(), built);
-    assert.deepEqual(game.exportStructure(), built);
+    assert.deepEqual(game.exportStructure(), { ...built, level: "canyon" });
   });
 
   test("import replaces the structure, resets the simulation and is undoable", () => {
@@ -355,12 +355,12 @@ describe("saving and loading", () => {
     assert.equal(game.canUndo, false);
   });
 
-  test("loadDefault brings back the demo bridge (undoably)", () => {
+  test("restartLevel brings back the level's starting structure (undoably)", () => {
     const game = createGame();
     const demo = game.scene.serialize();
     rightClick(game, 0, 15);
     const edited = game.scene.serialize();
-    game.loadDefault();
+    game.restartLevel();
     assert.deepEqual(game.scene.serialize(), demo);
     game.undo();
     assert.deepEqual(game.scene.serialize(), edited);
@@ -372,7 +372,7 @@ describe("saving and loading", () => {
     game.onChange = () => calls++;
     buildLink(game, -40, 25, -40, 35);
     game.undo();
-    game.loadDefault();
+    game.restartLevel();
     assert.equal(calls, 3);
   });
 });

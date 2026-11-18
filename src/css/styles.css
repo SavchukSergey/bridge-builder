@@ -62,6 +62,12 @@ body {
   font-weight: bold;
 }
 
+#level-description {
+  max-width: 11em;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 #help {
   margin-top: auto;
   max-width: 11em;

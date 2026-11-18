@@ -32,8 +32,12 @@ Object.defineProperty(globalThis, "localStorage", { value: new FakeStorage(), co
 
 const { Game } = await import("../src/js/game.js");
 
-/** Fresh game on an 800x600 canvas with empty storage and steel selected. */
-export function createGame() {
+/**
+ * Fresh game on an 800x600 canvas with empty storage and steel selected, on the given level
+ * (default: the Canyon, which starts from the demo bridge) and with the default view
+ * (zoom 8, centred on the origin) that coordinates in tests assume.
+ */
+export function createGame(levelId = "canyon") {
   localStorage.clear();
   ui.material = "steel";
   const canvas = {
@@ -52,8 +56,11 @@ export function createGame() {
     },
   };
   const game = new Game(/** @type {any} */(canvas));
+  game.selectLevel(levelId);
   game.ctx.width = canvas.width;
   game.ctx.height = canvas.height;
+  game.ctx.zoom = 8;
+  game.ctx.shift = { x: 0, y: 0, z: 0 };
   game.ctx.clear(); // applies the view transform, as the first rendered frame would
   return game;
 }

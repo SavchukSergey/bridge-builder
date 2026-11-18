@@ -12,8 +12,10 @@ export const VEHICLE_START_DELAY = 2;
 const STEP_UP = 0.5;
 /** Largest drop (m) it follows by staying on the road; a bigger drop means falling. */
 const STEP_DOWN = 1;
-/** Falling this far (m) below the cliff tops loses the test. */
+/** Falling this far (m) loses the test, wherever it ends up. */
 const FALL_LIMIT = 20;
+/** A truck survives landing after falling at most this far (m). */
+export const MAX_SAFE_DROP = 4;
 
 /**
  * @typedef {"waiting" | "driving" | "falling" | "crossed" | "fell"} VehicleState
@@ -41,6 +43,13 @@ export class Vehicle {
   /** @type {VehicleState} */
   state = "waiting";
   vy = 0;
+  /** Height the current fall started from. */
+  fallStartY = 0;
+  /**
+   * Why the truck was lost: fell into the gap, drove into a cliff face, or landed too hard.
+   * @type {"fell" | "crashed" | "hard landing" | undefined}
+   */
+  lostReason = undefined;
   /** @type {RoadContact | undefined} */
   contact = undefined;
 
@@ -52,7 +61,7 @@ export class Vehicle {
     this.level = level;
     this.mass = level.vehicleMass;
     this.x = startX;
-    this.y = level.groundY;
+    this.y = level.groundAt(startX) ?? 0;
   }
 
   get finished() {
@@ -82,8 +91,9 @@ export class Vehicle {
    */
   update(scene, evalCtx, dt) {
     if (this.state === "crossed") {
-      // Drive on along the far cliff, clearing the flag for the trucks behind.
+      // Drive on along the far side, clearing the flag for the trucks behind.
       this.x += this.speed * dt;
+      this.y = this.level.groundAt(this.x) ?? this.y;
       return;
     }
     if (this.finished) return;
@@ -97,42 +107,69 @@ export class Vehicle {
     if (this.state === "falling") {
       this.vy += evalCtx.gravity.y * dt;
       const nextY = this.y + this.vy * dt;
-      const landing = findRoad(scene, this.x, this.y + STEP_UP);
+      const landing = this.__support(scene, this.y + STEP_UP);
       if (landing && landing.y >= nextY) {
-        this.state = "driving";
-        this.vy = 0;
         this.y = landing.y;
-        this.contact = landing;
+        this.vy = 0;
+        if (this.fallStartY - landing.y > MAX_SAFE_DROP) {
+          this.__lose("hard landing");
+        } else {
+          this.state = "driving";
+          this.contact = landing.road;
+        }
       } else {
         this.y = nextY;
         this.contact = undefined;
-        if (this.y < this.level.groundY - FALL_LIMIT) this.state = "fell";
+        if (this.y < this.fallStartY - FALL_LIMIT) this.__lose("fell");
       }
       return;
     }
 
-    if (this.x >= this.level.finishX) {
-      this.y = this.level.groundY;
-      this.contact = undefined;
-      this.state = "crossed";
+    const ground = this.level.groundAt(this.x);
+    if (ground !== undefined && ground > this.y + STEP_UP) {
+      this.__lose("crashed"); // drove into a cliff face
       return;
     }
 
-    if (this.level.isGround(this.x)) {
-      this.y = this.level.groundY;
-      this.contact = undefined;
-      return;
-    }
-
-    const road = findRoad(scene, this.x, this.y + STEP_UP);
-    if (road && road.y >= this.y - STEP_DOWN) {
-      this.y = road.y;
-      this.contact = road;
-    } else {
+    const support = this.__support(scene, this.y + STEP_UP);
+    if (!support || support.y < this.y - STEP_DOWN) {
       this.state = "falling";
+      this.fallStartY = this.y;
       this.vy = 0;
       this.contact = undefined;
+      return;
     }
+    this.y = support.y;
+    this.contact = support.road;
+
+    if (this.x >= this.level.finishX) {
+      this.contact = undefined;
+      this.state = "crossed";
+    }
+  }
+
+  /**
+   * @param {"fell" | "crashed" | "hard landing"} reason
+   */
+  __lose(reason) {
+    this.state = "fell";
+    this.lostReason = reason;
+    this.contact = undefined;
+  }
+
+  /**
+   * The highest surface under the truck, road or ground, no higher than maxY.
+   * @param {import("./scene.js").Scene} scene
+   * @param {number} maxY
+   * @returns {{ y: number, road: RoadContact | undefined } | undefined}
+   */
+  __support(scene, maxY) {
+    const road = findRoad(scene, this.x, maxY);
+    const ground = this.level.groundAt(this.x);
+    const groundOk = ground !== undefined && ground <= maxY;
+    if (road && (!groundOk || road.y >= /** @type {number} */ (ground))) return { y: road.y, road };
+    if (groundOk) return { y: /** @type {number} */ (ground), road: undefined };
+    return undefined;
   }
 
   /**

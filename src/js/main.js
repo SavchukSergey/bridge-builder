@@ -1,5 +1,6 @@
 // Main entry point for the Bridge Builder game
 import { Game } from './game.js';
+import { levels } from './level.mjs';
 
 // @ts-check
 
@@ -75,6 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const fileImport = document.getElementById('import-file');
   /** @type {HTMLDivElement} */
   const txtStatus = document.getElementById('status-message');
+  /** @type {HTMLSelectElement} */
+  const selLevel = document.getElementById('level-select');
+  /** @type {HTMLDivElement} */
+  const txtLevel = document.getElementById('level-description');
   /** @type {HTMLDivElement} */
   const boxCost = document.getElementById('cost');
   /** @type {HTMLSpanElement} */
@@ -110,6 +115,15 @@ document.addEventListener('DOMContentLoaded', function () {
   resizeCanvas();
 
   const game = new Game(canvas);
+  const updateInsets = () => {
+    game.viewInsets = {
+      top: document.getElementById('control-panel')?.offsetHeight ?? 0,
+      right: document.getElementById('material-panel')?.offsetWidth ?? 0,
+    };
+  };
+  updateInsets();
+  game.fitView(); // now that the canvas has its real size
+  window.addEventListener('resize', updateInsets);
 
   chkSimulation.checked = false;
   chkSimulation.addEventListener('change', () => {
@@ -129,9 +143,28 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   btnNew.addEventListener('click', () => {
-    game.loadDefault();
+    game.restartLevel();
     chkSimulation.checked = false;
-    showStatus('Demo bridge loaded (Undo to go back)');
+    showStatus('Level restarted (Undo to go back)');
+  });
+
+  function refreshLevels() {
+    selLevel.replaceChildren(...levels.map(level => {
+      const option = document.createElement('option');
+      option.value = level.id;
+      option.textContent = level.name + (game.isCompleted(level.id) ? ' \u2713' : '');
+      return option;
+    }));
+    selLevel.value = game.level.id;
+    txtLevel.textContent = game.level.description;
+  }
+  game.onChange = refreshLevels;
+  refreshLevels();
+
+  selLevel.addEventListener('change', () => {
+    game.selectLevel(selLevel.value);
+    chkSimulation.checked = false;
+    selLevel.blur(); // keep keyboard shortcuts working on the canvas
   });
 
   btnExport.addEventListener('click', () => {
