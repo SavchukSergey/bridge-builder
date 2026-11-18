@@ -1,7 +1,8 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { at, createGame, runFrames } from "./helpers.mjs";
-import { levels } from "../src/js/level.mjs";
+import { creekLevel, levels } from "../src/js/level.mjs";
+import { alternatives } from "./solutions.mjs";
 
 /**
  * A stand-in for CanvasRenderingContext2D that accepts every call, checks the numbers it
@@ -130,6 +131,27 @@ describe("rendering", () => {
       assert.equal(composites.filter(c => c === "lighter").length, night ? game.level.vehicleCount : 0, `${levelId}: one beam per vehicle`);
       assert.equal(rec.stackDepth, 0);
     }
+  });
+
+  test("the first member to break and the tutorial's next click are marked in build mode", () => {
+    const game = createGame("creek");
+    game.importStructure(alternatives.creek["bare deck"](creekLevel));
+    runFrames(game, 60 * 20);
+    game.reset();
+    assert.ok(game.failedLink);
+    game.tutorialTarget = { x: -20, y: 10 };
+    const rec = withRecorder(game);
+    const dashes = [];
+    rec.setLineDash = (d) => dashes.push(d);
+    const before = rec.counts.stroke;
+    game.render();
+    assert.ok(dashes.some(d => d.length), "the failed member's dashed mark");
+    game.failedLink = undefined;
+    game.tutorialTarget = undefined;
+    const marked = rec.counts.stroke - before;
+    game.render();
+    assert.ok(rec.counts.stroke - before - marked < marked, "fewer strokes without the marks");
+    assert.equal(rec.stackDepth, 0);
   });
 
   test("zoomed far out and far in", () => {

@@ -3,8 +3,10 @@ import { Game } from './game.js';
 import { levels } from './level.mjs';
 import { Sound } from './audio.mjs';
 import { renderLevelPreview } from './level-preview.mjs';
+import { failureTip } from './hints.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
+const TUTORIAL_KEY = 'bridge-builder:tutorial';
 
 
 /**
@@ -178,6 +180,18 @@ document.addEventListener('DOMContentLoaded', function () {
     retry: byId('result-retry', HTMLButtonElement),
     next: byId('result-next', HTMLButtonElement),
     close: byId('result-close', HTMLButtonElement),
+    tip: byId('result-tip', HTMLParagraphElement),
+  };
+  const placeTip = {
+    root: byId('place-tip', HTMLDivElement),
+    what: byId('place-tip-what', HTMLDivElement),
+    left: byId('place-tip-left', HTMLDivElement),
+  };
+  const tutorial = {
+    root: byId('tutorial', HTMLDivElement),
+    step: byId('tutorial-step', HTMLSpanElement),
+    text: byId('tutorial-text', HTMLParagraphElement),
+    skip: byId('tutorial-skip', HTMLButtonElement),
   };
 
   /** @type {number | undefined} */
@@ -303,6 +317,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const broke = result.broken ? ` ${result.broken} member${result.broken === 1 ? '' : 's'} broke.` : '';
       dlg.text.textContent = (how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
+    dlg.tip.hidden = result.kind !== 'failed';
+    dlg.tip.textContent = result.kind === 'failed'
+      ? failureTip(result) + (result.failure ? ' It is marked in red on your bridge.' : '')
+      : '';
     dlg.cost.textContent = formatMoney(result.cost);
     dlg.budget.textContent = formatMoney(result.budget);
     dlg.best.replaceChildren(result.best ? `${formatMoney(result.best.cost)} ${starText(result.best.stars)}` : '\u2014');
@@ -519,6 +537,69 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // ---- readout while placing a link
+  function updatePlaceTip() {
+    const info = game.placementInfo;
+    placeTip.root.hidden = !info;
+    if (!info) return;
+    placeTip.what.textContent = `${info.label} \u00b7 ${info.length.toFixed(1)} m${info.mirrored ? ' \u00d7 2' : ''} \u00b7 ${formatMoney(info.cost)}`;
+    placeTip.left.textContent = info.remaining >= 0
+      ? `${formatMoney(info.remaining)} of the budget left`
+      : `${formatMoney(-info.remaining)} over budget`;
+    placeTip.root.classList.toggle('over', info.remaining < 0);
+    const rect = canvas.getBoundingClientRect();
+    placeTip.root.style.left = `${rect.left + info.client.x + 18}px`;
+    placeTip.root.style.top = `${rect.top + info.client.y + 18}px`;
+  }
+
+  // ---- tutorial on the first level
+  let tutorialDone = false;
+  try { tutorialDone = localStorage.getItem(TUTORIAL_KEY) === 'done'; } catch { /* storage blocked */ }
+  tutorial.skip.addEventListener('click', () => {
+    tutorialDone = true;
+    try { localStorage.setItem(TUTORIAL_KEY, 'done'); } catch { /* ignore */ }
+  });
+  const roadCard = byId('material-road', HTMLLabelElement);
+  const testButton = byId('test-label', HTMLLabelElement);
+  /** @type {Element | undefined} */
+  let focused;
+
+  /**
+   * The tutorial step for the game's current state, or nothing once Brook is won (or the
+   * tutorial was skipped, or on another level).
+   * @returns {{ n: number, text: string, focus?: Element, target?: { x: number, y: number } } | undefined}
+   */
+  function tutorialStep() {
+    if (tutorialDone || game.level.id !== 'brook' || game.isCompleted('brook')) return undefined;
+    if (!game.isBuildMode) return game.result ? undefined : { n: 4, text: 'Watch the test: every vehicle has to reach the flag. Win within budget to unlock the next level.' };
+    if (game.roadAcross && !game.isPlacing) {
+      return { n: 4, text: 'That\u2019s a road across. Press Test to send the traffic over it.', focus: testButton };
+    }
+    const material = document.querySelector('input[name="material"]:checked');
+    if (!(material instanceof HTMLInputElement) || material.value !== 'road') {
+      return { n: 1, text: 'Pick Road in the materials panel: it\u2019s the only thing vehicles can drive on.', focus: roadCard };
+    }
+    const xs = game.level.anchors.map(a => a.x);
+    const left = Math.max(...xs.filter(x => x < 0)), right = Math.min(...xs.filter(x => x > 0));
+    const y = game.level.anchors[0].y;
+    if (!game.isPlacing) return { n: 2, text: 'Click the anchor at the edge of the brook to start the road.', target: { x: left, y } };
+    return { n: 3, text: 'Now click the anchor on the far bank. Esc or right-click cancels.', target: { x: right, y } };
+  }
+
+  function updateTutorial() {
+    const step = tutorialStep();
+    tutorial.root.hidden = !step;
+    game.tutorialTarget = step?.target;
+    if (focused !== step?.focus) {
+      focused?.classList.remove('tutorial-focus');
+      step?.focus?.classList.add('tutorial-focus');
+      focused = step?.focus;
+    }
+    if (!step) return;
+    tutorial.step.textContent = `${step.n} / 4`;
+    if (tutorial.text.textContent !== step.text) tutorial.text.textContent = step.text;
+  }
+
   /** @type {number | undefined} */
   let lastFrame;
 
@@ -549,6 +630,8 @@ document.addEventListener('DOMContentLoaded', function () {
     barBudget.style.width = `${Math.min(1, share) * 100}%`;
     barBudget.classList.toggle('near', share > 0.85 && !game.overBudget);
     updateTooltip(tooltip, game.hoverInfo, canvas);
+    updatePlaceTip();
+    updateTutorial();
     updateSound();
     requestAnimationFrame(tick);
   }

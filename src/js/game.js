@@ -9,6 +9,7 @@ import { RenderCtx } from "./render-ctx.mjs";
 import { renderBackground } from "./scenery.mjs";
 import { Effects } from "./effects.mjs";
 import { CompositeScene, Scene } from "./scene.js";
+import { findRoad } from "./vehicle.mjs";
 /** @typedef {import("./vehicle.mjs").Vehicle} Vehicle */
 
 // @ts-check
@@ -164,7 +165,9 @@ export class Game {
     if (running && !this.__snapshot) {
       this.__cancelLink();
       this.__snapshot = this.scene.snapshot();
+      this.__roadAcrossAtStart = this.roadAcross;
       this.vehicles = this.level.createConvoy();
+      this.failedLink = undefined;
     }
     this.evalCtx.simulation = running;
   }
@@ -181,8 +184,70 @@ export class Game {
     this.evalCtx.time = 0;
     this.result = undefined;
     this.scene.breaks = [];
+    // the member that broke first stays marked on the rebuilt bridge until the next edit
+    this.failedLink = this.scene.firstFailure?.link;
+    this.scene.firstFailure = undefined;
     this.effects.clear();
   }
+
+  /**
+   * The member that broke first in the last load test, marked in build mode until the
+   * bridge is edited or tested again.
+   * @type {import("./engine/link.mjs").Link | undefined}
+   */
+  failedLink = undefined;
+
+  /** Whether there was road across the whole gap when the test started. */
+  __roadAcrossAtStart = true;
+
+  /**
+   * Whether road links cover every point between the start and the finish that has no
+   * ground under it (not whether they are strong enough).
+   */
+  get roadAcross() {
+    const { startX, finishX } = this.level;
+    for (let x = startX; x <= finishX; x += 0.5) {
+      if (this.level.groundAt(x) !== undefined) continue;
+      if (!findRoad(this.scene, x, Infinity)) return false;
+    }
+    return true;
+  }
+
+  /** Whether a link is being placed: its first end is down, the second not yet. */
+  get isPlacing() {
+    return this.__clickState !== undefined;
+  }
+
+  /**
+   * What the readout next to the pointer shows while a link is being placed: what a click
+   * would add (including its mirror image), and the budget left after it.
+   * @returns {PlacementInfo | undefined}
+   */
+  get placementInfo() {
+    if (!this.__clickState || !this.__hoverClient) return undefined;
+    const { links } = this.__clickState.preview;
+    if (!links.length) return undefined;
+    let length = 0, cost = 0;
+    for (const link of links) {
+      length += link.length;
+      cost += link.length * link.material.costPerMeter;
+    }
+    return {
+      client: this.__hoverClient,
+      label: links[0].material.label,
+      length: this.mirror ? length / 2 : length,
+      mirrored: this.mirror,
+      cost,
+      remaining: this.level.budget - this.cost - cost,
+    };
+  }
+
+  /**
+   * A point in the world to draw attention to (the tutorial's next click), drawn as a
+   * pulsing ring.
+   * @type {{ x: number, y: number } | undefined}
+   */
+  tutorialTarget = undefined;
 
   /** Structure cost, counted against {@link Level#budget}. */
   get cost() {
@@ -258,6 +323,7 @@ export class Game {
   }
 
   __afterChange() {
+    this.failedLink = undefined;
     this.__saveAutosave();
     this.onChange();
   }
@@ -272,6 +338,7 @@ export class Game {
     this.__cancelLink();
     this.level = findLevel(id) ?? levels[0];
     this.effects.level = this.level;
+    this.failedLink = undefined;
     this.__undoStack = [];
     this.__redoStack = [];
     this.__convoyPreviewCache = undefined;
@@ -371,7 +438,17 @@ export class Game {
 
     if (this.testState === "fell") {
       const lost = this.vehicles.find(v => v.state === "fell");
-      return { ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken };
+      const first = this.scene.firstFailure;
+      const failure = first && {
+        material: first.link.material.name,
+        label: first.link.material.label,
+        kind: first.link.material.look.kind,
+        mode: first.mode,
+      };
+      return {
+        ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken,
+        failure, roadAcross: this.__roadAcrossAtStart,
+      };
     }
     if (this.overBudget) {
       return { ...base, kind: "over-budget", stars: 0, best: previousBest, newBest: false, broken };
@@ -1008,6 +1085,7 @@ export class Game {
       g.stroke();
     }
     this.scene.renderStructure(this.ctx, { stress: this.showStress });
+    if (this.isBuildMode) this.__renderMarks();
     const grab = this.hoveredJoint;
     if (grab) {
       const g = this.ctx.ctx;
@@ -1042,6 +1120,36 @@ export class Game {
       for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
         vehicle.renderLights(this.ctx);
       }
+    }
+  }
+
+  /** The member that broke first, and the tutorial's next click, both pulsing. */
+  __renderMarks() {
+    const g = this.ctx.ctx;
+    const zoom = this.ctx.zoom;
+    const pulse = 0.5 + 0.5 * Math.sin((globalThis.performance?.now() ?? 0) / 220);
+    const failed = this.failedLink;
+    if (failed && this.scene.links.includes(failed)) {
+      g.save();
+      g.beginPath();
+      g.moveTo(failed.a.position.x, failed.a.position.y);
+      g.lineTo(failed.b.position.x, failed.b.position.y);
+      g.strokeStyle = `rgba(255, 90, 70, ${0.45 + 0.4 * pulse})`;
+      g.lineCap = "round";
+      g.setLineDash([6 / zoom, 5 / zoom]);
+      g.lineWidth = failed.drawnWidth(zoom) + (6 + 4 * pulse) / zoom;
+      g.stroke();
+      g.restore();
+    }
+    const target = this.tutorialTarget;
+    if (target) {
+      g.save();
+      g.beginPath();
+      g.arc(target.x, target.y, (12 + 8 * pulse) / zoom, 0, 2 * Math.PI);
+      g.strokeStyle = `rgba(242, 178, 51, ${0.5 + 0.5 * (1 - pulse)})`;
+      g.lineWidth = 3 / zoom;
+      g.stroke();
+      g.restore();
     }
   }
 
@@ -1128,6 +1236,16 @@ export class Game {
  */
 
 /**
+ * @typedef {Object} PlacementInfo
+ * @property {{ x: number, y: number }} client - pointer position, for placing the readout
+ * @property {string} label - material
+ * @property {number} length - m, of one side when mirrored
+ * @property {boolean} mirrored - the click also builds the mirror image
+ * @property {number} cost - of everything the click adds
+ * @property {number} remaining - budget left after it (negative: over)
+ */
+
+/**
  * @typedef {Object} TestResult
  * @property {"success" | "over-budget" | "failed"} kind - all trucks crossed within budget;
  *   crossed but the bridge costs too much; or a truck was lost
@@ -1138,7 +1256,10 @@ export class Game {
  * @property {BestResult | undefined} best - best win on this level, including this one
  * @property {BestResult | undefined} previousBest
  * @property {boolean} newBest - this win beat the previous best (or is the first)
- * @property {"fell" | "crashed" | "hard landing"} [reason] - how the first truck was lost
+ * @property {"fell" | "crashed" | "hard landing"} [reason] - how the first vehicle was lost
+ * @property {{ material: string, label: string, kind: "deck" | "beam" | "cable", mode: "tension" | "compression" }} [failure]
+ *   - failed: the first member to break, and how
+ * @property {boolean} [roadAcross] - failed: whether road spanned the whole gap at the start
  * @property {number} broken - members that broke
  * @property {string | undefined} nextLevel - id of the following level, if any
  */

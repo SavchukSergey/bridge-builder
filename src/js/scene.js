@@ -44,6 +44,12 @@ export class Scene {
    */
   breaks = [];
 
+  /**
+   * The first member to break in this load test, and how: pulled apart or crushed.
+   * @type {{ link: Link, mode: "tension" | "compression", time: number } | undefined}
+   */
+  firstFailure = undefined;
+
   grid = new Grid();
 
   constructor() {
@@ -430,6 +436,7 @@ export class Scene {
       if (utilization > 1) {
         link.broken = true;
         this.breaks.push(link);
+        this.firstFailure ??= { link, mode: link.stressForce > 0 ? "tension" : "compression", time: evalCtx.time };
       }
     }
     return dt;

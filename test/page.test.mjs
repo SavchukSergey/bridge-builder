@@ -15,6 +15,8 @@ const TAGS = {
   HTMLSelectElement: "select",
   HTMLCanvasElement: "canvas",
   HTMLDetailsElement: "details",
+  HTMLParagraphElement: "p",
+  HTMLLabelElement: "label",
 };
 
 test("every element main.js looks up exists in index.html with the expected tag", () => {

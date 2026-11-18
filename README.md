@@ -34,6 +34,12 @@ level is remembered.
 | Undo / redo | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> |
 | Cancel | <kbd>Esc</kbd> |
 
+While placing a link, a readout next to the pointer shows its length, its cost and how much
+of the budget would be left. Brook has a short step-by-step tutorial.
+
+When a test fails, the results name the member that broke first and how (pulled apart or
+crushed) with a tip, and it stays marked in red on the bridge until you change it.
+
 Hover over any member to see its load: tension or compression in kN, and how much of its
 strength it uses (during a test, also its peak). **Stress view** colours the whole bridge
 by load.
@@ -106,6 +112,7 @@ src/
     vehicle.mjs         driving, falling and axle loads
     vehicle-types.mjs   cars, buses, trucks, heavy haulers: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
+    hints.mjs           advice after a failed test
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
     audio.mjs           synthesized sound (Web Audio)

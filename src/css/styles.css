@@ -859,6 +859,7 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   #result, .result-card, .big-star.earned, #levels, .levels-card { animation: none; }
   .level-card { transition: none; }
+  .tutorial-focus, .tutorial-focus > .card, #tutorial { animation: none; }
 }
 
 /* ---------- toast ---------- */
@@ -948,4 +949,114 @@ kbd {
     padding: 0;
     justify-content: center;
   }
+}
+
+/* ---------- placement readout ---------- */
+
+#place-tip {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  padding: 6px 9px;
+  border-radius: var(--radius);
+  background-color: rgba(18, 24, 30, 0.92);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#place-tip-what {
+  font-weight: 700;
+}
+
+#place-tip-left {
+  color: var(--muted);
+}
+
+#place-tip.over #place-tip-left {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* ---------- tutorial ---------- */
+
+#tutorial {
+  position: fixed;
+  z-index: 25;
+  top: calc(var(--toolbar-height, 56px) + 14px);
+  left: calc((100% - 232px) / 2);
+  transform: translateX(-50%);
+  width: min(460px, calc(100% - 264px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(18, 26, 36, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(242, 178, 51, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: rise 0.3s ease-out;
+}
+
+#tutorial[hidden] {
+  display: none;
+}
+
+.tutorial-step {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+#tutorial-text {
+  margin: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.btn.link {
+  flex: none;
+  height: auto;
+  padding: 2px 4px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.tutorial-focus,
+.tutorial-focus > .card {
+  animation: tutorial-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 178, 51, 0.75); }
+  50% { box-shadow: 0 0 0 6px rgba(242, 178, 51, 0); }
+}
+
+/* ---------- failure tip in the results ---------- */
+
+#result-tip {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border-radius: var(--radius);
+  background: rgba(255, 107, 94, 0.12);
+  border: 1px solid rgba(255, 107, 94, 0.3);
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.45;
 }

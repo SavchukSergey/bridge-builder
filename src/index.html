@@ -56,7 +56,7 @@
 
     <div class="group">
       <input type="checkbox" id="toggle-simulation" class="visually-hidden" />
-      <label for="toggle-simulation" class="btn primary" title="Start or pause the load test">
+      <label for="toggle-simulation" id="test-label" class="btn primary" title="Start or pause the load test">
         <svg class="icon when-off"><use href="#icon-play" /></svg>
         <svg class="icon when-on"><use href="#icon-pause" /></svg>
         <span class="when-off">Test</span><span class="when-on">Pause</span>
@@ -144,7 +144,7 @@
     <section>
       <h2>Materials</h2>
       <div class="materials">
-        <label class="material-option" title="Deck the vehicle drives on">
+        <label class="material-option" id="material-road" title="Deck the vehicle drives on">
           <input type="radio" name="material" value="road" class="visually-hidden" />
           <span class="card">
             <span class="swatch road"></span>
@@ -224,6 +224,7 @@
         <dt>Budget</dt><dd id="result-budget"></dd>
         <dt>Best</dt><dd id="result-best"></dd>
       </dl>
+      <p id="result-tip" hidden></p>
       <p id="result-hint"></p>
       <div class="result-actions">
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
@@ -246,6 +247,17 @@
       <p class="levels-hint">Win a level within budget to unlock the next. Cheaper bridges earn more stars.</p>
       <div id="levels-grid"></div>
     </div>
+  </div>
+
+  <div id="place-tip" role="status" hidden>
+    <div id="place-tip-what"></div>
+    <div id="place-tip-left"></div>
+  </div>
+
+  <div id="tutorial" role="status" hidden>
+    <span id="tutorial-step" class="tutorial-step"></span>
+    <p id="tutorial-text"></p>
+    <button type="button" id="tutorial-skip" class="btn link">Skip tutorial</button>
   </div>
 
   <div id="link-tooltip" role="tooltip" hidden>
