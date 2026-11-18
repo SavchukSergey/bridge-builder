@@ -100,6 +100,13 @@ function updateTooltip(el, info, canvas) {
   el.root.style.top = `${y + 16 + h > window.innerHeight ? y - 16 - h : y + 16}px`;
 }
 
+/**
+ * @param {number} stars - 0 to 3
+ */
+function starText(stars) {
+  return '\u2605'.repeat(stars) + '\u2606'.repeat(3 - stars);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const canvas = getCanvas();
   /** @type {HTMLInputElement} */
@@ -148,6 +155,24 @@ document.addEventListener('DOMContentLoaded', function () {
   const txtLoad = document.getElementById('load-value');
   /** @type {HTMLDivElement} */
   const barBudget = document.getElementById('budget-fill');
+  const goals = {
+    two: /** @type {HTMLElement} */ (document.getElementById('goal-two')),
+    three: /** @type {HTMLElement} */ (document.getElementById('goal-three')),
+    best: /** @type {HTMLElement} */ (document.getElementById('best')),
+  };
+  const dlg = {
+    root: /** @type {HTMLElement} */ (document.getElementById('result')),
+    stars: [...document.querySelectorAll('#result-stars .big-star')],
+    title: /** @type {HTMLElement} */ (document.getElementById('result-title')),
+    text: /** @type {HTMLElement} */ (document.getElementById('result-text')),
+    cost: /** @type {HTMLElement} */ (document.getElementById('result-cost')),
+    budget: /** @type {HTMLElement} */ (document.getElementById('result-budget')),
+    best: /** @type {HTMLElement} */ (document.getElementById('result-best')),
+    hint: /** @type {HTMLElement} */ (document.getElementById('result-hint')),
+    retry: /** @type {HTMLButtonElement} */ (document.getElementById('result-retry')),
+    next: /** @type {HTMLButtonElement} */ (document.getElementById('result-next')),
+    close: /** @type {HTMLButtonElement} */ (document.getElementById('result-close')),
+  };
 
   /** @type {number | undefined} */
   let statusTimer;
@@ -247,12 +272,82 @@ document.addEventListener('DOMContentLoaded', function () {
     selLevel.replaceChildren(...levels.map(level => {
       const option = document.createElement('option');
       option.value = level.id;
-      option.textContent = level.name + (game.isCompleted(level.id) ? ' \u2713' : '');
+      const best = game.bestResult(level.id);
+      option.textContent = level.name + (best ? `  ${starText(best.stars)}` : game.isCompleted(level.id) ? ' \u2713' : '');
       return option;
     }));
     selLevel.value = game.level.id;
     txtLevel.textContent = game.level.description;
+
+    const { stars } = game.level;
+    goals.two.lastElementChild.textContent = `\u2264 ${formatMoney(stars.two)}`;
+    goals.three.lastElementChild.textContent = `\u2264 ${formatMoney(stars.three)}`;
+    const best = game.bestResult();
+    goals.best.textContent = best ? `Best ${formatMoney(best.cost)}  ${starText(best.stars)}` : '';
   }
+
+  /** @param {import('./game.js').TestResult} result */
+  function showResult(result) {
+    dlg.root.className = result.kind;
+    dlg.stars.forEach((star, i) => star.classList.toggle('earned', i < result.stars));
+    const over = result.cost - result.budget;
+    if (result.kind === 'success') {
+      dlg.title.textContent = ['', 'Bridge holds!', 'Great bridge!', 'Perfect bridge!'][result.stars];
+      dlg.text.textContent = `All ${game.level.vehicleCount} trucks crossed.`;
+    } else if (result.kind === 'over-budget') {
+      dlg.title.textContent = 'Over budget';
+      dlg.text.textContent = `All trucks crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
+    } else {
+      dlg.title.textContent = 'Bridge failed';
+      const how = { fell: 'A truck fell into the gap.', crashed: 'A truck crashed into the cliff.', 'hard landing': 'A truck landed too hard.' };
+      const broke = result.broken ? ` ${result.broken} member${result.broken === 1 ? '' : 's'} broke.` : '';
+      dlg.text.textContent = (how[result.reason ?? 'fell'] ?? how.fell) + broke;
+    }
+    dlg.cost.textContent = formatMoney(result.cost);
+    dlg.budget.textContent = formatMoney(result.budget);
+    dlg.best.replaceChildren(result.best ? `${formatMoney(result.best.cost)} ${starText(result.best.stars)}` : '\u2014');
+    if (result.newBest && result.previousBest) {
+      const badge = document.createElement('span');
+      badge.className = 'new-best';
+      badge.textContent = 'New best';
+      dlg.best.append(badge);
+    }
+
+    // what the next star needs
+    const { goals: g } = result;
+    dlg.hint.textContent = result.kind !== 'success' ? ''
+      : result.stars === 1 ? `\u2605\u2605 at ${formatMoney(g.two)} or less: trim ${formatMoney(result.cost - g.two)}.`
+        : result.stars === 2 ? `\u2605\u2605\u2605 at ${formatMoney(g.three)} or less: trim ${formatMoney(result.cost - g.three)}.`
+          : 'As cheap as it gets. Or is it?';
+
+    dlg.retry.lastElementChild.textContent = result.kind === 'success' ? (result.stars < 3 ? 'Make it cheaper' : 'Rebuild')
+      : result.kind === 'over-budget' ? 'Make it cheaper' : 'Try again';
+    dlg.retry.classList.toggle('primary', result.kind !== 'success' || !result.nextLevel);
+    dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
+    dlg.root.hidden = false;
+    (dlg.next.hidden ? dlg.retry : dlg.next).focus();
+  }
+
+  function hideResult() {
+    dlg.root.hidden = true;
+  }
+
+  game.onResult = showResult;
+  dlg.close.addEventListener('click', hideResult);
+  dlg.retry.addEventListener('click', () => {
+    hideResult();
+    game.reset();
+    chkSimulation.checked = false;
+  });
+  dlg.next.addEventListener('click', () => {
+    hideResult();
+    const next = game.result?.nextLevel;
+    if (next) game.selectLevel(next);
+    chkSimulation.checked = false;
+  });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !dlg.root.hidden) hideResult();
+  });
   game.onChange = refreshLevels;
   refreshLevels();
 
@@ -308,7 +403,10 @@ document.addEventListener('DOMContentLoaded', function () {
     txtCost.textContent = formatMoney(game.cost);
     txtBudget.textContent = formatMoney(game.level.budget);
     txtLoad.textContent = `${game.level.vehicleCount} × ${game.level.vehicleMass / 1000} t trucks`;
+    if (!game.result && !dlg.root.hidden) hideResult();
     boxCost.classList.toggle('over', game.overBudget);
+    goals.two.classList.toggle('met', !game.overBudget && game.cost <= game.level.stars.two);
+    goals.three.classList.toggle('met', !game.overBudget && game.cost <= game.level.stars.three);
     const share = game.cost / game.level.budget;
     barBudget.style.width = `${Math.min(1, share) * 100}%`;
     barBudget.classList.toggle('near', share > 0.85 && !game.overBudget);

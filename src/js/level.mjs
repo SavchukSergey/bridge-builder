@@ -21,7 +21,9 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @property {number} vehicleMass - kg, per truck
  * @property {number} [vehicleCount] - trucks in the convoy
  * @property {number} [vehicleSpacing] - m between the fronts of consecutive trucks
- * @property {number} budget - maximum structure cost
+ * @property {number} budget - maximum structure cost: crossing within it earns one star
+ * @property {{ two: number, three: number }} stars - cost at or under which a win earns two
+ *   and three stars
  * @property {{ x0: number, x1: number, y: number }} view - area to fit on screen
  * @property {number} [water] - height of the river surface in the gap, if there is one
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
@@ -48,6 +50,7 @@ export class Level {
     this.vehicleCount = opts.vehicleCount ?? 1;
     this.vehicleSpacing = opts.vehicleSpacing ?? 10;
     this.budget = opts.budget;
+    this.stars = opts.stars;
     this.view = opts.view;
     this.example = opts.example;
     this.water = opts.water;
@@ -64,6 +67,17 @@ export class Level {
       if (x >= block.x0 && x <= block.x1 && (top === undefined || block.y > top)) top = block.y;
     }
     return top;
+  }
+
+  /**
+   * Stars a bridge of this cost earns if every truck crosses: 0 over budget, else 1 to 3.
+   * @param {number} cost
+   */
+  starsFor(cost) {
+    if (cost > this.budget) return 0;
+    if (cost <= this.stars.three) return 3;
+    if (cost <= this.stars.two) return 2;
+    return 1;
   }
 
   /** Vertical line that mirror mode reflects across: the middle of the anchors. */
@@ -139,6 +153,7 @@ export const creekLevel = new Level({
   vehicleCount: 2,
   vehicleSpacing: 20,
   budget: 18000, // a small suspension bridge with light towers and thin hangers: ~$16,400
+  stars: { two: 17200, three: 16600 },
   view: { x0: -45, x1: 45, y: 15 },
   water: 4,
 });
@@ -161,6 +176,7 @@ export const canyonLevel = new Level({
   vehicleCount: 4,
   vehicleSpacing: 20,
   budget: 38000,
+  stars: { two: 36800, three: 35600 },
   view: { x0: -65, x1: 65, y: 15 },
   water: -14,
   example: () => new Scene().serialize(), // the default scene is the demo bridge
@@ -179,6 +195,7 @@ export const stepLevel = new Level({
   vehicleCount: 3,
   vehicleSpacing: 20,
   budget: 37500, // a Pratt truss over the ramp with light verticals: ~$34,600
+  stars: { two: 36000, three: 34900 },
   view: { x0: -55, x1: 55, y: 18 },
   water: 3,
 });
@@ -199,6 +216,7 @@ export const pierLevel = new Level({
   vehicleCount: 4,
   vehicleSpacing: 20,
   budget: 81000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
+  stars: { two: 78000, three: 75800 },
   view: { x0: -85, x1: 85, y: 8 },
   water: -2,
 });

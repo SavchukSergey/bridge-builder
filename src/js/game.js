@@ -37,6 +37,8 @@ const MAX_UNDO = 100;
 const AUTOSAVE_KEY = "bridge-builder:structure";
 const LEVEL_KEY = "bridge-builder:level";
 const COMPLETED_KEY = "bridge-builder:completed";
+/** Best (cheapest) winning cost and stars per level: { [levelId]: { cost, stars } }. */
+const BEST_KEY = "bridge-builder:best";
 
 export class Game {
 
@@ -163,6 +165,7 @@ export class Game {
     }
     this.vehicles = [];
     this.evalCtx.time = 0;
+    this.result = undefined;
   }
 
   /** Structure cost, counted against {@link Level#budget}. */
@@ -298,8 +301,67 @@ export class Game {
   __markCompleted() {
     if (this.isCompleted()) return;
     storageSet(COMPLETED_KEY, JSON.stringify([...this.__completed(), this.level.id]));
-    this.onChange();
   }
+
+  /**
+   * The cheapest winning bridge on a level so far (on this browser).
+   * @param {string} [id]
+   * @returns {BestResult | undefined}
+   */
+  bestResult(id = this.level.id) {
+    const entry = this.__bests()[id];
+    return entry && Number.isFinite(entry.cost) && [1, 2, 3].includes(entry.stars) ? entry : undefined;
+  }
+
+  /** @returns {Record<string, BestResult>} */
+  __bests() {
+    try {
+      const all = JSON.parse(storageGet(BEST_KEY) ?? "{}");
+      return all && typeof all === "object" && !Array.isArray(all) ? all : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * How the load test that just finished went; also records a win.
+   * @returns {TestResult}
+   */
+  __finishTest() {
+    const level = this.level;
+    const cost = this.cost;
+    const previousBest = this.bestResult();
+    const next = levels[levels.indexOf(level) + 1];
+    const base = { cost, budget: level.budget, goals: level.stars, previousBest, nextLevel: next?.id };
+    const broken = this.scene.links.filter(l => l.broken).length;
+
+    if (this.testState === "fell") {
+      const lost = this.vehicles.find(v => v.state === "fell");
+      return { ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken };
+    }
+    if (this.overBudget) {
+      return { ...base, kind: "over-budget", stars: 0, best: previousBest, newBest: false, broken };
+    }
+    const stars = level.starsFor(cost);
+    const newBest = !previousBest || cost < previousBest.cost - 0.5;
+    const best = newBest ? { cost, stars } : previousBest;
+    if (newBest) storageSet(BEST_KEY, JSON.stringify({ ...this.__bests(), [level.id]: best }));
+    this.__markCompleted();
+    this.onChange();
+    return { ...base, kind: "success", stars, best, newBest, broken };
+  }
+
+  /**
+   * Set once the current load test is won or lost, until reset.
+   * @type {TestResult | undefined}
+   */
+  result = undefined;
+
+  /**
+   * Called once when a load test is won or lost.
+   * @type {(result: TestResult) => void}
+   */
+  onResult = () => { };
 
   /**
    * The structure as built (pre-simulation positions), as plain JSON, tagged with the level.
@@ -937,7 +999,10 @@ export class Game {
         for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
         simulated += dt;
       }
-      if (this.testState === "crossed" && !this.overBudget) this.__markCompleted();
+      if (!this.result && this.testFinished) {
+        this.result = this.__finishTest();
+        this.onResult(this.result);
+      }
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
@@ -962,6 +1027,28 @@ export class Game {
 
 /**
  * @typedef {DragState | ClickState | undefined} InteractionState
+ */
+
+/**
+ * @typedef {Object} BestResult
+ * @property {number} cost
+ * @property {number} stars - 1 to 3
+ */
+
+/**
+ * @typedef {Object} TestResult
+ * @property {"success" | "over-budget" | "failed"} kind - all trucks crossed within budget;
+ *   crossed but the bridge costs too much; or a truck was lost
+ * @property {number} stars - 0 unless kind is "success"
+ * @property {number} cost
+ * @property {number} budget
+ * @property {{ two: number, three: number }} goals - star thresholds
+ * @property {BestResult | undefined} best - best win on this level, including this one
+ * @property {BestResult | undefined} previousBest
+ * @property {boolean} newBest - this win beat the previous best (or is the first)
+ * @property {"fell" | "crashed" | "hard landing"} [reason] - how the first truck was lost
+ * @property {number} broken - members that broke
+ * @property {string | undefined} nextLevel - id of the following level, if any
  */
 
 /**
