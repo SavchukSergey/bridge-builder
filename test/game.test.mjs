@@ -106,13 +106,13 @@ describe("building links", () => {
 });
 
 describe("panning", () => {
-  test("dragging pans the view and the click that ends the drag is ignored", () => {
+  test("dragging empty space pans the view and the click that ends the drag is ignored", () => {
     const game = createGame();
-    const start = at(game, -40, 25);
+    const start = at(game, -40, 40); // sky above the tower
     game.__handleMouseDown(start);
     game.__handleMouseMove({ ...start, clientX: start.clientX + 80 });
     game.__handleMouseUp();
-    game.__handleClick(at(game, -40, 25));
+    game.__handleClick({ ...start, clientX: start.clientX + 80 });
     assert.equal(game.ctx.shift.x, -10);
     assert.equal(game.__clickState, undefined);
   });

@@ -106,12 +106,13 @@ describe("rendering", () => {
     assert.deepEqual(game.ctx.clientToGlobal({ x: 123, y: 45, z: 0 }), before);
 
     // a pan still follows the pointer one-to-one
-    const start = at(game, 0, 15);
+    const start = at(game, 0, 30); // empty sky
+
     game.__handleMouseDown(start);
     game.__handleMouseMove({ clientX: start.clientX + 80, clientY: start.clientY });
     game.__handleMouseUp();
     const moved = game.ctx.clientToGlobal({ x: start.clientX + 80, y: start.clientY, z: 0 });
-    assert.ok(Math.abs(moved.x - 0) < 1e-9 && Math.abs(moved.y - 15) < 1e-9, "the grabbed point stays under the pointer");
+    assert.ok(Math.abs(moved.x - 0) < 1e-9 && Math.abs(moved.y - 30) < 1e-9, "the grabbed point stays under the pointer");
   });
 
   test("zoomed far out and far in", () => {

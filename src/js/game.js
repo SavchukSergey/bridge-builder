@@ -26,6 +26,10 @@ const MAX_SUBSTEPS = 1000;
 const PICK_RADIUS_PX = 12;
 /** Grid step (in metres) that new joints snap to. */
 const SNAP_STEP = 1;
+/** Longest single link (m); longer ones are split into segments when built. */
+const MAX_LINK_LENGTH = 10;
+/** Shortest link (m): zero-length links would divide by zero in strain. */
+const MIN_LINK_LENGTH = 0.1;
 const MAX_UNDO = 100;
 /** Per-level autosave: `${AUTOSAVE_KEY}:${level.id}`. */
 const AUTOSAVE_KEY = "bridge-builder:structure";
@@ -358,14 +362,77 @@ export class Game {
   __handleMouseDown(ev) {
     const client = this.__getPointerClient(ev);
     const clientToGlobal = this.ctx.getClientToGlobalMatrix();
+    const startGlobal = clientToGlobal.transformPoint(client);
+
+    // Left-dragging a free joint in build mode moves it; any other drag pans.
+    let moves;
+    if ((ev.button ?? 0) === 0 && this.isBuildMode && !this.__clickState) {
+      const joint = this.scene.findJoint(startGlobal, this.__pickRadius());
+      if (joint && !joint.fixed) moves = this.__jointMoves(joint);
+    }
 
     this.__dragState = {
-      startGlobal: clientToGlobal.transformPoint(client),
+      startGlobal,
       startClient: client,
       original: this.ctx.shift,
       clientToGlobal,
-      moved: false
+      moved: false,
+      moves,
     };
+  }
+
+  /**
+   * The joints that move together when `joint` is dragged.
+   * @param {Joint} joint
+   * @returns {JointMove[]}
+   */
+  __jointMoves(joint) {
+    return [{ joint, start: { ...joint.position }, map: (t) => t }];
+  }
+
+  /**
+   * Drags the grabbed joint(s) towards `target`, if every attached link stays between the
+   * minimum and maximum length and no joint lands on another; otherwise they stay put.
+   * @param {JointMove[]} moves
+   * @param {import("./math.js").Vec3F} target
+   */
+  __dragJoints(moves, target) {
+    const placed = moves.map(m => ({ joint: m.joint, position: m.map(target) }));
+    const moving = new Set(moves.map(m => m.joint));
+    const at = (/** @type {Joint} */ j) => placed.find(p => p.joint === j)?.position ?? j.position;
+    const startAt = (/** @type {Joint} */ j) => moves.find(m => m.joint === j)?.start ?? j.position;
+    for (const { position } of placed) {
+      for (const other of this.scene.joints) {
+        if (!moving.has(other) && vec3flen(vec3fsub(other.position, position)) < MIN_LINK_LENGTH) return;
+      }
+    }
+    for (const link of this.scene.links) {
+      if (!moving.has(link.a) && !moving.has(link.b)) continue;
+      const length = vec3flen(vec3fsub(at(link.b), at(link.a)));
+      // a link that was already longer than the maximum (e.g. in an example bridge) may
+      // shorten, but not grow further
+      const limit = Math.max(MAX_LINK_LENGTH, vec3flen(vec3fsub(startAt(link.b), startAt(link.a))));
+      if (length < MIN_LINK_LENGTH || length > limit + 1e-9) return;
+    }
+    this.__placeJoints(placed);
+  }
+
+  /**
+   * Moves joints, giving the links attached to them their new lengths.
+   * @param {{ joint: Joint, position: import("./math.js").Vec3F }[]} placed
+   */
+  __placeJoints(placed) {
+    for (const { joint, position } of placed) {
+      joint.position.x = position.x;
+      joint.position.y = position.y;
+    }
+    const moved = new Set(placed.map(p => p.joint));
+    for (const link of this.scene.links) {
+      if (!moved.has(link.a) && !moved.has(link.b)) continue;
+      link.length = vec3flen(vec3fsub(link.b.position, link.a.position));
+      link.preEval();
+    }
+    this.scene.distributeMass();
   }
 
   /**
@@ -428,6 +495,15 @@ export class Game {
         }
         this.__dragState.moved = true;
       }
+      if (this.__dragState.cancelled) return;
+      if (this.__dragState.moves) {
+        let target = this.ctx.clientToGlobal(client);
+        if (this.snapToGrid && !ev.altKey) {
+          target = createVec3F(Math.round(target.x / SNAP_STEP) * SNAP_STEP, Math.round(target.y / SNAP_STEP) * SNAP_STEP, 0);
+        }
+        this.__dragJoints(this.__dragState.moves, target);
+        return;
+      }
       const newGlobal = this.__dragState.clientToGlobal.transformPoint(client);
       const deltaGlobal = vec3fsub(newGlobal, this.__dragState.startGlobal);
       const newPos = vec3fsub(this.__dragState.original, deltaGlobal);
@@ -472,7 +548,7 @@ export class Game {
     const dist = vec3flen(dir);
 
     // Zero-length links would divide by zero in strain and poison the simulation with NaN.
-    const minLinkLength = 0.1;
+    const minLinkLength = MIN_LINK_LENGTH;
     if (jointB === jointA || dist < minLinkLength) {
       return { joints, links };
     }
@@ -480,7 +556,7 @@ export class Game {
       joints.push(jointB);
     }
 
-    const maxSegLength = 10;
+    const maxSegLength = MAX_LINK_LENGTH;
     const partsCount = Math.ceil(dist / maxSegLength);
 
     // A single-segment link between two existing joints may already exist.
@@ -547,7 +623,7 @@ export class Game {
     if (target?.closest?.("input[type=text], input[type=number], textarea, [contenteditable]")) return;
 
     if (ev.key === "Escape") {
-      this.__cancelLink();
+      if (!this.__cancelDrag()) this.__cancelLink();
       return;
     }
     const mod = ev.ctrlKey || ev.metaKey;
@@ -617,8 +693,36 @@ export class Game {
    * @param {PointerEvent} _ev 
    */
   __handleMouseUp(_ev) {
-    this.__suppressClick = this.__dragState?.moved ?? false;
+    const drag = this.__dragState;
+    this.__suppressClick = drag?.moved ?? false;
     this.__dragState = undefined;
+    if (!drag?.moves || !drag.moved || drag.cancelled) return;
+
+    // Put the joints back, then redo the move as an edit, so undo restores where they were.
+    const final = drag.moves.map(m => ({ joint: m.joint, position: { ...m.joint.position } }));
+    this.__placeJoints(drag.moves.map(m => ({ joint: m.joint, position: m.start })));
+    const changed = final.some(({ joint, position }) => position.x !== joint.position.x || position.y !== joint.position.y);
+    if (changed) this.__edit(() => this.__placeJoints(final));
+  }
+
+  /** Esc while dragging a joint: put it back. */
+  __cancelDrag() {
+    const drag = this.__dragState;
+    if (!drag?.moves || drag.cancelled) return false;
+    this.__placeJoints(drag.moves.map(m => ({ joint: m.joint, position: m.start })));
+    drag.cancelled = true;
+    return true;
+  }
+
+  /**
+   * The free joint under the pointer that a drag would move (or the one being dragged).
+   * @returns {Joint | undefined}
+   */
+  get hoveredJoint() {
+    if (this.__dragState?.moves) return this.__dragState.cancelled ? undefined : this.__dragState.moves[0].joint;
+    if (!this.__hoverClient || !this.isBuildMode || this.__clickState) return undefined;
+    const joint = this.scene.findJoint(this.ctx.clientToGlobal(this.__hoverClient), this.__pickRadius());
+    return joint && !joint.fixed ? joint : undefined;
   }
 
   /**
@@ -689,6 +793,20 @@ export class Game {
       g.stroke();
     }
     this.scene.renderStructure(this.ctx, { stress: this.showStress });
+    const grab = this.hoveredJoint;
+    if (grab) {
+      const g = this.ctx.ctx;
+      g.beginPath();
+      g.arc(grab.position.x, grab.position.y, 9 / this.ctx.zoom, 0, 2 * Math.PI);
+      g.strokeStyle = "rgba(255, 214, 64, 0.95)";
+      g.lineWidth = 2.5 / this.ctx.zoom;
+      g.stroke();
+    }
+    if (this.canvas.style) {
+      this.canvas.style.cursor = this.__dragState?.moves && this.__dragState.moved ? "grabbing"
+        : grab ? "grab"
+          : this.__clickState ? "crosshair" : "";
+    }
     // Before the first run, show the convoy lined up at the start.
     for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
       vehicle.render(this.ctx);
@@ -760,8 +878,19 @@ export class Game {
  * @property {import("./math.js").Vec3F} startGlobal 
  * @property {import("./math.js").Vec3F} startClient 
  * @property {import("./math.js").Vec3F} original 
- * @property {DOMMatrix} clientToGlobal 
+ * @property {{ transformPoint(p: import("./math.js").Vec3F): import("./math.js").Vec3F }} clientToGlobal
  * @property {boolean} moved - pointer travelled past DRAG_THRESHOLD_PX
+ * @property {JointMove[]} [moves] - joints being dragged (a free joint, and its mirror image),
+ *   with where they started; panning if absent
+ * @property {boolean} [cancelled] - Esc pressed: the drag is undone and ignored until release
+ */
+
+/**
+ * @typedef {Object} JointMove
+ * @property {Joint} joint
+ * @property {import("./math.js").Vec3F} start
+ * @property {(target: import("./math.js").Vec3F) => import("./math.js").Vec3F} map - where
+ *   this joint goes when the dragged one goes to target
  */
 
 /**
