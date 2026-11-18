@@ -110,26 +110,19 @@ symbol .solid {
   gap: 8px;
 }
 
-#level-select {
-  appearance: none;
-  -webkit-appearance: none;
-  font: inherit;
-  font-weight: 600;
-  color: var(--text);
-  background: var(--raised) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa8b6' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center / 14px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  padding: 7px 30px 7px 10px;
-  cursor: pointer;
+.level-button {
+  min-width: 150px;
 }
 
-#level-select:hover {
-  background-color: var(--raised-hover);
+.level-button .chevron {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  color: var(--muted);
 }
 
-#level-select option {
-  color: #1b2430;
-  background: white;
+.level-button[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
 }
 
 .btn {
@@ -170,7 +163,6 @@ symbol .solid {
 
 .btn:focus-visible,
 input:focus-visible + .btn,
-#level-select:focus-visible,
 input:focus-visible + .card {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -677,6 +669,181 @@ kbd {
   display: none;
 }
 
+/* ---------- level-select screen ---------- */
+
+#levels {
+  position: fixed;
+  z-index: 40;
+  top: var(--toolbar-height, 56px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  background: rgba(8, 14, 20, 0.55);
+  animation: fade-in 0.2s ease-out;
+}
+
+#levels[hidden] {
+  display: none;
+}
+
+.levels-card {
+  width: min(980px, 100%);
+  padding: 20px 22px 24px;
+  border-radius: 14px;
+  background: rgba(18, 26, 36, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  animation: rise 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.levels-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.levels-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.levels-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.levels-total .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.levels-header .close {
+  margin-left: auto;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.levels-hint {
+  margin: 6px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.level-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 8px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.level-card:hover:not(:disabled) {
+  background: var(--raised-hover);
+  transform: translateY(-2px);
+}
+
+.level-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.level-card.current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.level-card.locked {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.level-thumb {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-radius: 6px;
+  display: block;
+}
+
+.level-card.locked .level-thumb {
+  filter: grayscale(1) brightness(0.55);
+}
+
+.level-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.level-num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.level-stars .icon {
+  width: 17px;
+  height: 17px;
+  color: rgba(255, 255, 255, 0.16);
+}
+
+.level-stars .icon.earned {
+  color: var(--accent);
+}
+
+.level-detail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.level-detail .icon {
+  width: 13px;
+  height: 13px;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
 }
@@ -690,7 +857,8 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #result, .result-card, .big-star.earned { animation: none; }
+  #result, .result-card, .big-star.earned, #levels, .levels-card { animation: none; }
+  .level-card { transition: none; }
 }
 
 /* ---------- toast ---------- */
@@ -767,11 +935,15 @@ kbd {
 
 @media (max-width: 900px) {
   .brand span,
-  .btn:not(.primary) span {
+  .btn:not(.primary):not(.level-button) span {
     display: none;
   }
 
-  .btn:not(.primary) {
+  .level-button {
+    min-width: 0;
+  }
+
+  .btn:not(.primary):not(.level-button) {
     width: 34px;
     padding: 0;
     justify-content: center;

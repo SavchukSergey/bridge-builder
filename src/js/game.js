@@ -63,7 +63,9 @@ export class Game {
      * @type {Vehicle[]}
      */
     this.vehicles = [];
-    this.selectLevel(storageGet(LEVEL_KEY) ?? levels[0].id);
+    // the last level played, unless it has since become locked (e.g. new levels were added)
+    const saved = findLevel(storageGet(LEVEL_KEY));
+    this.selectLevel(saved && this.isUnlocked(saved.id) ? saved.id : levels[0].id);
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
     this.__handleMouseMove = this.__handleMouseMove.bind(this);
@@ -301,6 +303,23 @@ export class Game {
   /** Whether the level has been won within budget (ever, on this browser). */
   isCompleted(id = this.level.id) {
     return this.__completed().includes(id);
+  }
+
+  /**
+   * Whether a level can be played: the first always, a later one once the level before it
+   * has been won within budget. A level already won stays open.
+   * @param {string} [id]
+   */
+  isUnlocked(id = this.level.id) {
+    const i = levels.findIndex(level => level.id === id);
+    if (i < 0) return false;
+    return i === 0 || this.isCompleted(id) || this.isCompleted(levels[i - 1].id);
+  }
+
+  /** Stars earned over all levels (the best result on each), and how many there are. */
+  get totalStars() {
+    const earned = levels.reduce((sum, level) => sum + (this.bestResult(level.id)?.stars ?? 0), 0);
+    return { earned, max: levels.length * 3 };
   }
 
   /** @returns {string[]} */

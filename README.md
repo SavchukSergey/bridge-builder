@@ -52,10 +52,27 @@ Links longer than 10 m are split into 10 m segments.
 
 ### Levels
 
-1. **Creek**: 40 m, two trucks. A bare deck won't hold.
-2. **Canyon**: 80 m, four trucks. The example bridge works but costs too much.
-3. **Step up**: 60 m, with the far side 8 m higher.
-4. **River pier**: 120 m, with a rock in the river to build a pier on.
+Twelve levels, each introducing one idea. Open the list from the level button in the
+toolbar: it shows your stars and best cost on each. A level unlocks once the one before it
+is won within budget.
+
+| # | Level | The idea |
+| --- | --- | --- |
+| 1 | Brook | 20 m: lay a road across |
+| 2 | Creek | 40 m: a bare deck sags and snaps, so hold it up |
+| 3 | Ledges | rock ledges below the road to prop the deck from |
+| 4 | Canyon | 80 m: the example bridge works but costs too much |
+| 5 | Step up | the far side is 8 m higher |
+| 6 | Heavy load | one 100 t truck: cables stretch too much |
+| 7 | Downhill | the far side is 10 m lower, five trucks |
+| 8 | River pier | 120 m with a rock in the river for a pier |
+| 9 | Long span | 100 m with nothing to stand on |
+| 10 | Viaduct | 180 m with two rocks: three spans |
+| 11 | Deep gorge | low ledges: an arch is cheaper than a truss |
+| 12 | Grand crossing | 160 m, climbing, six trucks |
+
+Every level has a reference bridge in the tests that crosses within budget, and the budgets
+are set so the cheapest known design uses 85-95% of them.
 
 ## How it works
 
@@ -76,6 +93,7 @@ src/
     engine/             joints and links
     materials/          material properties and looks
     level.mjs           level definitions, star thresholds
+    level-preview.mjs   level thumbnails for the level-select screen
     vehicle.mjs         trucks
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes

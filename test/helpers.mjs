@@ -35,10 +35,11 @@ const { Game } = await import("../src/js/game.js");
 /**
  * Fresh game on an 800x600 canvas with empty storage and steel selected, on the given level
  * (default: the Canyon, which starts from the demo bridge) and with the default view
- * (zoom 8, centred on the origin) that coordinates in tests assume.
+ * (zoom 8, centred on the origin) that coordinates in tests assume. With keepStorage, saved
+ * progress is kept; a null level keeps the one the game chose at startup.
  */
-export function createGame(levelId = "canyon") {
-  localStorage.clear();
+export function createGame(levelId = "canyon", { keepStorage = false } = {}) {
+  if (!keepStorage) localStorage.clear();
   ui.material = "steel";
   const canvas = {
     width: 800,
@@ -56,7 +57,7 @@ export function createGame(levelId = "canyon") {
     },
   };
   const game = new Game(/** @type {any} */(canvas));
-  game.selectLevel(levelId);
+  if (levelId !== null) game.selectLevel(levelId); // null: keep the level the game started on
   game.ctx.width = canvas.width;
   game.ctx.height = canvas.height;
   game.ctx.zoom = 8;

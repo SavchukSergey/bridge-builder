@@ -2,6 +2,7 @@
 import { Game } from './game.js';
 import { levels } from './level.mjs';
 import { Sound } from './audio.mjs';
+import { renderLevelPreview } from './level-preview.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
 
@@ -137,14 +138,21 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnImport = byId('import-structure', HTMLButtonElement);
   const fileImport = byId('import-file', HTMLInputElement);
   const txtStatus = byId('status-message', HTMLDivElement);
-  const selLevel = byId('level-select', HTMLSelectElement);
+  const btnLevel = byId('level-button', HTMLButtonElement);
+  const txtLevelName = byId('level-button-name', HTMLSpanElement);
+  const picker = {
+    root: byId('levels', HTMLDivElement),
+    grid: byId('levels-grid', HTMLDivElement),
+    total: byId('levels-total', HTMLSpanElement),
+    close: byId('levels-close', HTMLButtonElement),
+  };
   const tooltip = {
-    root: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip')),
-    title: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-title')),
-    force: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-force')),
-    meter: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-meter')),
-    peak: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-peak')),
-    load: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-load')),
+    root: byId('link-tooltip', HTMLDivElement),
+    title: byId('link-tooltip-title', HTMLDivElement),
+    force: byId('link-tooltip-force', HTMLDivElement),
+    meter: byId('link-tooltip-meter', HTMLDivElement),
+    peak: byId('link-tooltip-peak', HTMLDivElement),
+    load: byId('link-tooltip-load', HTMLDivElement),
   };
   const txtLevel = byId('level-description', HTMLDivElement);
   const boxCost = byId('cost', HTMLElement);
@@ -153,22 +161,22 @@ document.addEventListener('DOMContentLoaded', function () {
   const txtLoad = byId('load-value', HTMLSpanElement);
   const barBudget = byId('budget-fill', HTMLDivElement);
   const goals = {
-    two: /** @type {HTMLElement} */ (document.getElementById('goal-two')),
-    three: /** @type {HTMLElement} */ (document.getElementById('goal-three')),
-    best: /** @type {HTMLElement} */ (document.getElementById('best')),
+    two: byId('goal-two', HTMLElement),
+    three: byId('goal-three', HTMLElement),
+    best: byId('best', HTMLElement),
   };
   const dlg = {
-    root: /** @type {HTMLElement} */ (document.getElementById('result')),
+    root: byId('result', HTMLElement),
     stars: [...document.querySelectorAll('#result-stars .big-star')],
-    title: /** @type {HTMLElement} */ (document.getElementById('result-title')),
-    text: /** @type {HTMLElement} */ (document.getElementById('result-text')),
-    cost: /** @type {HTMLElement} */ (document.getElementById('result-cost')),
-    budget: /** @type {HTMLElement} */ (document.getElementById('result-budget')),
-    best: /** @type {HTMLElement} */ (document.getElementById('result-best')),
-    hint: /** @type {HTMLElement} */ (document.getElementById('result-hint')),
-    retry: /** @type {HTMLButtonElement} */ (document.getElementById('result-retry')),
-    next: /** @type {HTMLButtonElement} */ (document.getElementById('result-next')),
-    close: /** @type {HTMLButtonElement} */ (document.getElementById('result-close')),
+    title: byId('result-title', HTMLElement),
+    text: byId('result-text', HTMLElement),
+    cost: byId('result-cost', HTMLElement),
+    budget: byId('result-budget', HTMLElement),
+    best: byId('result-best', HTMLElement),
+    hint: byId('result-hint', HTMLElement),
+    retry: byId('result-retry', HTMLButtonElement),
+    next: byId('result-next', HTMLButtonElement),
+    close: byId('result-close', HTMLButtonElement),
   };
 
   /** @type {number | undefined} */
@@ -200,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
-  const toolbar = /** @type {HTMLElement} */ (document.getElementById('control-panel'));
-  const sidePanel = /** @type {HTMLElement} */ (document.getElementById('material-panel'));
+  const toolbar = byId('control-panel', HTMLElement);
+  const sidePanel = byId('material-panel', HTMLElement);
   const updateInsets = () => {
     const top = toolbar.offsetHeight;
     // the side panel runs under the toolbar; keep its content below it
@@ -209,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
     game.viewInsets = { top, right: sidePanel.offsetWidth };
   };
   // on short windows start with the controls help folded, so the materials stay in view
-  const help = /** @type {HTMLDetailsElement} */ (document.getElementById('help'));
+  const help = byId('help', HTMLDetailsElement);
   help.open = window.innerHeight >= 860;
 
   updateInsets();
@@ -264,15 +272,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function refreshLevels() {
-    selLevel.replaceChildren(...levels.map(level => {
-      const option = document.createElement('option');
-      option.value = level.id;
-      const best = game.bestResult(level.id);
-      option.textContent = level.name + (best ? `  ${starText(best.stars)}` : game.isCompleted(level.id) ? ' \u2713' : '');
-      return option;
-    }));
-    selLevel.value = game.level.id;
+    txtLevelName.textContent = `${game.level.number}. ${game.level.name}`;
     txtLevel.textContent = game.level.description;
+    if (!picker.root.hidden) renderLevelCards();
 
     const { stars } = game.level;
     lastChild(goals.two).textContent = `\u2264 ${formatMoney(stars.two)}`;
@@ -385,16 +387,110 @@ document.addEventListener('DOMContentLoaded', function () {
     chkSimulation.checked = false;
   });
   window.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape' && !dlg.root.hidden) hideResult();
+    if (ev.key !== 'Escape') return;
+    if (!picker.root.hidden) hideLevels();
+    else if (!dlg.root.hidden) hideResult();
   });
   game.onChange = refreshLevels;
   refreshLevels();
 
-  selLevel.addEventListener('change', () => {
-    game.selectLevel(selLevel.value);
-    chkSimulation.checked = false;
-    selLevel.blur(); // keep keyboard shortcuts working on the canvas
-  });
+  // ---- level-select screen
+  /**
+   * A card per level: preview, number and name, stars and best cost, or what unlocks it.
+   * @param {import('./level.mjs').Level} level
+   */
+  function levelCard(level) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'level-card';
+    card.dataset.level = level.id;
+    const unlocked = game.isUnlocked(level.id);
+    const best = game.bestResult(level.id);
+    const previous = levels[level.number - 2];
+    card.disabled = !unlocked;
+    card.classList.toggle('current', level === game.level);
+    card.classList.toggle('locked', !unlocked);
+
+    const thumb = document.createElement('canvas');
+    thumb.className = 'level-thumb';
+    const W = 216, H = 108, ratio = window.devicePixelRatio || 1;
+    thumb.width = Math.round(W * ratio);
+    thumb.height = Math.round(H * ratio);
+    const g = thumb.getContext('2d');
+    if (g) {
+      g.scale(ratio, ratio);
+      renderLevelPreview(g, level, W, H);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'level-title';
+    const num = document.createElement('span');
+    num.className = 'level-num';
+    num.textContent = String(level.number);
+    const name = document.createElement('span');
+    name.textContent = level.name;
+    title.append(num, name);
+
+    const stars = document.createElement('div');
+    stars.className = 'level-stars';
+    for (let i = 0; i < 3; i++) {
+      const star = svgIcon('icon-star');
+      star.classList.toggle('earned', i < (best?.stars ?? 0));
+      stars.append(star);
+    }
+
+    const detail = document.createElement('div');
+    detail.className = 'level-detail';
+    if (unlocked) {
+      detail.textContent = best ? `Best ${formatMoney(best.cost)}` : `Budget ${formatMoney(level.budget)}`;
+    } else {
+      detail.append(svgIcon('icon-lock'), `Win ${previous.name} to unlock`);
+    }
+
+    card.append(thumb, title, stars, detail);
+    card.title = unlocked ? level.description : `Locked: win ${previous.name} within budget first`;
+    card.addEventListener('click', () => {
+      hideLevels();
+      hideResult();
+      if (level !== game.level) game.selectLevel(level.id);
+      chkSimulation.checked = false;
+    });
+    return card;
+  }
+
+  /** @param {string} id - symbol id in the page's icon sprite */
+  function svgIcon(id) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('icon');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `#${id}`);
+    svg.append(use);
+    return svg;
+  }
+
+  function renderLevelCards() {
+    picker.grid.replaceChildren(...levels.map(levelCard));
+    const { earned, max } = game.totalStars;
+    picker.total.textContent = `${earned} / ${max}`;
+  }
+
+  function showLevels() {
+    renderLevelCards();
+    picker.root.hidden = false;
+    btnLevel.setAttribute('aria-expanded', 'true');
+    const current = picker.grid.querySelector('.level-card.current');
+    if (current instanceof HTMLElement) current.focus();
+  }
+
+  function hideLevels() {
+    picker.root.hidden = true;
+    btnLevel.setAttribute('aria-expanded', 'false');
+  }
+
+  btnLevel.addEventListener('click', () => (picker.root.hidden ? showLevels() : hideLevels()));
+  picker.close.addEventListener('click', hideLevels);
+  // a click on the backdrop, outside the panel, closes it
+  picker.root.addEventListener('click', (ev) => { if (ev.target === picker.root) hideLevels(); });
 
   btnExport.addEventListener('click', () => {
     const json = JSON.stringify(game.exportStructure(), null, 2);

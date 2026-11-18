@@ -46,7 +46,7 @@ describe("test results", () => {
     assert.equal(result.stars, 3);
     assert.equal(result.newBest, true);
     assert.equal(result.previousBest, undefined);
-    assert.equal(result.nextLevel, "canyon");
+    assert.equal(result.nextLevel, "ledges");
     assert.deepEqual(game.bestResult("creek"), { cost: game.cost, stars: 3 });
     assert.ok(game.isCompleted("creek"));
 
@@ -93,7 +93,7 @@ describe("test results", () => {
   });
 
   test("the last level has no next level", () => {
-    const game = createGame("pier");
+    const game = createGame("grand");
     const result = runTest(game);
     assert.equal(result.nextLevel, undefined);
   });
