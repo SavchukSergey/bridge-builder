@@ -163,6 +163,7 @@ export class Scene {
    */
   removeJoint(joint) {
     if (joint.fixed) return false;
+    /** @type {Joint[]} */
     const neighbours = [];
     this.content.links = this.links.filter(l => {
       if (l.a === joint) { neighbours.push(l.b); return false; }
@@ -336,7 +337,8 @@ export class Scene {
 
   /**
    * 
-   * @param {import("./eval-ctx.mjs").EvalCtx} evalCtx 
+   * @param {import("./eval-ctx.mjs").EvalCtx} evalCtx
+   * @param {import("./vehicle.mjs").JointLoad[]} [loads] - external forces, e.g. vehicles
    */
   tick(evalCtx, loads = []) {
     this.distributeMass();

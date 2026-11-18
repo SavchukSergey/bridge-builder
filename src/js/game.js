@@ -380,7 +380,7 @@ export class Game {
 
   /**
    * The structure as built (pre-simulation positions), as plain JSON, tagged with the level.
-   * @returns {import("./scene.js").SavedStructure}
+   * @returns {import("./scene.js").SavedStructure & { level: string }}
    */
   exportStructure() {
     return { ...this.scene.serialize(this.__snapshot), level: this.level.id };
@@ -564,7 +564,7 @@ export class Game {
     } else {
       const material = this.__getCurrentMaterial();
       const path = this.__buildLink(this.__clickState.jointA, globalPoint, material, !ev.altKey);
-      path.start = this.__clickState.jointA;
+      const start = this.__clickState.jointA;
       this.__cancelLink();
 
       // An empty path means the second click landed on the start joint: treat it as cancel.
@@ -574,7 +574,7 @@ export class Game {
           this.scene.links.push(...path.links);
           if (this.mirror) {
             // built after the original is in the scene, so it joins up with its joints
-            const image = this.__mirrorPath(this.__clickState?.jointA ?? path.start, path, material);
+            const image = this.__mirrorPath(start, path, material);
             this.scene.joints.push(...image.joints);
             this.scene.links.push(...image.links);
           }
@@ -631,13 +631,14 @@ export class Game {
    * @param {import("./materials/material.mjs").Material} material
    * @param {boolean} [allowSnap] - snap a new end joint to the grid if snapping is enabled
    * @param {number} [joinRadius] - an existing joint this close to globalB is used as the end
-   * @returns {{ joints: Joint[], links: Link[], start?: Joint }}
+   * @returns {{ joints: Joint[], links: Link[] }}
    */
   __buildLink(jointA, globalB, material, allowSnap = true, joinRadius = this.__pickRadius()) {
     /**
      * @type {Joint[]}
      */
     const joints = [];
+    /** @type {Link[]} */
     const links = [];
 
     // Existing joints near the cursor win over grid snapping.

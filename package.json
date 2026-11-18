@@ -1,15 +1,23 @@
 {
   "name": "bridge-builder",
   "version": "1.0.0",
-  "description": "",
+  "description": "A bridge-building physics puzzle: build a bridge from steel, cables and road deck, then watch a convoy of trucks test it.",
   "license": "ISC",
   "author": "Serhii Savchuk",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "http-server ./src",
-    "test": "node --test"
+    "test": "node --test",
+    "typecheck": "tsc -p .",
+    "check": "npm run typecheck && npm test"
   },
   "dependencies": {
     "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
   }
 }

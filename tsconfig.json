@@ -1,0 +1,16 @@
+{
+  // Type-checks the plain JavaScript in src/ using its JSDoc annotations. Nothing is
+  // compiled: the browser runs the sources as they are.
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/js/**/*.js", "src/js/**/*.mjs"]
+}

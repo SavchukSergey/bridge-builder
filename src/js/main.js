@@ -5,20 +5,33 @@ import { Sound } from './audio.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
 
-// @ts-check
 
 /**
- * @returns {HTMLCanvasElement}
+ * The element with this id, checked to exist and be of the expected kind.
+ * @template {HTMLElement} T
+ * @param {string} id
+ * @param {{ new(): T, name: string }} type - e.g. HTMLButtonElement
+ * @returns {T}
  */
+function byId(id, type) {
+  const el = document.getElementById(id);
+  if (!(el instanceof type)) throw new Error(`#${id} is missing or not a ${type.name}`);
+  return el;
+}
+
+/**
+ * The last child element, e.g. the label span after an icon.
+ * @param {Element} el
+ * @returns {Element}
+ */
+function lastChild(el) {
+  const child = el.lastElementChild;
+  if (!child) throw new Error(`${el.id || el.tagName} has no child element`);
+  return child;
+}
+
 function getCanvas() {
-  /** @type {HTMLCanvasElement} */
-  const canvas = document.getElementById('game-canvas');
-
-  if (!canvas) {
-    throw new Error("canvas is not found");
-  }
-
-  return canvas;
+  return byId('game-canvas', HTMLCanvasElement);
 }
 
 /**
@@ -89,11 +102,11 @@ function updateTooltip(el, info, canvas) {
   const now = Math.min(1, info.utilization);
   el.meter.style.width = `${now * 100}%`;
   el.meter.style.backgroundColor = loadColor(info.utilization);
-  const hasPeak = info.peakUtilization !== undefined;
-  el.peak.hidden = !hasPeak;
-  if (hasPeak) el.peak.style.left = `calc(${Math.min(1, info.peakUtilization) * 100}% - 1px)`;
+  const peak = info.peakUtilization;
+  el.peak.hidden = peak === undefined;
+  if (peak !== undefined) el.peak.style.left = `calc(${Math.min(1, peak) * 100}% - 1px)`;
   el.load.textContent = `${Math.round(info.utilization * 100)}% of strength`
-    + (hasPeak ? ` \u00b7 peak ${Math.round(info.peakUtilization * 100)}%` : '');
+    + (peak !== undefined ? ` \u00b7 peak ${Math.round(peak * 100)}%` : '');
 
   // next to the pointer, flipped to stay on screen
   const rect = canvas.getBoundingClientRect();
@@ -112,32 +125,19 @@ function starText(stars) {
 
 document.addEventListener('DOMContentLoaded', function () {
   const canvas = getCanvas();
-  /** @type {HTMLInputElement} */
-  const chkSimulation = document.getElementById('toggle-simulation');
-  /** @type {HTMLButtonElement} */
-  const btnReset = document.getElementById('reset-simulation');
-  /** @type {HTMLDivElement} */
-  const txtTime = document.getElementById('simulation-time-value');
-  /** @type {HTMLDivElement} */
-  const txtMode = document.getElementById('mode-label');
-  /** @type {HTMLButtonElement} */
-  const btnUndo = document.getElementById('undo');
-  /** @type {HTMLButtonElement} */
-  const btnRedo = document.getElementById('redo');
-  /** @type {HTMLInputElement} */
-  const chkSnap = document.getElementById('toggle-snap');
-  /** @type {HTMLButtonElement} */
-  const btnNew = document.getElementById('new-structure');
-  /** @type {HTMLButtonElement} */
-  const btnExport = document.getElementById('export-structure');
-  /** @type {HTMLButtonElement} */
-  const btnImport = document.getElementById('import-structure');
-  /** @type {HTMLInputElement} */
-  const fileImport = document.getElementById('import-file');
-  /** @type {HTMLDivElement} */
-  const txtStatus = document.getElementById('status-message');
-  /** @type {HTMLSelectElement} */
-  const selLevel = document.getElementById('level-select');
+  const chkSimulation = byId('toggle-simulation', HTMLInputElement);
+  const btnReset = byId('reset-simulation', HTMLButtonElement);
+  const txtTime = byId('simulation-time-value', HTMLSpanElement);
+  const txtMode = byId('mode-label', HTMLDivElement);
+  const btnUndo = byId('undo', HTMLButtonElement);
+  const btnRedo = byId('redo', HTMLButtonElement);
+  const chkSnap = byId('toggle-snap', HTMLInputElement);
+  const btnNew = byId('new-structure', HTMLButtonElement);
+  const btnExport = byId('export-structure', HTMLButtonElement);
+  const btnImport = byId('import-structure', HTMLButtonElement);
+  const fileImport = byId('import-file', HTMLInputElement);
+  const txtStatus = byId('status-message', HTMLDivElement);
+  const selLevel = byId('level-select', HTMLSelectElement);
   const tooltip = {
     root: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip')),
     title: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-title')),
@@ -146,18 +146,12 @@ document.addEventListener('DOMContentLoaded', function () {
     peak: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-peak')),
     load: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-load')),
   };
-  /** @type {HTMLDivElement} */
-  const txtLevel = document.getElementById('level-description');
-  /** @type {HTMLDivElement} */
-  const boxCost = document.getElementById('cost');
-  /** @type {HTMLSpanElement} */
-  const txtCost = document.getElementById('cost-value');
-  /** @type {HTMLSpanElement} */
-  const txtBudget = document.getElementById('budget-value');
-  /** @type {HTMLSpanElement} */
-  const txtLoad = document.getElementById('load-value');
-  /** @type {HTMLDivElement} */
-  const barBudget = document.getElementById('budget-fill');
+  const txtLevel = byId('level-description', HTMLDivElement);
+  const boxCost = byId('cost', HTMLElement);
+  const txtCost = byId('cost-value', HTMLSpanElement);
+  const txtBudget = byId('budget-value', HTMLSpanElement);
+  const txtLoad = byId('load-value', HTMLSpanElement);
+  const barBudget = byId('budget-fill', HTMLDivElement);
   const goals = {
     two: /** @type {HTMLElement} */ (document.getElementById('goal-two')),
     three: /** @type {HTMLElement} */ (document.getElementById('goal-three')),
@@ -243,16 +237,14 @@ document.addEventListener('DOMContentLoaded', function () {
   btnUndo.addEventListener('click', () => game.undo());
   btnRedo.addEventListener('click', () => game.redo());
 
-  /** @type {HTMLInputElement} */
-  const chkStress = document.getElementById('toggle-stress');
+  const chkStress = byId('toggle-stress', HTMLInputElement);
   game.showStress = chkStress.checked;
   chkStress.addEventListener('change', () => {
     game.showStress = chkStress.checked;
     chkStress.blur();
   });
 
-  /** @type {HTMLInputElement} */
-  const chkMirror = document.getElementById('toggle-mirror');
+  const chkMirror = byId('toggle-mirror', HTMLInputElement);
   game.mirror = chkMirror.checked;
   chkMirror.addEventListener('change', () => {
     game.mirror = chkMirror.checked;
@@ -283,8 +275,8 @@ document.addEventListener('DOMContentLoaded', function () {
     txtLevel.textContent = game.level.description;
 
     const { stars } = game.level;
-    goals.two.lastElementChild.textContent = `\u2264 ${formatMoney(stars.two)}`;
-    goals.three.lastElementChild.textContent = `\u2264 ${formatMoney(stars.three)}`;
+    lastChild(goals.two).textContent = `\u2264 ${formatMoney(stars.two)}`;
+    lastChild(goals.three).textContent = `\u2264 ${formatMoney(stars.three)}`;
     const best = game.bestResult();
     goals.best.textContent = best ? `Best ${formatMoney(best.cost)}  ${starText(best.stars)}` : '';
   }
@@ -323,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
         : result.stars === 2 ? `\u2605\u2605\u2605 at ${formatMoney(g.three)} or less: trim ${formatMoney(result.cost - g.three)}.`
           : 'As cheap as it gets. Or is it?';
 
-    dlg.retry.lastElementChild.textContent = result.kind === 'success' ? (result.stars < 3 ? 'Make it cheaper' : 'Rebuild')
+    lastChild(dlg.retry).textContent = result.kind === 'success' ? (result.stars < 3 ? 'Make it cheaper' : 'Rebuild')
       : result.kind === 'over-budget' ? 'Make it cheaper' : 'Try again';
     dlg.retry.classList.toggle('primary', result.kind !== 'success' || !result.nextLevel);
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
@@ -337,8 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---- sound
   const sound = new Sound();
-  /** @type {HTMLInputElement} */
-  const chkSound = document.getElementById('toggle-sound');
+  const chkSound = byId('toggle-sound', HTMLInputElement);
   try {
     chkSound.checked = localStorage.getItem(SOUND_KEY) !== 'off';
   } catch { /* storage blocked: default on */ }
