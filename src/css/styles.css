@@ -31,6 +31,33 @@ body {
 }
 
 
+#control-panel {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#control-panel .separator {
+  width: 1px;
+  align-self: stretch;
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+#status-message {
+  margin-left: auto;
+}
+
+#status-message.error {
+  color: #b00020;
+  font-weight: bold;
+}
+
+#help {
+  margin-top: auto;
+  max-width: 11em;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 #material-panel {
   position: fixed;
   top: 0;

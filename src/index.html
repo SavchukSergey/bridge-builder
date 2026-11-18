@@ -24,6 +24,24 @@
 
     <div id="simulation-time">Time: <span id="simulation-time-value">0.00s</span></div>
     <div id="mode-label"></div>
+
+    <span class="separator"></span>
+
+    <button type="button" id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+    <button type="button" id="redo" title="Redo (Ctrl+Y)" disabled>Redo</button>
+    <label title="Snap new joints to a 1 m grid (hold Alt to place freely)">
+      <input type="checkbox" id="toggle-snap" checked />
+      Snap
+    </label>
+
+    <span class="separator"></span>
+
+    <button type="button" id="new-structure" title="Replace with the demo bridge">New</button>
+    <button type="button" id="export-structure" title="Download the structure as JSON">Export</button>
+    <button type="button" id="import-structure" title="Load a structure from a JSON file">Import</button>
+    <input type="file" id="import-file" accept=".json,application/json" hidden />
+
+    <div id="status-message" role="status"></div>
   </div>
 
   <div id="material-panel">
@@ -35,6 +53,14 @@
       <input type="radio" name="material" value="cable" />
       <span>Cable</span>
     </label>
+
+    <div id="help">
+      <p>Click a joint, then click to place a link.</p>
+      <p>Right-click: delete / cancel</p>
+      <p>Esc: cancel</p>
+      <p>Alt: place without snapping</p>
+      <p>Drag: pan &middot; Ctrl+wheel: zoom</p>
+    </div>
   </div>
 
   <script type="module" src="js/main.js" crossorigin="anonymous"></script>
