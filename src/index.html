@@ -9,83 +9,172 @@
 </head>
 
 <body>
-  <div id="game-container">
+  <!-- Icons, used with <svg><use href="#icon-..."/></svg> -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <symbol id="icon-bridge" viewBox="0 0 24 24"><path d="M2 16h20M4 16V9m16 7V9M4 9q8 7 16 0M8 16v-4.2M12 16v-3m4 3v-4.2" /></symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" class="solid" /></symbol>
+      <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z" class="solid" /></symbol>
+      <symbol id="icon-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5" /></symbol>
+      <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></symbol>
+      <symbol id="icon-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5m5 5H10a6 6 0 0 0 0 12h3" /></symbol>
+      <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M4 15h16M10 4v16m5-16v16" /></symbol>
+      <symbol id="icon-stress" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></symbol>
+      <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 20h14" /></symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18" /></symbol>
+      <symbol id="icon-truck" viewBox="0 0 24 24"><path d="M2 6h12v10H2zm12 4h4l3 3v3h-7M6.5 19a2 2 0 1 0 0-.01M17.5 19a2 2 0 1 0 0-.01" /></symbol>
+    </defs>
+  </svg>
 
+  <div id="game-container">
     <canvas id="game-canvas"></canvas>
   </div>
 
-  <div id="control-panel">
+  <header id="control-panel">
+    <div class="brand">
+      <svg class="icon"><use href="#icon-bridge" /></svg>
+      <span>Bridge Builder</span>
+    </div>
+
     <select id="level-select" title="Level"></select>
 
-    <label>
-      <input type="checkbox" id="toggle-simulation" />
-      Simulation
-    </label>
-
-    <button type="button" id="reset-simulation" disabled>Reset</button>
-
-    <div id="simulation-time">Time: <span id="simulation-time-value">0.00s</span></div>
-    <div id="mode-label"></div>
-
-    <span class="separator"></span>
-
-    <button type="button" id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
-    <button type="button" id="redo" title="Redo (Ctrl+Y)" disabled>Redo</button>
-    <label title="Snap new joints to a 1 m grid (hold Alt to place freely)">
-      <input type="checkbox" id="toggle-snap" checked />
-      Snap
-    </label>
-    <label title="Colour members by load: green relaxed, blue in tension, red in compression">
-      <input type="checkbox" id="toggle-stress" />
-      Stress view
-    </label>
-
-    <span class="separator"></span>
-
-    <button type="button" id="new-structure" title="Start this level over (Undo to go back)">Restart</button>
-    <button type="button" id="export-structure" title="Download the structure as JSON">Export</button>
-    <button type="button" id="import-structure" title="Load a structure from a JSON file">Import</button>
-    <input type="file" id="import-file" accept=".json,application/json" hidden />
-
-    <div id="status-message" role="status"></div>
-  </div>
-
-  <div id="material-panel">
-    <label class="material-option" title="Deck the vehicle drives on">
-      <input type="radio" name="material" value="road" />
-      <span class="swatch road"></span><span>Road</span> <small>$300/m</small>
-    </label>
-    <label class="material-option" title="20 x 20 cm section">
-      <input type="radio" name="material" value="steel" checked />
-      <span class="swatch steel"></span><span>Steel</span> <small>$200/m</small>
-    </label>
-    <label class="material-option" title="10 x 10 cm section: a quarter of the strength">
-      <input type="radio" name="material" value="steel-light" />
-      <span class="swatch steel-light"></span><span>Light steel</span> <small>$70/m</small>
-    </label>
-    <label class="material-option" title="Only holds in tension">
-      <input type="radio" name="material" value="cable" />
-      <span class="swatch cable"></span><span>Cable</span> <small>$60/m</small>
-    </label>
-    <label class="material-option" title="Only holds in tension; a fifth of the strength">
-      <input type="radio" name="material" value="cable-thin" />
-      <span class="swatch cable-thin"></span><span>Thin cable</span> <small>$20/m</small>
-    </label>
-
-    <div id="cost">Cost: <span id="cost-value"></span><br />Budget: <span id="budget-value"></span></div>
-    <div id="load">Load: <span id="load-value"></span></div>
-
-    <div id="level-description"></div>
-
-    <div id="help">
-      <p>Get every truck to the flag, within budget. Start the simulation to test.</p>
-      <p>Click a joint, then click to place a link.</p>
-      <p>Right-click: delete / cancel</p>
-      <p>Esc: cancel</p>
-      <p>Alt: place without snapping</p>
-      <p>Drag: pan &middot; Ctrl+wheel: zoom</p>
+    <div class="group">
+      <input type="checkbox" id="toggle-simulation" class="visually-hidden" />
+      <label for="toggle-simulation" class="btn primary" title="Start or pause the load test">
+        <svg class="icon when-off"><use href="#icon-play" /></svg>
+        <svg class="icon when-on"><use href="#icon-pause" /></svg>
+        <span class="when-off">Test</span><span class="when-on">Pause</span>
+      </label>
+      <button type="button" id="reset-simulation" class="btn" title="Back to build mode" disabled>
+        <svg class="icon"><use href="#icon-reset" /></svg><span>Reset</span>
+      </button>
     </div>
-  </div>
+
+    <div class="group status">
+      <div id="simulation-time" class="chip" title="Simulated time">
+        <svg class="icon"><use href="#icon-clock" /></svg><span id="simulation-time-value">0.00s</span>
+      </div>
+      <div id="mode-label"></div>
+    </div>
+
+    <div class="group">
+      <button type="button" id="undo" class="btn icon-only" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+        <svg class="icon"><use href="#icon-undo" /></svg>
+      </button>
+      <button type="button" id="redo" class="btn icon-only" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>
+        <svg class="icon"><use href="#icon-redo" /></svg>
+      </button>
+      <input type="checkbox" id="toggle-snap" class="visually-hidden" checked />
+      <label for="toggle-snap" class="btn toggle" title="Snap new joints to a 1 m grid (hold Alt to place freely)">
+        <svg class="icon"><use href="#icon-grid" /></svg><span>Snap</span>
+      </label>
+      <input type="checkbox" id="toggle-stress" class="visually-hidden" />
+      <label for="toggle-stress" class="btn toggle"
+        title="Colour members by load: green relaxed, blue in tension, red in compression">
+        <svg class="icon"><use href="#icon-stress" /></svg><span>Stress view</span>
+      </label>
+    </div>
+
+    <div class="group">
+      <button type="button" id="new-structure" class="btn" title="Start this level over (Undo to go back)">
+        <svg class="icon"><use href="#icon-restart" /></svg><span>Restart</span>
+      </button>
+      <button type="button" id="export-structure" class="btn icon-only" title="Export: download the structure as JSON"
+        aria-label="Export">
+        <svg class="icon"><use href="#icon-download" /></svg>
+      </button>
+      <button type="button" id="import-structure" class="btn icon-only" title="Import: load a structure from a JSON file"
+        aria-label="Import">
+        <svg class="icon"><use href="#icon-upload" /></svg>
+      </button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden />
+    </div>
+  </header>
+
+  <aside id="material-panel">
+    <section class="level-card">
+      <div id="level-description"></div>
+      <div class="facts">
+        <span class="chip"><svg class="icon"><use href="#icon-truck" /></svg><span id="load-value"></span></span>
+      </div>
+    </section>
+
+    <section id="cost" class="budget">
+      <div class="budget-row">
+        <span class="label">Cost</span>
+        <span id="cost-value" class="value"></span>
+      </div>
+      <div class="budget-bar"><div id="budget-fill"></div></div>
+      <div class="budget-row small">
+        <span>Budget</span>
+        <span id="budget-value"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Materials</h2>
+      <div class="materials">
+        <label class="material-option" title="Deck the vehicle drives on">
+          <input type="radio" name="material" value="road" class="visually-hidden" />
+          <span class="card">
+            <span class="swatch road"></span>
+            <span class="name">Road</span><span class="price">$300/m</span>
+            <span class="note">Deck · drivable</span>
+          </span>
+        </label>
+        <label class="material-option" title="20 x 20 cm section">
+          <input type="radio" name="material" value="steel" class="visually-hidden" checked />
+          <span class="card">
+            <span class="swatch steel"></span>
+            <span class="name">Steel</span><span class="price">$200/m</span>
+            <span class="note">Push &amp; pull</span>
+          </span>
+        </label>
+        <label class="material-option" title="10 x 10 cm section: a quarter of the strength">
+          <input type="radio" name="material" value="steel-light" class="visually-hidden" />
+          <span class="card">
+            <span class="swatch steel-light"></span>
+            <span class="name">Light steel</span><span class="price">$70/m</span>
+            <span class="note">¼ strength</span>
+          </span>
+        </label>
+        <label class="material-option" title="Only holds in tension">
+          <input type="radio" name="material" value="cable" class="visually-hidden" />
+          <span class="card">
+            <span class="swatch cable"></span>
+            <span class="name">Cable</span><span class="price">$60/m</span>
+            <span class="note">Pull only</span>
+          </span>
+        </label>
+        <label class="material-option" title="Only holds in tension; a fifth of the strength">
+          <input type="radio" name="material" value="cable-thin" class="visually-hidden" />
+          <span class="card">
+            <span class="swatch cable-thin"></span>
+            <span class="name">Thin cable</span><span class="price">$20/m</span>
+            <span class="note">Pull only · ⅕</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <details id="help" open>
+      <summary>Controls</summary>
+      <p>Get every truck to the flag, within budget. Press <b>Test</b> to load the bridge.</p>
+      <dl>
+        <dt>Click</dt><dd>joint, then click to place a link</dd>
+        <dt><kbd>Right-click</kbd></dt><dd>delete / cancel</dd>
+        <dt><kbd>Esc</kbd></dt><dd>cancel</dd>
+        <dt><kbd>Alt</kbd></dt><dd>place without snapping</dd>
+        <dt>Drag</dt><dd>pan</dd>
+        <dt><kbd>Ctrl</kbd>+wheel</dt><dd>zoom</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></dt><dd>undo / redo</dd>
+      </dl>
+    </details>
+  </aside>
+
+  <div id="status-message" role="status"></div>
 
   <div id="link-tooltip" role="tooltip" hidden>
     <div id="link-tooltip-title"></div>

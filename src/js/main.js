@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const txtBudget = document.getElementById('budget-value');
   /** @type {HTMLSpanElement} */
   const txtLoad = document.getElementById('load-value');
+  /** @type {HTMLDivElement} */
+  const barBudget = document.getElementById('budget-fill');
 
   /** @type {number | undefined} */
   let statusTimer;
@@ -173,19 +175,34 @@ document.addEventListener('DOMContentLoaded', function () {
   resizeCanvas();
 
   const game = new Game(canvas);
+  const toolbar = /** @type {HTMLElement} */ (document.getElementById('control-panel'));
+  const sidePanel = /** @type {HTMLElement} */ (document.getElementById('material-panel'));
   const updateInsets = () => {
-    game.viewInsets = {
-      top: document.getElementById('control-panel')?.offsetHeight ?? 0,
-      right: document.getElementById('material-panel')?.offsetWidth ?? 0,
-    };
+    const top = toolbar.offsetHeight;
+    // the side panel runs under the toolbar; keep its content below it
+    document.documentElement.style.setProperty('--toolbar-height', `${top}px`);
+    game.viewInsets = { top, right: sidePanel.offsetWidth };
   };
+  // on short windows start with the controls help folded, so the materials stay in view
+  const help = /** @type {HTMLDetailsElement} */ (document.getElementById('help'));
+  help.open = window.innerHeight >= 860;
+
   updateInsets();
   game.fitView(); // now that the canvas has its real size
   window.addEventListener('resize', updateInsets);
+  // the toolbar wraps onto more rows on narrow windows: refit when its height changes
+  let toolbarHeight = toolbar.offsetHeight;
+  new ResizeObserver(() => {
+    if (toolbar.offsetHeight === toolbarHeight) return;
+    toolbarHeight = toolbar.offsetHeight;
+    updateInsets();
+    game.fitView();
+  }).observe(toolbar);
 
   chkSimulation.checked = false;
   chkSimulation.addEventListener('change', () => {
     game.setSimulationRunning(chkSimulation.checked);
+    chkSimulation.blur(); // keep keyboard shortcuts working on the canvas
   });
   btnReset.addEventListener('click', () => {
     game.reset();
@@ -206,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
   game.snapToGrid = chkSnap.checked;
   chkSnap.addEventListener('change', () => {
     game.snapToGrid = chkSnap.checked;
+    chkSnap.blur();
   });
 
   btnNew.addEventListener('click', () => {
@@ -279,6 +297,9 @@ document.addEventListener('DOMContentLoaded', function () {
     txtBudget.textContent = formatMoney(game.level.budget);
     txtLoad.textContent = `${game.level.vehicleCount} × ${game.level.vehicleMass / 1000} t trucks`;
     boxCost.classList.toggle('over', game.overBudget);
+    const share = game.cost / game.level.budget;
+    barBudget.style.width = `${Math.min(1, share) * 100}%`;
+    barBudget.classList.toggle('near', share > 0.85 && !game.overBudget);
     updateTooltip(tooltip, game.hoverInfo, canvas);
     requestAnimationFrame(tick);
   }
