@@ -30,6 +30,8 @@ const SNAP_STEP = 1;
 const MAX_LINK_LENGTH = 10;
 /** Shortest link (m): zero-length links would divide by zero in strain. */
 const MIN_LINK_LENGTH = 0.1;
+/** Joints closer than this (m) count as the same point when matching mirror images. */
+const MIRROR_EPS = 1e-3;
 const MAX_UNDO = 100;
 /** Per-level autosave: `${AUTOSAVE_KEY}:${level.id}`. */
 const AUTOSAVE_KEY = "bridge-builder:structure";
@@ -105,6 +107,12 @@ export class Game {
 
   /** Colour members by their load instead of drawing their material. */
   showStress = false;
+
+  /**
+   * Mirror mode: every link built, deleted or moved also happens to its mirror image across
+   * the level's {@link Level.mirrorAxis}.
+   */
+  mirror = false;
 
   /** Called after every change to the built structure (edit, undo, load). */
   onChange = () => { };
@@ -387,7 +395,16 @@ export class Game {
    * @returns {JointMove[]}
    */
   __jointMoves(joint) {
-    return [{ joint, start: { ...joint.position }, map: (t) => t }];
+    const moves = [{ joint, start: { ...joint.position }, map: (/** @type {import("./math.js").Vec3F} */ t) => t }];
+    if (!this.mirror) return moves;
+    const image = this.__mirrorJoint(joint);
+    if (image === joint) {
+      const axis = this.level.mirrorAxis;
+      moves[0].map = (t) => createVec3F(axis, t.y, 0);
+    } else if (image && !image.fixed) {
+      moves.push({ joint: image, start: { ...image.position }, map: (t) => this.__mirrorPoint(t) });
+    }
+    return moves;
   }
 
   /**
@@ -401,9 +418,13 @@ export class Game {
     const moving = new Set(moves.map(m => m.joint));
     const at = (/** @type {Joint} */ j) => placed.find(p => p.joint === j)?.position ?? j.position;
     const startAt = (/** @type {Joint} */ j) => moves.find(m => m.joint === j)?.start ?? j.position;
-    for (const { position } of placed) {
+    for (const { joint, position } of placed) {
       for (const other of this.scene.joints) {
         if (!moving.has(other) && vec3flen(vec3fsub(other.position, position)) < MIN_LINK_LENGTH) return;
+      }
+      // a joint and its mirror image meeting on the axis
+      for (const p of placed) {
+        if (p.joint !== joint && vec3flen(vec3fsub(p.position, position)) < MIN_LINK_LENGTH) return;
       }
     }
     for (const link of this.scene.links) {
@@ -466,6 +487,7 @@ export class Game {
     } else {
       const material = this.__getCurrentMaterial();
       const path = this.__buildLink(this.__clickState.jointA, globalPoint, material, !ev.altKey);
+      path.start = this.__clickState.jointA;
       this.__cancelLink();
 
       // An empty path means the second click landed on the start joint: treat it as cancel.
@@ -473,6 +495,12 @@ export class Game {
         this.__edit(() => {
           this.scene.joints.push(...path.joints);
           this.scene.links.push(...path.links);
+          if (this.mirror) {
+            // built after the original is in the scene, so it joins up with its joints
+            const image = this.__mirrorPath(this.__clickState?.jointA ?? path.start, path, material);
+            this.scene.joints.push(...image.joints);
+            this.scene.links.push(...image.links);
+          }
           this.scene.distributeMass();
         });
       }
@@ -511,8 +539,11 @@ export class Game {
     } else if (this.__clickState) {
       const material = this.__getCurrentMaterial();
       const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material, !ev.altKey);
-      this.__clickState.preview.joints = path.joints;
-      this.__clickState.preview.links = path.links;
+      const image = this.mirror && path.links.length
+        ? this.__mirrorPath(this.__clickState.jointA, path, material)
+        : { joints: [], links: [] };
+      this.__clickState.preview.joints = [...path.joints, ...image.joints];
+      this.__clickState.preview.links = [...path.links, ...image.links];
       this.__clickState.preview.distributeMass();
     }
   }
@@ -522,8 +553,10 @@ export class Game {
    * @param {import("./math.js").Vec3F} globalB
    * @param {import("./materials/material.mjs").Material} material
    * @param {boolean} [allowSnap] - snap a new end joint to the grid if snapping is enabled
+   * @param {number} [joinRadius] - an existing joint this close to globalB is used as the end
+   * @returns {{ joints: Joint[], links: Link[], start?: Joint }}
    */
-  __buildLink(jointA, globalB, material, allowSnap = true) {
+  __buildLink(jointA, globalB, material, allowSnap = true, joinRadius = this.__pickRadius()) {
     /**
      * @type {Joint[]}
      */
@@ -531,7 +564,7 @@ export class Game {
     const links = [];
 
     // Existing joints near the cursor win over grid snapping.
-    let jointB = this.scene.findJoint(globalB, this.__pickRadius());
+    let jointB = this.scene.findJoint(globalB, joinRadius);
     if (!jointB && allowSnap && this.snapToGrid) {
       const snapped = createVec3F(
         Math.round(globalB.x / SNAP_STEP) * SNAP_STEP,
@@ -588,6 +621,45 @@ export class Game {
   }
 
   /**
+   * @param {import("./math.js").Vec3F} p
+   * @returns {import("./math.js").Vec3F}
+   */
+  __mirrorPoint(p) {
+    return createVec3F(2 * this.level.mirrorAxis - p.x, p.y, 0);
+  }
+
+  /**
+   * The joint at the mirror image of `joint` (itself if it is on the axis), if there is one.
+   * @param {Joint} joint
+   */
+  __mirrorJoint(joint) {
+    return this.scene.findJoint(this.__mirrorPoint(joint.position), MIRROR_EPS);
+  }
+
+  /**
+   * The mirror image of a path from `start`: new joints and links to add. Empty if the path
+   * is its own mirror image (it crosses or lies on the axis symmetrically).
+   * @param {Joint} start
+   * @param {{ joints: Joint[], links: Link[] }} path
+   * @param {import("./materials/material.mjs").Material} material
+   * @returns {{ joints: Joint[], links: Link[] }}
+   */
+  __mirrorPath(start, path, material) {
+    const end = /** @type {Link} */ (path.links.at(-1)).b;
+    const ma = this.__mirrorPoint(start.position), mb = this.__mirrorPoint(end.position);
+    const same = (/** @type {import("./math.js").Vec3F} */ p, /** @type {import("./math.js").Vec3F} */ q) =>
+      vec3flen(vec3fsub(p, q)) < MIRROR_EPS;
+    if ((same(ma, end.position) && same(mb, start.position)) || (same(ma, start.position) && same(mb, end.position))) {
+      return { joints: [], links: [] };
+    }
+    const existing = this.scene.findJoint(ma, MIRROR_EPS);
+    const imageStart = existing ?? new Joint(ma);
+    const image = this.__buildLink(imageStart, mb, material, false, MIRROR_EPS);
+    if (!image.links.length) return { joints: [], links: [] };
+    return { joints: existing ? image.joints : [imageStart, ...image.joints], links: image.links };
+  }
+
+  /**
    * Right click: cancels the link being built, otherwise deletes the joint or link under the cursor.
    * @param {MouseEvent} ev
    */
@@ -608,11 +680,26 @@ export class Game {
     const joint = this.scene.findJoint(globalPoint, radius);
     if (joint) {
       // Fixed anchors are not removable; don't fall through to deleting a link attached to one.
-      this.__edit(() => this.scene.removeJoint(joint));
+      this.__edit(() => {
+        const image = this.mirror ? this.__mirrorJoint(joint) : undefined;
+        const removed = this.scene.removeJoint(joint);
+        // (the image may already be gone, as an orphan of the first removal)
+        if (removed && image && image !== joint && this.scene.joints.includes(image)) this.scene.removeJoint(image);
+        return removed;
+      });
       return;
     }
     const link = this.scene.findLink(globalPoint, radius);
-    if (link) this.__edit(() => this.scene.removeLink(link));
+    if (link) this.__edit(() => {
+      let image;
+      if (this.mirror) {
+        const ia = this.__mirrorJoint(link.a), ib = this.__mirrorJoint(link.b);
+        image = this.scene.links.find(l => l !== link && ((l.a === ia && l.b === ib) || (l.a === ib && l.b === ia)));
+      }
+      const removed = this.scene.removeLink(link);
+      if (image && this.scene.links.includes(image)) this.scene.removeLink(image);
+      return removed;
+    });
   }
 
   /**
@@ -634,6 +721,8 @@ export class Game {
     } else if (mod && (key === "y" || (key === "z" && ev.shiftKey))) {
       ev.preventDefault();
       this.redo();
+    } else if (!mod && !ev.altKey && key === "m") {
+      this.mirror = !this.mirror;
     }
   }
 
@@ -780,6 +869,21 @@ export class Game {
     renderBackground(this.ctx, this.level.startY);
     this.level.render(this.ctx);
     if (this.isBuildMode) this.scene.grid.render(this.ctx);
+    if (this.isBuildMode && this.mirror) {
+      const g = this.ctx.ctx;
+      const x = this.level.mirrorAxis;
+      const top = this.ctx.clientToGlobal({ x: 0, y: 0, z: 0 }).y;
+      const bottom = this.ctx.clientToGlobal({ x: 0, y: this.ctx.height, z: 0 }).y;
+      g.save();
+      g.setLineDash([8 / this.ctx.zoom, 6 / this.ctx.zoom]);
+      g.strokeStyle = "rgba(242, 178, 51, 0.9)";
+      g.lineWidth = 2 / this.ctx.zoom;
+      g.beginPath();
+      g.moveTo(x, bottom);
+      g.lineTo(x, top);
+      g.stroke();
+      g.restore();
+    }
     const hovered = this.hoveredLink;
     if (hovered) {
       // halo under the hovered link

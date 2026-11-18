@@ -19,6 +19,7 @@
       <symbol id="icon-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></symbol>
       <symbol id="icon-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5m5 5H10a6 6 0 0 0 0 12h3" /></symbol>
       <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 10h16M4 15h16M10 4v16m5-16v16" /></symbol>
+      <symbol id="icon-mirror" viewBox="0 0 24 24"><path d="M12 3v18M9 7 3 17h6zm6 0 6 10h-6z" /></symbol>
       <symbol id="icon-stress" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></symbol>
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
@@ -69,6 +70,10 @@
       <input type="checkbox" id="toggle-snap" class="visually-hidden" checked />
       <label for="toggle-snap" class="btn toggle" title="Snap new joints to a 1 m grid (hold Alt to place freely)">
         <svg class="icon"><use href="#icon-grid" /></svg><span>Snap</span>
+      </label>
+      <input type="checkbox" id="toggle-mirror" class="visually-hidden" />
+      <label for="toggle-mirror" class="btn toggle" title="Mirror: build, delete and move symmetrically about the middle (M)">
+        <svg class="icon"><use href="#icon-mirror" /></svg><span>Mirror</span>
       </label>
       <input type="checkbox" id="toggle-stress" class="visually-hidden" />
       <label for="toggle-stress" class="btn toggle"
@@ -170,6 +175,7 @@
         <dt>Drag a joint</dt><dd>move it</dd>
         <dt>Drag</dt><dd>pan</dd>
         <dt><kbd>Ctrl</kbd>+wheel</dt><dd>zoom</dd>
+        <dt><kbd>M</kbd></dt><dd>mirror mode</dd>
         <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></dt><dd>undo / redo</dd>
       </dl>
     </details>

@@ -223,6 +223,14 @@ document.addEventListener('DOMContentLoaded', function () {
     chkStress.blur();
   });
 
+  /** @type {HTMLInputElement} */
+  const chkMirror = document.getElementById('toggle-mirror');
+  game.mirror = chkMirror.checked;
+  chkMirror.addEventListener('change', () => {
+    game.mirror = chkMirror.checked;
+    chkMirror.blur();
+  });
+
   game.snapToGrid = chkSnap.checked;
   chkSnap.addEventListener('change', () => {
     game.snapToGrid = chkSnap.checked;
@@ -291,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
     game.render();
     txtTime.innerText = game.evalCtx.time.toFixed(2) + 's';
     btnReset.disabled = game.isBuildMode;
+    chkMirror.checked = game.mirror; // the M key toggles it too
     btnUndo.disabled = !game.canUndo;
     btnRedo.disabled = !game.canRedo;
     const mode = modeText(game);

@@ -66,6 +66,12 @@ export class Level {
     return top;
   }
 
+  /** Vertical line that mirror mode reflects across: the middle of the anchors. */
+  get mirrorAxis() {
+    const xs = this.anchors.map(a => a.x);
+    return (Math.min(...xs) + Math.max(...xs)) / 2;
+  }
+
   /** Ground height where the trucks start. */
   get startY() {
     return /** @type {number} */ (this.groundAt(this.startX));
