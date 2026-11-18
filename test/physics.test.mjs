@@ -18,7 +18,7 @@ function peakSpeedOver(game, seconds) {
 test("the demo bridge survives 15 s, stays finite and settles", () => {
   const game = createGame();
   game.setSimulationRunning(true);
-  game.vehicle = undefined; // the structure on its own, without the load test
+  game.vehicles = []; // the structure on its own, without the load test
   const early = peakSpeedOver(game, 3);   // 0-3 s: gravity ramps up, deck drops and bounces
   peakSpeedOver(game, 9);
   const late = peakSpeedOver(game, 3);    // 12-15 s
@@ -29,7 +29,7 @@ test("the demo bridge survives 15 s, stays finite and settles", () => {
   assert.ok(late < early / 5, `motion decays (peak ${early.toFixed(3)} -> ${late.toFixed(3)} m/s)`);
   assert.ok(late < 0.3, `nearly at rest (peak ${late.toFixed(3)} m/s)`);
 
-  const midDeck = game.scene.joints.find(j => !j.fixed && Math.abs(j.position.x) < 1 && j.position.y < 15);
+  const midDeck = game.scene.joints.find(j => !j.fixed && Math.abs(j.position.x) < 1 && j.position.y < 12);
   assert.ok(midDeck.position.y < 10 && midDeck.position.y > 8, `deck sags a little under gravity (y = ${midDeck.position.y})`);
 });
 

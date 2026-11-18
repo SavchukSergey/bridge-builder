@@ -37,15 +37,15 @@ function modeText(game) {
     case 'waiting':
       return { text: 'Loading the bridge...' + paused, kind: '' };
     case 'driving':
-      return { text: 'Truck crossing...' + paused, kind: '' };
+      return { text: 'Trucks crossing...' + paused, kind: '' };
     case 'falling':
-      return { text: 'Truck falling!' + paused, kind: 'failure' };
+      return { text: 'A truck is falling!' + paused, kind: 'failure' };
     case 'crossed':
       return game.overBudget
-        ? { text: 'Truck crossed, but over budget. Reset to improve.', kind: 'failure' }
-        : { text: 'Success! The truck crossed.', kind: 'success' };
+        ? { text: 'All trucks crossed, but over budget. Reset and make it cheaper.', kind: 'failure' }
+        : { text: 'Success! All trucks crossed.', kind: 'success' };
     case 'fell':
-      return { text: 'The truck fell. Reset and try again.', kind: 'failure' };
+      return { text: 'A truck fell. Reset and try again.', kind: 'failure' };
   }
 }
 
@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const txtCost = document.getElementById('cost-value');
   /** @type {HTMLSpanElement} */
   const txtBudget = document.getElementById('budget-value');
+  /** @type {HTMLSpanElement} */
+  const txtLoad = document.getElementById('load-value');
 
   /** @type {number | undefined} */
   let statusTimer;
@@ -176,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
     txtMode.className = mode.kind;
     txtCost.textContent = formatMoney(game.cost);
     txtBudget.textContent = formatMoney(game.level.budget);
+    txtLoad.textContent = `${game.level.vehicleCount} × ${game.level.vehicleMass / 1000} t trucks`;
     boxCost.classList.toggle('over', game.overBudget);
     requestAnimationFrame(tick);
   }

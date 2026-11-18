@@ -7,7 +7,7 @@ import { steel } from "./materials/steel.mjs";
 import { createVec3F, vec3fadd, vec3flen, vec3fmul, vec3fsub } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { CompositeScene, Scene } from "./scene.js";
-import { Vehicle } from "./vehicle.mjs";
+/** @typedef {import("./vehicle.mjs").Vehicle} Vehicle */
 
 // @ts-check
 
@@ -45,10 +45,10 @@ export class Game {
     this.scene = new Scene();
     this.level = demoLevel;
     /**
-     * The load-test vehicle; exists from the first simulation start until reset.
-     * @type {Vehicle | undefined}
+     * The load-test convoy; exists from the first simulation start until reset.
+     * @type {Vehicle[]}
      */
-    this.vehicle = undefined;
+    this.vehicles = [];
     this.__loadAutosave();
 
     this.__handleMouseDown = this.__handleMouseDown.bind(this);
@@ -125,7 +125,7 @@ export class Game {
     if (running && !this.__snapshot) {
       this.__cancelLink();
       this.__snapshot = this.scene.snapshot();
-      this.vehicle = new Vehicle(this.level);
+      this.vehicles = this.level.createConvoy();
     }
     this.evalCtx.simulation = running;
   }
@@ -138,7 +138,7 @@ export class Game {
       this.scene.restore(this.__snapshot);
       this.__snapshot = undefined;
     }
-    this.vehicle = undefined;
+    this.vehicles = [];
     this.evalCtx.time = 0;
   }
 
@@ -152,11 +152,24 @@ export class Game {
   }
 
   /**
-   * Outcome of the load test so far.
+   * Outcome of the load test so far, over the whole convoy: lost as soon as any truck
+   * falls, won once every truck has crossed.
    * @returns {"building" | "waiting" | "driving" | "falling" | "crossed" | "fell"}
    */
   get testState() {
-    return this.vehicle?.state ?? "building";
+    const states = this.vehicles.map(v => v.state);
+    if (!states.length) return "building";
+    if (states.includes("fell")) return "fell";
+    if (states.includes("falling")) return "falling";
+    if (states.every(s => s === "crossed")) return "crossed";
+    if (states.every(s => s === "waiting")) return "waiting";
+    return "driving";
+  }
+
+  /** True once the load test has been won or lost. */
+  get testFinished() {
+    const state = this.testState;
+    return state === "crossed" || state === "fell";
   }
 
   get canUndo() {
@@ -535,7 +548,10 @@ export class Game {
     this.scene.grid.render(this.ctx);
     this.level.render(this.ctx);
     this.scene.renderStructure(this.ctx);
-    (this.vehicle ?? new Vehicle(this.level)).render(this.ctx);
+    // Before the first run, show the convoy lined up at the start.
+    for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
+      vehicle.render(this.ctx);
+    }
   }
 
   /**
@@ -551,15 +567,23 @@ export class Game {
       // so simulated time doesn't drift from real time.
       const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) + this.__timeCarry;
       let simulated = 0;
-      const vehicle = this.vehicle;
+      const vehicles = this.vehicles;
       for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
-        const dt = this.scene.tick(this.evalCtx, vehicle?.loads(this.evalCtx));
-        vehicle?.update(this.scene, this.evalCtx, dt);
+        const loads = vehicles.flatMap(v => v.loads(this.evalCtx));
+        const dt = this.scene.tick(this.evalCtx, loads);
+        for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
         simulated += dt;
       }
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
+  }
+
+  /** @type {Vehicle[] | undefined} */
+  __convoyPreviewCache = undefined;
+
+  __convoyPreview() {
+    return this.__convoyPreviewCache ??= this.level.createConvoy();
   }
 
   __getCurrentMaterial() {

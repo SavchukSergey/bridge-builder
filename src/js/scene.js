@@ -20,6 +20,11 @@ export const AIR_DRAG = 0.5;
 /** Version of the saved-structure JSON format produced by {@link Scene#serialize}. */
 export const SAVE_FORMAT_VERSION = 1;
 
+/** Demo bridge: tower tops at this height (deck at y = 10)... */
+const DEMO_TOWER_TOP = 25;
+/** ...and the main cable's sag below them at mid-span (1/8 of the 80 m span). */
+const DEMO_CABLE_SAG = 10;
+
 export class Scene {
 
   get joints() {
@@ -50,8 +55,9 @@ export class Scene {
     const jointBO = new Joint(createVec3F(50, 10, 0), true);
     this.joints.push(jointBI, jointBO);
 
-    const jointAH = new Joint(createVec3F(-40, 20, 0));
-    const jointBH = new Joint(createVec3F(40, 20, 0));
+    // Tower tops, braced back to the outer anchors.
+    const jointAH = new Joint(createVec3F(-40, DEMO_TOWER_TOP, 0));
+    const jointBH = new Joint(createVec3F(40, DEMO_TOWER_TOP, 0));
     this.joints.push(jointAH, jointBH);
 
     this.links.push(new Link(jointAI, jointAH, steel));
@@ -60,25 +66,12 @@ export class Scene {
     this.links.push(new Link(jointAH, jointAO, steel));
     this.links.push(new Link(jointBH, jointBO, steel));
 
-    const ropeJoints = [
-      new Joint(createVec3F(-30, 20, 0)),
-      new Joint(createVec3F(-20, 20, 0)),
-      new Joint(createVec3F(-10, 20, 0)),
-      new Joint(createVec3F(0, 20, 0)),
-      new Joint(createVec3F(10, 20, 0)),
-      new Joint(createVec3F(20, 20, 0)),
-      new Joint(createVec3F(30, 20, 0)),
-    ];
-    const ropeLinks = [
-      new Link(jointAH, ropeJoints[0], cable),
-      new Link(ropeJoints[0], ropeJoints[1], cable),
-      new Link(ropeJoints[1], ropeJoints[2], cable),
-      new Link(ropeJoints[2], ropeJoints[3], cable),
-      new Link(ropeJoints[3], ropeJoints[4], cable),
-      new Link(ropeJoints[4], ropeJoints[5], cable),
-      new Link(ropeJoints[5], ropeJoints[6], cable),
-      new Link(ropeJoints[6], jointBH, cable),
-    ]
+    // Main cable hung as a parabola: a straight cable can't carry vertical load until it
+    // stretches into a sag, and the deck would fail first.
+    const ropeJoints = [-30, -20, -10, 0, 10, 20, 30].map(x =>
+      new Joint(createVec3F(x, DEMO_TOWER_TOP - DEMO_CABLE_SAG * (1 - (x / 40) ** 2), 0)));
+    const ropeEnds = [jointAH, ...ropeJoints, jointBH];
+    const ropeLinks = ropeEnds.slice(1).map((joint, i) => new Link(ropeEnds[i], joint, cable));
 
     const bridgeJoints = [
       new Joint(createVec3F(-30, 10, 0)),

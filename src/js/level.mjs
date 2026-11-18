@@ -1,3 +1,5 @@
+import { Vehicle } from "./vehicle.mjs";
+
 /**
  * A level: two cliffs separated by a gap, a vehicle that must drive from one side to the
  * other, and a budget for the structure.
@@ -11,7 +13,9 @@ export class Level {
    * @param {number} opts.gapRightX - left edge of the right cliff
    * @param {number} opts.startX - where the vehicle starts (on the left cliff)
    * @param {number} opts.finishX - the vehicle has crossed once it reaches this x
-   * @param {number} opts.vehicleMass - kg
+   * @param {number} opts.vehicleMass - kg, per truck
+   * @param {number} [opts.vehicleCount] - trucks in the convoy
+   * @param {number} [opts.vehicleSpacing] - m between the fronts of consecutive trucks
    * @param {number} opts.budget - maximum structure cost
    */
   constructor(opts) {
@@ -22,7 +26,17 @@ export class Level {
     this.startX = opts.startX;
     this.finishX = opts.finishX;
     this.vehicleMass = opts.vehicleMass;
+    this.vehicleCount = opts.vehicleCount ?? 1;
+    this.vehicleSpacing = opts.vehicleSpacing ?? 10;
     this.budget = opts.budget;
+  }
+
+  /**
+   * The trucks for one load test, queued on the left cliff with the first at startX.
+   * @returns {Vehicle[]}
+   */
+  createConvoy() {
+    return Array.from({ length: this.vehicleCount }, (_, i) => new Vehicle(this, this.startX - i * this.vehicleSpacing));
   }
 
   /**
@@ -67,14 +81,20 @@ export class Level {
   }
 }
 
-/** The level the demo bridge is built for: a 80 m gap between cliffs at y = 10. */
+/**
+ * An 80 m gap between cliffs at y = 10, crossed by a jam of four 40 t trucks (the usual
+ * maximum for a heavy goods vehicle). The demo bridge carries them, but costs more than
+ * the budget: cheaper designs exist (around $40,500), so the puzzle is to economise.
+ */
 export const demoLevel = new Level({
   name: "Demo gap",
   groundY: 10,
   gapLeftX: -40,
   gapRightX: 40,
-  startX: -48,
+  startX: -46,
   finishX: 48,
-  vehicleMass: 20000,
-  budget: 60000,
+  vehicleMass: 40000,
+  vehicleCount: 4,
+  vehicleSpacing: 20,
+  budget: 44000,
 });

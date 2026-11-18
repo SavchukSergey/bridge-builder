@@ -33,8 +33,9 @@ const FALL_LIMIT = 20;
  */
 
 export class Vehicle {
-  length = 4;
-  height = 1.6;
+  /** Drawn size (m); the vehicle acts on the structure as a single point load. */
+  length = 12;
+  height = 3.5;
   /** m/s */
   speed = 5;
   /** @type {VehicleState} */
@@ -45,11 +46,12 @@ export class Vehicle {
 
   /**
    * @param {import("./level.mjs").Level} level
+   * @param {number} [startX] - defaults to the level's start; convoys queue up behind it
    */
-  constructor(level) {
+  constructor(level, startX = level.startX) {
     this.level = level;
     this.mass = level.vehicleMass;
-    this.x = level.startX;
+    this.x = startX;
     this.y = level.groundY;
   }
 
@@ -79,6 +81,11 @@ export class Vehicle {
    * @param {number} dt
    */
   update(scene, evalCtx, dt) {
+    if (this.state === "crossed") {
+      // Drive on along the far cliff, clearing the flag for the trucks behind.
+      this.x += this.speed * dt;
+      return;
+    }
     if (this.finished) return;
     if (this.state === "waiting") {
       if (evalCtx.time < VEHICLE_START_DELAY) return;
@@ -105,7 +112,6 @@ export class Vehicle {
     }
 
     if (this.x >= this.level.finishX) {
-      this.x = this.level.finishX;
       this.y = this.level.groundY;
       this.contact = undefined;
       this.state = "crossed";

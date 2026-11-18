@@ -15,11 +15,11 @@ function deck(material = "road", { skip = -1 } = {}) {
   return { version: SAVE_FORMAT_VERSION, joints, links };
 }
 
-/** Runs the load test until it finishes (or `seconds` pass). */
-function runTest(game, seconds = 40) {
+/** Runs the load test until it is won or lost (or `seconds` pass); returns the outcome. */
+function runTest(game, seconds = 60) {
   game.setSimulationRunning(true);
-  for (let f = 0; f < seconds * 60 && !game.vehicle.finished; f++) game.tick();
-  return game.vehicle;
+  for (let f = 0; f < seconds * 60 && !game.testFinished; f++) game.tick();
+  return game.testState;
 }
 
 describe("findRoad", () => {
@@ -102,91 +102,122 @@ describe("vehicle loads", () => {
 });
 
 describe("load test", () => {
-  test("the vehicle waits for gravity to ramp up, then drives at its speed", () => {
+  test("the convoy queues behind the start and waits for gravity to ramp up", () => {
     const game = createGame();
     game.setSimulationRunning(true);
+    const { vehicles } = game;
+    assert.equal(vehicles.length, demoLevel.vehicleCount);
+    assert.deepEqual(vehicles.map(v => v.x), vehicles.map((_, i) => demoLevel.startX - i * demoLevel.vehicleSpacing));
+    assert.ok(vehicles.every(v => v.mass === demoLevel.vehicleMass));
+
     while (game.evalCtx.time < VEHICLE_START_DELAY - 0.1) game.tick();
-    assert.equal(game.vehicle.state, "waiting");
-    assert.equal(game.vehicle.x, demoLevel.startX);
-    for (let i = 0; i < 60 * 2; i++) game.tick();
-    assert.equal(game.vehicle.state, "driving");
-    const expected = demoLevel.startX + game.vehicle.speed * (game.evalCtx.time - VEHICLE_START_DELAY);
-    assert.ok(Math.abs(game.vehicle.x - expected) < 0.05, `x ${game.vehicle.x} vs ${expected}`);
+    assert.equal(game.testState, "waiting");
+    assert.equal(vehicles[0].x, demoLevel.startX);
   });
 
-  test("the demo bridge carries the vehicle across without breaking", () => {
+  test("trucks then drive together at their speed, keeping their spacing", () => {
+    const game = createGame();
+    game.setSimulationRunning(true);
+    while (game.evalCtx.time < VEHICLE_START_DELAY + 1) game.tick();
+    assert.equal(game.testState, "driving");
+    const [first, second] = game.vehicles;
+    const expected = demoLevel.startX + first.speed * (game.evalCtx.time - VEHICLE_START_DELAY);
+    assert.ok(Math.abs(first.x - expected) < 0.05, `x ${first.x} vs ${expected}`);
+    assert.ok(Math.abs(first.x - second.x - demoLevel.vehicleSpacing) < 1e-9);
+  });
+
+  test("the demo bridge carries the whole convoy across without breaking", () => {
     const game = createGame();
     let lowest = Infinity;
     game.setSimulationRunning(true);
-    while (!game.vehicle.finished && game.evalCtx.time < 40) {
+    while (!game.testFinished && game.evalCtx.time < 60) {
       game.tick();
-      lowest = Math.min(lowest, game.vehicle.y);
+      for (const v of game.vehicles) if (!demoLevel.isGround(v.x)) lowest = Math.min(lowest, v.y);
     }
-    assert.equal(game.vehicle.state, "crossed");
     assert.equal(game.testState, "crossed");
-    assert.equal(game.vehicle.x, demoLevel.finishX);
+    assert.ok(game.vehicles.every(v => v.state === "crossed" && v.x >= demoLevel.finishX));
     assert.equal(game.scene.links.filter(l => l.broken).length, 0);
-    assert.ok(lowest < demoLevel.groundY - 0.5, `the deck visibly sags under the vehicle (lowest y ${lowest})`);
+    assert.ok(lowest < demoLevel.groundY - 0.3, `the deck visibly sags under the trucks (lowest y ${lowest})`);
   });
 
-  test("with no road across the gap the vehicle falls", () => {
+  test("the test is not won until the last truck has crossed", () => {
+    const game = createGame();
+    game.setSimulationRunning(true);
+    while (game.vehicles[0].state !== "crossed") game.tick();
+    assert.notEqual(game.testState, "crossed");
+    assert.equal(game.testFinished, false);
+  });
+
+  test("a bare road deck cannot carry its own weight, let alone trucks", () => {
+    const game = createGame();
+    game.importStructure(deck());
+    assert.equal(runTest(game), "fell");
+    assert.ok(game.scene.links.some(l => l.broken));
+  });
+
+  test("with no road across the gap the first truck falls at the cliff edge", () => {
     const game = createGame();
     game.importStructure({ version: SAVE_FORMAT_VERSION, joints: [{ x: -40, y: 10, fixed: true }], links: [] });
     game.setSimulationRunning(true);
+    const first = game.vehicles[0];
     let fallStartX;
-    while (!game.vehicle.finished && game.evalCtx.time < 40) {
+    while (!game.testFinished && game.evalCtx.time < 40) {
       game.tick();
-      if (game.vehicle.state === "falling") fallStartX ??= game.vehicle.x;
+      if (first.state === "falling") fallStartX ??= first.x;
     }
-    assert.equal(game.vehicle.state, "fell");
+    assert.equal(game.testState, "fell");
+    assert.equal(first.state, "fell");
     assert.ok(Math.abs(fallStartX - demoLevel.gapLeftX) < 0.2, `starts falling at the cliff edge (x = ${fallStartX})`);
-    assert.ok(game.vehicle.y < demoLevel.groundY - 19);
+    assert.ok(first.y < demoLevel.groundY - 19);
   });
 
-  test("a missing deck section makes the vehicle fall", () => {
+  test("a missing deck section makes the trucks fall", () => {
     const game = createGame();
     game.importStructure(deck("road", { skip: 4 }));
-    assert.equal(runTest(game).state, "fell");
+    assert.equal(runTest(game), "fell");
   });
 
-  test("steel is not a road: a steel deck does not carry the vehicle", () => {
+  test("steel is not a road: a steel deck does not carry the trucks", () => {
     const game = createGame();
     game.importStructure(deck("steel"));
-    assert.equal(runTest(game).state, "fell");
+    assert.equal(runTest(game), "fell");
   });
 
-  test("a vehicle that falls onto a road below lands and keeps driving", () => {
+  test("a truck that falls onto a road below lands and keeps driving", () => {
     const game = createGame();
-    // upper road ends at x = -30; a lower road 3 m down continues across the gap
+    // upper road (anchored at both ends) ends at x = -30; a lower road 3 m down continues
     const s = deck();
+    s.joints[1].fixed = true;
     s.joints.push({ x: -40, y: 7, fixed: true }, { x: -30, y: 7, fixed: true }, { x: -25, y: 7, fixed: true });
     const n = s.joints.length;
     s.links = [s.links[0], { a: n - 3, b: n - 2, material: "road" }, { a: n - 2, b: n - 1, material: "road" }];
     game.importStructure(s);
     game.setSimulationRunning(true);
+    const first = game.vehicles[0];
     const states = new Set();
-    while (game.vehicle.x < -26 && game.evalCtx.time < 20) {
+    while (first.x < -26 && game.evalCtx.time < 20) {
       game.tick();
-      states.add(game.vehicle.state);
+      states.add(first.state);
     }
     assert.ok(states.has("falling"), "it fell off the end of the upper road");
-    assert.equal(game.vehicle.state, "driving");
-    assert.ok(Math.abs(game.vehicle.y - 7) < 0.2, `landed on the lower road (y = ${game.vehicle.y})`);
+    assert.equal(first.state, "driving");
+    assert.ok(Math.abs(first.y - 7) < 0.2, `landed on the lower road (y = ${first.y})`);
   });
 
-  test("the vehicle exists only while simulating; reset removes it", () => {
+  test("the convoy exists only while simulating; reset removes it", () => {
     const game = createGame();
-    assert.equal(game.vehicle, undefined);
+    assert.deepEqual(game.vehicles, []);
     assert.equal(game.testState, "building");
     game.setSimulationRunning(true);
     for (let i = 0; i < 200; i++) game.tick();
     game.setSimulationRunning(false);
-    assert.ok(game.vehicle, "still there while paused");
-    const x = game.vehicle.x;
+    assert.equal(game.vehicles.length, demoLevel.vehicleCount, "still there while paused");
+    const x = game.vehicles[0].x;
     game.tick();
-    assert.equal(game.vehicle.x, x, "does not move while paused");
+    assert.equal(game.vehicles[0].x, x, "does not move while paused");
     game.reset();
-    assert.equal(game.vehicle, undefined);
+    assert.deepEqual(game.vehicles, []);
+    assert.equal(game.testState, "building");
   });
 });
 
@@ -197,10 +228,37 @@ describe("budget", () => {
     assert.equal(game.cost, 80 * 300);
   });
 
-  test("the demo bridge is within the demo level budget", () => {
+  test("the demo bridge works but is over the demo level's budget", () => {
     const game = createGame();
-    assert.ok(Math.abs(game.cost - 42657) < 1, `cost ${game.cost}`);
-    assert.equal(game.overBudget, false);
+    assert.ok(Math.abs(game.cost - 45351) < 1, `cost ${game.cost}`);
+    assert.equal(game.overBudget, true);
+  });
+
+  test("a cheaper suspension bridge carries the convoy within budget", () => {
+    // Demo layout with 10 m towers, a 6 m cable sag and cable backstays.
+    const top = 20, sag = 6;
+    const s = deck();
+    const n = s.joints.length;
+    s.joints.push({ x: -50, y: 10, fixed: true }, { x: 50, y: 10, fixed: true }, { x: -40, y: top }, { x: 40, y: top });
+    const [AO, BO, AH, BH] = [n, n + 1, n + 2, n + 3];
+    s.links.push(
+      { a: 0, b: AH, material: "steel" }, { a: n - 1, b: BH, material: "steel" },
+      { a: AH, b: AO, material: "cable" }, { a: BH, b: BO, material: "cable" },
+    );
+    const rope = [AH];
+    for (let i = 1; i <= 7; i++) {
+      const x = -40 + i * 10;
+      s.joints.push({ x, y: top - sag * (1 - (x / 40) ** 2) });
+      rope.push(s.joints.length - 1);
+      s.links.push({ a: s.joints.length - 1, b: i, material: "cable" }); // hanger to deck joint
+    }
+    rope.push(BH);
+    rope.slice(1).forEach((b, i) => s.links.push({ a: rope[i], b, material: "cable" }));
+
+    const game = createGame();
+    game.importStructure(s);
+    assert.equal(game.overBudget, false, `cost ${game.cost}`);
+    assert.equal(runTest(game), "crossed");
   });
 
   test("going over budget is reported, and cost uses rest lengths during simulation", () => {
