@@ -118,8 +118,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  function tick() {
-    game.tick();
+  /** @type {number | undefined} */
+  let lastFrame;
+
+  /**
+   * @param {DOMHighResTimeStamp} [now]
+   */
+  function tick(now = performance.now()) {
+    const elapsed = lastFrame === undefined ? 0 : (now - lastFrame) / 1000;
+    lastFrame = now;
+    game.tick(elapsed);
     game.render();
     txtTime.innerText = game.evalCtx.time.toFixed(2) + 's';
     btnReset.disabled = game.isBuildMode;

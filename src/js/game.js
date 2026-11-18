@@ -11,9 +11,14 @@ import { CompositeScene, Scene } from "./scene.js";
 
 /** Pointer travel (in screen pixels) after which a press counts as a pan, not a click. */
 const DRAG_THRESHOLD_PX = 4;
-/** Simulated seconds per rendered frame (real time at 60 fps). */
+/** Default simulated seconds per frame when the caller does not pass the elapsed time. */
 const SIM_TIME_PER_FRAME = 1 / 60;
-const MAX_SUBSTEPS = 400;
+/**
+ * Longest stretch of real time simulated in one frame. Longer gaps (a background tab,
+ * a breakpoint) are dropped instead of being caught up in one huge frame.
+ */
+const MAX_FRAME_TIME = 0.1;
+const MAX_SUBSTEPS = 1000;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */
 const PICK_RADIUS_PX = 12;
 /** Grid step (in metres) that new joints snap to. */
@@ -86,6 +91,9 @@ export class Game {
   /** @type {import("./scene.js").SavedStructure[]} */
   __redoStack = [];
 
+  /** Simulated-minus-real time left over from the previous frame (see {@link tick}). */
+  __timeCarry = 0;
+
   /** Set when the last pointer press was a pan, so the following click is ignored. */
   __suppressClick = false;
 
@@ -116,6 +124,7 @@ export class Game {
   /** Stops the simulation and restores the structure as it was built. */
   reset() {
     this.evalCtx.simulation = false;
+    this.__timeCarry = 0;
     if (this.__snapshot) {
       this.scene.restore(this.__snapshot);
       this.__snapshot = undefined;
@@ -499,15 +508,24 @@ export class Game {
     this.scene.render(this.ctx);
   }
 
-  tick() {
+  /**
+   * Advances the simulation by the real time that passed since the previous frame, so it
+   * runs at the same speed at any frame rate. Stiff structures need more (smaller)
+   * substeps; the substep cap keeps the page responsive and slows the simulation down
+   * instead of freezing when exceeded.
+   * @param {number} [elapsed] - seconds since the previous frame
+   */
+  tick(elapsed = SIM_TIME_PER_FRAME) {
     if (this.evalCtx.simulation) {
-      // Advance a fixed amount of simulated time per frame; stiff structures need
-      // more (smaller) substeps. The cap keeps the page responsive and slows the
-      // simulation down instead of freezing when the budget is exceeded.
+      // Substeps don't divide the frame exactly; carry the over/undershoot to the next frame
+      // so simulated time doesn't drift from real time.
+      const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) + this.__timeCarry;
       let simulated = 0;
-      for (let i = 0; i < MAX_SUBSTEPS && simulated < SIM_TIME_PER_FRAME; i++) {
+      for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
         simulated += this.scene.tick(this.evalCtx);
       }
+      // If the substep cap was hit, drop the backlog rather than chase it.
+      this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
   }
 

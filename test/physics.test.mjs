@@ -5,17 +5,28 @@ import { SAVE_FORMAT_VERSION } from "../src/js/scene.js";
 
 const maxSpeed = (scene) => Math.max(...scene.joints.map(j => Math.hypot(j.velocity.x, j.velocity.y)));
 
-test("the demo bridge survives 10 s, stays finite and settles", () => {
-  const game = createGame();
-  runFrames(game, 300);
-  const speedAt5s = maxSpeed(game.scene);
-  runFrames(game, 300);
+/** Highest joint speed seen over the next `seconds` of simulation (60 fps frames). */
+function peakSpeedOver(game, seconds) {
+  let peak = 0;
+  for (let f = 0; f < seconds * 60; f++) {
+    game.tick();
+    peak = Math.max(peak, maxSpeed(game.scene));
+  }
+  return peak;
+}
 
-  assert.ok(Math.abs(game.evalCtx.time - 10) < 0.5, `simulates in real time (t = ${game.evalCtx.time})`);
+test("the demo bridge survives 15 s, stays finite and settles", () => {
+  const game = createGame();
+  game.setSimulationRunning(true);
+  const early = peakSpeedOver(game, 3);   // 0-3 s: gravity ramps up, deck drops and bounces
+  peakSpeedOver(game, 9);
+  const late = peakSpeedOver(game, 3);    // 12-15 s
+
+  assert.ok(Math.abs(game.evalCtx.time - 15) < 0.01, `simulates in real time (t = ${game.evalCtx.time})`);
   assert.ok(game.scene.joints.every(j => Number.isFinite(j.position.x) && Number.isFinite(j.position.y)));
   assert.equal(game.scene.links.filter(l => l.broken).length, 0);
-  assert.ok(maxSpeed(game.scene) < speedAt5s, "motion decays");
-  assert.ok(maxSpeed(game.scene) < 1, `nearly at rest (max speed ${maxSpeed(game.scene)} m/s)`);
+  assert.ok(late < early / 5, `motion decays (peak ${early.toFixed(3)} -> ${late.toFixed(3)} m/s)`);
+  assert.ok(late < 0.3, `nearly at rest (peak ${late.toFixed(3)} m/s)`);
 
   const midDeck = game.scene.joints.find(j => !j.fixed && Math.abs(j.position.x) < 1 && j.position.y < 15);
   assert.ok(midDeck.position.y < 10 && midDeck.position.y > 8, `deck sags a little under gravity (y = ${midDeck.position.y})`);
@@ -61,4 +72,24 @@ test("cables can sag but never push", () => {
   });
   runFrames(game, 120);
   assert.ok(game.scene.joints[1].position.y < 9, "the top of a cable post falls");
+});
+
+test("simulated time follows real elapsed time at any frame rate, capped per frame", () => {
+  const at60 = createGame();
+  at60.setSimulationRunning(true);
+  for (let i = 0; i < 60; i++) at60.tick(1 / 60);
+
+  const at10 = createGame();
+  at10.setSimulationRunning(true);
+  for (let i = 0; i < 10; i++) at10.tick(1 / 10);
+
+  assert.ok(Math.abs(at60.evalCtx.time - 1) < 0.01, `60 fps: ${at60.evalCtx.time}`);
+  assert.ok(Math.abs(at10.evalCtx.time - 1) < 0.01, `10 fps: ${at10.evalCtx.time}`);
+
+  const stalled = createGame();
+  stalled.setSimulationRunning(true);
+  stalled.tick(30); // tab was in the background for 30 s
+  assert.ok(stalled.evalCtx.time < 0.11, "long gaps are not caught up");
+  stalled.tick(-1);
+  assert.ok(stalled.evalCtx.time < 0.11, "negative elapsed is ignored");
 });

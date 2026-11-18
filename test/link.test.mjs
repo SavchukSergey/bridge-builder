@@ -55,3 +55,18 @@ test("stress colour is green at rest, red in compression, blue in tension", () =
   assert.deepEqual(link(steel, 9).stressColor, { r: 1, g: 0, b: 0 });
   assert.deepEqual(link(steel, 11).stressColor, { r: 0, g: 0, b: 1 });
 });
+
+test("damping is a fixed fraction of critical damping for every link", async () => {
+  const { DAMPING_RATIO } = await import("../src/js/engine/link.mjs");
+  const anchor = new Joint(createVec3F(0, 0, 0), true);
+  for (const length of [1, 10]) {
+    const end = new Joint(createVec3F(length, 0, 0));
+    const l = new Link(anchor, end, steel);
+    end.mass = l.mass / 2;
+    // anchor is fixed, so the reduced mass is just the free end's mass
+    const critical = 2 * Math.sqrt(l.stiffness * end.mass);
+    assert.ok(Math.abs(l.dampingCoefficient / critical - DAMPING_RATIO) < 1e-12);
+  }
+  const loose = new Link(new Joint(createVec3F(0, 0, 0), true), new Joint(createVec3F(1, 0, 0), true), steel);
+  assert.equal(loose.dampingCoefficient, 0, "no damping between two fixed joints");
+});

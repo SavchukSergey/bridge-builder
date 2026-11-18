@@ -9,6 +9,12 @@ import { createVec3F, vec3flen2, vec3fsub } from "./math.js";
 const MAX_DT = 0.0005;
 /** Fraction of the theoretical stability limit actually used. */
 const STABILITY_SAFETY = 0.5;
+/**
+ * Global velocity drag (1/s). Link damping only acts along links; this settles the slow
+ * whole-structure modes (a deck bouncing on its cables) within a few seconds.
+ * Terminal falling speed is g / AIR_DRAG.
+ */
+export const AIR_DRAG = 0.5;
 
 /** Version of the saved-structure JSON format produced by {@link Scene#serialize}. */
 export const SAVE_FORMAT_VERSION = 1;
@@ -347,7 +353,8 @@ export class Scene {
       const rvy = vb.y - va.y;
       const rvz = vb.z - va.z;
       const vrel = rvx * link.directionN.x + rvy * link.directionN.y + rvz * link.directionN.z;
-      const dampingForce = vrel * 0.1;
+      if (vrel === 0 || (!link.material.canCompress && link.strain <= 0)) continue; // slack cables don't damp
+      const dampingForce = vrel * link.dampingCoefficient;
       const dfx = link.directionN.x * dampingForce;
       const dfy = link.directionN.y * dampingForce;
       const dfz = link.directionN.z * dampingForce;
@@ -371,7 +378,7 @@ export class Scene {
     const accDt = maxAcc ? Math.max(50 / maxAcc, 0.00001) : MAX_DT;
     const dt = Math.min(MAX_DT, accDt, this.stableDt());
     evalCtx.time += dt;
-    const viscosity = Math.pow(0.99, dt);
+    const viscosity = Math.exp(-AIR_DRAG * dt);
 
     for (const joint of this.joints) {
       if (!joint.fixed && joint.mass) {

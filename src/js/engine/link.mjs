@@ -1,5 +1,8 @@
 import { createVec3F, lerpColor, vec3flen, vec3fmul } from "../math.js";
 
+/** Fraction of critical damping applied along each link. */
+export const DAMPING_RATIO = 0.1;
+
 export class Link {
 
   /**
@@ -64,6 +67,23 @@ export class Link {
   get crossSectionalArea() {
     //todo: poissonRatio
     return this.material.crossSectionalArea;
+  }
+
+  /** Axial spring stiffness k = E*A/L (N/m). */
+  get stiffness() {
+    return this.material.youngModulus * this.crossSectionalArea / this.length;
+  }
+
+  /**
+   * Axial damping c = 2*zeta*sqrt(k*m), using the reduced mass of the two end joints, so
+   * every link's own vibration is damped at the same ratio {@link DAMPING_RATIO}
+   * regardless of how stiff or heavy it is.
+   */
+  get dampingCoefficient() {
+    const invMassA = this.a.fixed || !this.a.mass ? 0 : 1 / this.a.mass;
+    const invMassB = this.b.fixed || !this.b.mass ? 0 : 1 / this.b.mass;
+    const invMass = invMassA + invMassB;
+    return invMass ? 2 * DAMPING_RATIO * Math.sqrt(this.stiffness / invMass) : 0;
   }
 
   get strain() {

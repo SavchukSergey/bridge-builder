@@ -5,7 +5,7 @@ import { Joint } from "../src/js/engine/joint.mjs";
 import { Link } from "../src/js/engine/link.mjs";
 import { steel } from "../src/js/materials/steel.mjs";
 import { createVec3F } from "../src/js/math.js";
-import { Scene, SAVE_FORMAT_VERSION } from "../src/js/scene.js";
+import { AIR_DRAG, Scene, SAVE_FORMAT_VERSION } from "../src/js/scene.js";
 
 const v = (x, y) => createVec3F(x, y, 0);
 
@@ -165,6 +165,6 @@ test("tick integrates with semi-implicit Euler: v += a*dt, then x += v*dt", () =
   // starting at rest with an unstressed link, the only force is gravity
   const dt = scene.tick(evalCtx);
   const g = evalCtx.gravity.y;
-  assert.ok(Math.abs(joint.velocity.y - g * dt * Math.pow(0.99, dt)) < 1e-12, "velocity");
+  assert.ok(Math.abs(joint.velocity.y - g * dt * Math.exp(-AIR_DRAG * dt)) < 1e-12, "velocity");
   assert.ok(Math.abs(joint.position.y - (-10 + g * dt * dt)) < 1e-12, `position moved by v*dt (${joint.position.y + 10} vs ${g * dt * dt})`);
 });
