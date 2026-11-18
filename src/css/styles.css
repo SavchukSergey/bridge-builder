@@ -68,6 +68,44 @@ body {
   line-height: 1.4;
 }
 
+#link-tooltip {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  min-width: 13em;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background-color: rgba(20, 24, 28, 0.92);
+  color: #eee;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#link-tooltip-title {
+  font-weight: bold;
+}
+
+#link-tooltip .meter {
+  position: relative;
+  height: 6px;
+  margin: 4px 0 2px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+#link-tooltip-meter {
+  height: 100%;
+}
+
+#link-tooltip-peak {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background-color: white;
+}
+
 #help {
   margin-top: auto;
   max-width: 11em;

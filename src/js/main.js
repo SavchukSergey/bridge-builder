@@ -50,6 +50,56 @@ function modeText(game) {
   }
 }
 
+/**
+ * Colour for a load fraction: green when relaxed, through amber, to red at the limit.
+ * @param {number} fraction
+ */
+function loadColor(fraction) {
+  const hue = 120 * (1 - Math.min(1, Math.max(0, fraction)));
+  return `hsl(${hue}, 75%, 50%)`;
+}
+
+/**
+ * @param {string} name
+ */
+function capitalize(name) {
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+/**
+ * Shows the stress tooltip next to the pointer for the hovered link, or hides it.
+ * @param {Record<string, HTMLElement>} el
+ * @param {import('./game.js').LinkInfo | undefined} info
+ * @param {HTMLCanvasElement} canvas
+ */
+function updateTooltip(el, info, canvas) {
+  if (!info) {
+    el.root.hidden = true;
+    return;
+  }
+  el.root.hidden = false;
+  el.title.textContent = `${capitalize(info.material)} \u00b7 ${info.length.toFixed(1)} m \u00b7 ${formatMoney(info.cost)}`;
+  el.force.textContent = info.state === 'slack' ? 'Slack (cables only pull)'
+    : info.state === 'unloaded' ? 'Unloaded'
+      : `${capitalize(info.state)}: ${Math.round(info.forceKN).toLocaleString('en-US')} kN`;
+
+  const now = Math.min(1, info.utilization);
+  el.meter.style.width = `${now * 100}%`;
+  el.meter.style.backgroundColor = loadColor(info.utilization);
+  const hasPeak = info.peakUtilization !== undefined;
+  el.peak.hidden = !hasPeak;
+  if (hasPeak) el.peak.style.left = `calc(${Math.min(1, info.peakUtilization) * 100}% - 1px)`;
+  el.load.textContent = `${Math.round(info.utilization * 100)}% of strength`
+    + (hasPeak ? ` \u00b7 peak ${Math.round(info.peakUtilization * 100)}%` : '');
+
+  // next to the pointer, flipped to stay on screen
+  const rect = canvas.getBoundingClientRect();
+  const x = rect.left + info.client.x, y = rect.top + info.client.y;
+  const { offsetWidth: w, offsetHeight: h } = el.root;
+  el.root.style.left = `${x + 16 + w > window.innerWidth ? x - 16 - w : x + 16}px`;
+  el.root.style.top = `${y + 16 + h > window.innerHeight ? y - 16 - h : y + 16}px`;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const canvas = getCanvas();
   /** @type {HTMLInputElement} */
@@ -78,6 +128,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const txtStatus = document.getElementById('status-message');
   /** @type {HTMLSelectElement} */
   const selLevel = document.getElementById('level-select');
+  const tooltip = {
+    root: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip')),
+    title: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-title')),
+    force: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-force')),
+    meter: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-meter')),
+    peak: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-peak')),
+    load: /** @type {HTMLDivElement} */ (document.getElementById('link-tooltip-load')),
+  };
   /** @type {HTMLDivElement} */
   const txtLevel = document.getElementById('level-description');
   /** @type {HTMLDivElement} */
@@ -213,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
     txtBudget.textContent = formatMoney(game.level.budget);
     txtLoad.textContent = `${game.level.vehicleCount} × ${game.level.vehicleMass / 1000} t trucks`;
     boxCost.classList.toggle('over', game.overBudget);
+    updateTooltip(tooltip, game.hoverInfo, canvas);
     requestAnimationFrame(tick);
   }
 

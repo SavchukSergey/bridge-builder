@@ -313,6 +313,7 @@ export class Scene {
     });
     this.content.links = snapshot.links.map(({ link, broken }) => {
       link.broken = broken;
+      link.peakUtilization = 0;
       link.preEval();
       return link;
     });
@@ -407,9 +408,10 @@ export class Scene {
     }
 
     for (const link of this.links) {
-      if (!link.broken && link.overStressed) {
-        link.broken = true;
-      }
+      if (link.broken) continue;
+      const utilization = link.utilization;
+      if (utilization > link.peakUtilization) link.peakUtilization = utilization;
+      if (utilization > 1) link.broken = true;
     }
     return dt;
   }

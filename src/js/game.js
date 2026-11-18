@@ -69,6 +69,8 @@ export class Game {
     canvas.addEventListener("wheel", this.__handleWheel);
     canvas.addEventListener("click", this.__handleClick);
     canvas.addEventListener("contextmenu", this.__handleContextMenu);
+    this.__handlePointerLeave = this.__handlePointerLeave.bind(this);
+    canvas.addEventListener("pointerleave", this.__handlePointerLeave);
     window.addEventListener("keydown", this.__handleKeyDown);
   }
 
@@ -79,6 +81,7 @@ export class Game {
     this.canvas.removeEventListener("wheel", this.__handleWheel)
     this.canvas.removeEventListener("click", this.__handleClick)
     this.canvas.removeEventListener("contextmenu", this.__handleContextMenu)
+    this.canvas.removeEventListener("pointerleave", this.__handlePointerLeave)
     window.removeEventListener("keydown", this.__handleKeyDown)
   }
 
@@ -411,6 +414,7 @@ export class Game {
    */
   __handleMouseMove(ev) {
     const client = this.__getPointerClient(ev);
+    this.__hoverClient = client;
     if (this.__dragState) {
       if (!this.__dragState.moved) {
         const dx = client.x - this.__dragState.startClient.x;
@@ -553,6 +557,51 @@ export class Game {
     }
   }
 
+  /**
+   * Last pointer position over the canvas (client pixels), or undefined once it left.
+   * @type {import("./math.js").Vec3F | undefined}
+   */
+  __hoverClient = undefined;
+
+  __handlePointerLeave() {
+    this.__hoverClient = undefined;
+  }
+
+  /**
+   * The unbroken link under the pointer, unless the pointer is busy panning or placing a link.
+   * Looked up on demand so it follows links as they move during a simulation.
+   * @returns {import("./engine/link.mjs").Link | undefined}
+   */
+  get hoveredLink() {
+    if (!this.__hoverClient || this.__clickState || this.__dragState?.moved) return undefined;
+    return this.scene.findLink(this.ctx.clientToGlobal(this.__hoverClient), this.__pickRadius());
+  }
+
+  /**
+   * What the stress tooltip shows for the hovered link.
+   * @returns {LinkInfo | undefined}
+   */
+  get hoverInfo() {
+    const link = this.hoveredLink;
+    if (!link || !this.__hoverClient) return undefined;
+    const force = link.stressForce;
+    /** @type {LinkInfo["state"]} */
+    let state = "unloaded";
+    if (force > 0) state = "tension";
+    else if (force < 0) state = "compression";
+    else if (link.strain < 0) state = "slack"; // a cable pushed shorter than its length
+    return {
+      client: this.__hoverClient,
+      material: link.material.name,
+      length: link.length,
+      cost: link.length * link.material.costPerMeter,
+      state,
+      forceKN: Math.abs(force) / 1000,
+      utilization: link.utilization,
+      peakUtilization: this.isBuildMode ? undefined : link.peakUtilization,
+    };
+  }
+
   /** Pick radius in world units, constant on screen regardless of zoom. */
   __pickRadius() {
     return PICK_RADIUS_PX / this.ctx.zoom;
@@ -621,6 +670,16 @@ export class Game {
     this.ctx.clear();
     this.scene.grid.render(this.ctx);
     this.level.render(this.ctx);
+    const hovered = this.hoveredLink;
+    if (hovered) {
+      // halo under the hovered link
+      this.ctx.beginPath();
+      this.ctx.moveTo(hovered.a.position.x, hovered.a.position.y);
+      this.ctx.lineTo(hovered.b.position.x, hovered.b.position.y);
+      this.ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      this.ctx.lineWidth = Math.sqrt(hovered.material.crossSectionalArea) + 8 / this.ctx.zoom;
+      this.ctx.stroke();
+    }
     this.scene.renderStructure(this.ctx);
     // Before the first run, show the convoy lined up at the start.
     for (const vehicle of this.vehicles.length ? this.vehicles : this.__convoyPreview()) {
@@ -673,6 +732,18 @@ export class Game {
 
 /**
  * @typedef {DragState | ClickState | undefined} InteractionState
+ */
+
+/**
+ * @typedef {Object} LinkInfo
+ * @property {import("./math.js").Vec3F} client - pointer position, client pixels
+ * @property {string} material
+ * @property {number} length - rest length, m
+ * @property {number} cost
+ * @property {"tension" | "compression" | "slack" | "unloaded"} state
+ * @property {number} forceKN - magnitude of the axial force
+ * @property {number} utilization - fraction of the material's strength in use now
+ * @property {number | undefined} peakUtilization - highest since the simulation started
  */
 
 /**

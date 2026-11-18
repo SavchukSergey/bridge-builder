@@ -26,6 +26,8 @@ export class Link {
     this.directionN = vec3fmul(this.direction, 1 / this.length);
 
     this.broken = false;
+    /** Highest {@link utilization} reached since the simulation started. */
+    this.peakUtilization = 0;
   }
 
   preEval() {
@@ -120,8 +122,16 @@ export class Link {
   }
 
   get overStressed() {
+    return this.utilization > 1;
+  }
+
+  /**
+   * Current stress as a fraction of what the material can take in that direction
+   * (tensile or compressive strength): 1 means at the breaking point.
+   */
+  get utilization() {
     const sp = this.stressPressure;
-    return sp < 0 ? -sp > this.material.compressionStrength : sp > this.material.tensileStrength;
+    return sp < 0 ? -sp / this.material.compressionStrength : sp / this.material.tensileStrength;
   }
 
   get dx() {
