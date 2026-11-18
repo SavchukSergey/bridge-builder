@@ -261,7 +261,7 @@ export class Game {
   fitView() {
     const { x0, x1, y } = this.level.view;
     const { top, right } = this.viewInsets;
-    const visibleWidth = Math.max(100, (this.canvas.width || 800) - right);
+    const visibleWidth = Math.max(100, (this.canvas.width / this.ctx.pixelRatio || 800) - right);
     const zoom = Math.max(1, visibleWidth / (x1 - x0));
     this.ctx.zoom = zoom;
     // The visible area's centre is offset from the canvas centre by half of each inset.
@@ -670,8 +670,8 @@ export class Game {
   }
 
   render() {
-    this.ctx.width = this.canvas.width;
-    this.ctx.height = this.canvas.height;
+    this.ctx.width = this.canvas.width / this.ctx.pixelRatio;
+    this.ctx.height = this.canvas.height / this.ctx.pixelRatio;
     this.ctx.clear();
     renderBackground(this.ctx, this.level.startY);
     this.level.render(this.ctx);

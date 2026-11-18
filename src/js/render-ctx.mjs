@@ -9,23 +9,43 @@ export class RenderCtx {
     this.ctx = ctx;
   }
 
+  /** Size in CSS pixels; the canvas itself has {@link pixelRatio} times as many. */
   width = 0;
   height = 0;
+  /** CSS pixels per metre. */
   zoom = 8;
+  /**
+   * Device pixels per CSS pixel (window.devicePixelRatio): drawing at the screen's real
+   * resolution keeps lines sharp on high-DPI displays. Everything else, including pointer
+   * positions, stays in CSS pixels.
+   */
+  pixelRatio = 1;
   shift = createVec3F(0, 0, 0);
 
   #updateTransform() {
-    const { zoom, shift, width, height } = this;
-    this.ctx.setTransform(zoom, 0, 0, -zoom, width / 2 - shift.x * zoom, height / 2 + shift.y * zoom);
+    const { zoom, shift, width, height, pixelRatio: r } = this;
+    this.ctx.setTransform(zoom * r, 0, 0, -zoom * r, (width / 2 - shift.x * zoom) * r, (height / 2 + shift.y * zoom) * r);
+  }
+
+  /** Switches drawing to screen space: CSS pixels from the top left. */
+  screenSpace() {
+    const r = this.pixelRatio;
+    this.ctx.setTransform(r, 0, 0, r, 0, 0);
   }
 
   getTransform() {
     return this.ctx.getTransform();
   }
 
+  /**
+   * A client-to-world mapping frozen at the current view, for dragging: it keeps mapping
+   * with the view the drag started from while the view itself moves.
+   * @returns {{ transformPoint(p: import("./math.js").Vec3F): import("./math.js").Vec3F }}
+   */
   getClientToGlobalMatrix() {
-    //todo: optimize. Inverse is expensive
-    return this.ctx.getTransform().inverse();
+    const frozen = new RenderCtx(this.ctx);
+    Object.assign(frozen, { width: this.width, height: this.height, zoom: this.zoom, shift: { ...this.shift } });
+    return { transformPoint: (p) => frozen.clientToGlobal(p) };
   }
 
   /**
@@ -43,24 +63,9 @@ export class RenderCtx {
     );
   }
 
-  /**
-   * 
-   * @param {import("./math.js").Vec3F} vec 
-   * @returns {import("./math.js").Vec3F} 
-   */
-  globalToClient(vec) {
-    const { shift, zoom } = this;
-
-    return createVec3F(
-      (vec.x - shift.x) * zoom,
-      (vec.y - shift.y) * zoom,
-      (vec.z - shift.z) * zoom
-    );
-  }
-
   clear() {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.clearRect(0, 0, this.width * this.pixelRatio, this.height * this.pixelRatio);
     this.#updateTransform();
   }
 

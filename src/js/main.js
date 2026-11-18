@@ -163,18 +163,21 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Initialize canvas dimensions
+  const game = new Game(canvas);
+
+  // Size the canvas in device pixels, so it is sharp on high-DPI screens. Browser zoom and
+  // moving the window to another monitor change the ratio; both fire 'resize'.
   function resizeCanvas() {
     const container = canvas.parentElement;
-    if (container) {
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-    }
+    if (!container) return;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.round(container.clientWidth * ratio);
+    canvas.height = Math.round(container.clientHeight * ratio);
+    game.ctx.pixelRatio = canvas.width / container.clientWidth || 1;
   }
 
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
-
-  const game = new Game(canvas);
   const toolbar = /** @type {HTMLElement} */ (document.getElementById('control-panel'));
   const sidePanel = /** @type {HTMLElement} */ (document.getElementById('material-panel'));
   const updateInsets = () => {

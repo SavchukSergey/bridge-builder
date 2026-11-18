@@ -90,6 +90,30 @@ describe("rendering", () => {
     assert.equal(rec.stackDepth, 0);
   });
 
+  test("on a high-DPI screen it draws at device resolution, with pointer maths unchanged", () => {
+    const game = createGame();
+    const before = game.ctx.clientToGlobal({ x: 123, y: 45, z: 0 });
+    const zoom = game.ctx.zoom;
+
+    game.ctx.pixelRatio = 2;
+    game.canvas.width = 1600; // 800 CSS pixels at 2 device pixels each
+    game.canvas.height = 1200;
+    const rec = withRecorder(game);
+    game.render();
+    assert.equal(game.ctx.width, 800, "layout stays in CSS pixels");
+    const m = rec.getTransform();
+    assert.equal(m.a, zoom * 2, "world drawn at twice the scale in device pixels");
+    assert.deepEqual(game.ctx.clientToGlobal({ x: 123, y: 45, z: 0 }), before);
+
+    // a pan still follows the pointer one-to-one
+    const start = at(game, 0, 15);
+    game.__handleMouseDown(start);
+    game.__handleMouseMove({ clientX: start.clientX + 80, clientY: start.clientY });
+    game.__handleMouseUp();
+    const moved = game.ctx.clientToGlobal({ x: start.clientX + 80, y: start.clientY, z: 0 });
+    assert.ok(Math.abs(moved.x - 0) < 1e-9 && Math.abs(moved.y - 15) < 1e-9, "the grabbed point stays under the pointer");
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);

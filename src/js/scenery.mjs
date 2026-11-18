@@ -63,7 +63,7 @@ export function renderBackground(ctx, groundY) {
   const g = ctx.ctx;
   const { width: w, height: h, zoom, shift } = ctx;
   g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.screenSpace();
 
   /** Screen y of a layer point at height y with parallax p. */
   const sy = (/** @type {number} */ y, /** @type {number} */ p) => h / 2 - (y - shift.y) * zoom * p;
