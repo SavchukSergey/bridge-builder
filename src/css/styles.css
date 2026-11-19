@@ -1696,3 +1696,78 @@ body.simple .advanced {
 @media (prefers-reduced-motion: reduce) {
   #hint.flash { animation: none; }
 }
+
+/* ---------- read aloud ---------- */
+
+.speak.no-voice {
+  display: none !important;
+}
+
+.btn.speak {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  justify-content: center;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn.speak:hover,
+.btn.speak.reading {
+  color: var(--accent);
+}
+
+.btn.speak.reading .wave {
+  animation: speak-wave 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes speak-wave {
+  from { opacity: 0.2; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.speak.reading .wave { animation: none; }
+}
+
+.level-card,
+.hint-card {
+  position: relative;
+}
+
+.level-card .speak,
+.hint-card .speak {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+#level-description,
+#hint-text {
+  padding-right: 26px;
+}
+
+/* the hint's words are read once they're shown */
+.hint-card:has(#hint-text[hidden]) .speak {
+  display: none;
+}
+
+.result-card .result-speak {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+#tutorial .tutorial-speak {
+  vertical-align: middle;
+}
+
+@media (pointer: coarse) {
+  .btn.speak {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+}

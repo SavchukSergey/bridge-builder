@@ -7,7 +7,7 @@
 //
 // SHELL must list every file in src/ (a test checks it); bump VERSION when that changes.
 
-const VERSION = 2;
+const VERSION = 3;
 const CACHE = `bridge-builder-v${VERSION}`;
 
 const SHELL = [
@@ -55,6 +55,7 @@ const SHELL = [
   "js/scenery.mjs",
   "js/share.mjs",
   "js/solutions.mjs",
+  "js/speech.mjs",
   "js/storage.mjs",
   "js/themes.mjs",
   "js/vehicle-types.mjs",

@@ -8,6 +8,7 @@ import { renderLevelPreview } from './level-preview.mjs';
 import { SANDBOX_DEFAULT, SANDBOX_LIMITS, SANDBOX_TRAFFIC, normalizeSandbox, parseSandboxId, sandboxId } from './sandbox.mjs';
 import { challengesFor } from './challenges.mjs';
 import { failureTip, levelHint } from './hints.mjs';
+import { setUpReading } from './speech.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -139,6 +140,7 @@ function starText(stars) {
 document.addEventListener('DOMContentLoaded', function () {
   document.documentElement.lang = language();
   translatePage(document);
+  const stopReading = setUpReading(document, language());
   const canvas = getCanvas();
   const chkSimulation = byId('toggle-simulation', HTMLInputElement);
   const btnReset = byId('reset-simulation', HTMLButtonElement);
@@ -495,6 +497,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function hideResult() {
     dlg.root.hidden = true;
+    stopReading?.();
   }
 
   // ---- sound

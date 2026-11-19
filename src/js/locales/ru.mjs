@@ -367,6 +367,7 @@ export default {
   "ui.tutorialAgain": "Пройти ещё раз на уровне «Ручей»",
   "ui.simple": "Простое управление",
   "ui.simpleNote": "прячет лишние кнопки: зеркало, нагрузку, сетку, слежение, экспорт и импорт",
+  "ui.readAloud": "Прочитай мне вслух",
   "ui.language": "Язык",
   "ui.app": "Приложение",
   "ui.install": "Установить Bridge Builder",

@@ -367,6 +367,7 @@ export default {
   "ui.tutorialAgain": "Пройти ще раз на рівні «Струмок»",
   "ui.simple": "Просте керування",
   "ui.simpleNote": "ховає зайві кнопки: дзеркало, навантаження, сітку, стеження, експорт та імпорт",
+  "ui.readAloud": "Прочитай мені вголос",
   "ui.language": "Мова",
   "ui.app": "Застосунок",
   "ui.install": "Установити Bridge Builder",
