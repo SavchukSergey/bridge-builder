@@ -14,19 +14,35 @@ function materialId(material) {
   return Object.keys(materials).find(id => materials[id] === material);
 }
 
+/** Where the guide is, worked out as the game does it (with the reference bridge's pieces). */
 function progressOf(game, steps) {
   const pieces = game.scene.links.map(l => ({ a: l.a.position, b: l.b.position, material: materialId(l.material) }));
   const dots = game.scene.joints.map(j => j.position);
-  return guideProgress(steps, pieces, dots);
+  return guideProgress(steps, pieces, dots, piecesOf(solutions[game.level.id](game.level)));
 }
 
 describe("build it with me", () => {
-  test("every step is a piece the editor builds in one go", () => {
+  test("every reference bridge is built from pieces the editor builds in one go", () => {
     for (const level of levels) {
-      for (const p of piecesOf(solutions[level.id](level))) {
-        assert.ok(Math.hypot(p.b.x - p.a.x, p.b.y - p.a.y) <= MAX_LINK_LENGTH + 1e-9, level.id);
+      const { joints, links } = solutions[level.id](level);
+      for (const { a, b } of links) {
+        const length = Math.hypot(joints[b].x - joints[a].x, joints[b].y - joints[a].y);
+        assert.ok(length <= MAX_LINK_LENGTH + 1e-9, `${level.id}: a ${length.toFixed(1)} m piece`);
       }
     }
+  });
+
+  test("a piece the reference bridge doesn't have comes first, and isn't counted", () => {
+    const level = levels.find(l => l.id === "brook");
+    const reference = solutions.brook(level);
+    const steps = planGuide(reference, level.initialStructure(), isDeck);
+    const stray = { a: { x: -10, y: 10 }, b: { x: -10, y: 14 }, material: "steel" };
+    const dots = level.initialStructure().joints.map(j => ({ x: j.x, y: j.y })).concat([stray.b]);
+    const now = guideProgress(steps, [stray], dots, piecesOf(reference));
+    assert.deepEqual(now.step, { kind: "remove", ...stray });
+    assert.equal(now.done, 0);
+    assert.equal(now.total, steps.length);
+    assert.equal(guideProgress(steps, [], dots, piecesOf(reference)).step, steps[0], "without it, the plan");
   });
 
   test("the road comes first, and every piece starts from a dot already there", () => {

@@ -998,9 +998,10 @@ kbd {
 
 /* ---------- narrow screens ---------- */
 
+/* narrow screens: the toolbar's buttons become icons (buttons elsewhere keep their words) */
 @media (max-width: 900px) {
   .brand span,
-  .btn:not(.primary):not(.level-button):not(.speed) span {
+  #control-panel .btn:not(.primary):not(.level-button):not(.speed) span {
     display: none;
   }
 
@@ -1008,7 +1009,7 @@ kbd {
     min-width: 0;
   }
 
-  .btn:not(.primary):not(.level-button):not(.speed) {
+  #control-panel .btn:not(.primary):not(.level-button):not(.speed) {
     width: 34px;
     padding: 0;
     justify-content: center;
@@ -1321,6 +1322,22 @@ kbd {
     left: 50%;
     width: calc(100% - 20px);
     top: calc(var(--toolbar-height, 56px) + 8px);
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  /* the panel is under the game here, not beside it: the result can use the full width */
+  #result {
+    right: 0;
+  }
+
+  /* too narrow for the text and the stop button side by side: it goes under them */
+  #tutorial-skip {
+    margin-left: auto;
+  }
+
+  #tutorial .tutorial-body {
+    flex: 1 1 calc(100% - 110px);
   }
 
   #status-message {

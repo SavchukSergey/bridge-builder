@@ -89,17 +89,24 @@ export function planGuide(reference, start, isDeck) {
 /**
  * Where the player is: the first step not yet done (a build step whose first end isn't there
  * yet waits for one that can be started), how many are done, and, if the next piece is there
- * but made of the wrong material, which one.
+ * but made of the wrong material, which one. A piece the bridge doesn't have anywhere (built
+ * before the guide started, or between the wrong dots) comes first, as a piece to take away;
+ * it isn't counted in `done` or `total`.
  * @param {readonly GuideStep[]} steps
  * @param {readonly Piece[]} pieces the scene's pieces now
  * @param {readonly Point[]} dots the scene's dots now
+ * @param {readonly Piece[]} [wanted] the reference bridge's pieces ({@link piecesOf})
  * @returns {{ step?: GuideStep, done: number, total: number, wrong?: string }}
  */
-export function guideProgress(steps, pieces, dots) {
+export function guideProgress(steps, pieces, dots, wanted = []) {
   const isDone = (/** @type {GuideStep} */ s) => s.kind === "remove"
     ? !pieces.some(p => joins(p, s.a, s.b))
     : pieces.some(p => joins(p, s.a, s.b) && p.material === s.material);
   const open = steps.filter(s => !isDone(s));
+  const stray = wanted.length ? pieces.find(p => !wanted.some(w => joins(w, p.a, p.b))) : undefined;
+  if (stray) {
+    return { step: { kind: "remove", a: stray.a, b: stray.b, material: stray.material }, done: steps.length - open.length, total: steps.length };
+  }
   const there = (/** @type {Point} */ p) => dots.some(d => samePoint(d, p));
   /** @type {GuideStep | undefined} */
   let step = open.find(s => s.kind === "remove") ?? open.find(s => there(s.a) || there(s.b)) ?? open[0];

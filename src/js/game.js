@@ -22,6 +22,9 @@ export { SPEEDS } from "./game-config.mjs";
 /** @typedef {import("./game-types.mjs").PlacementInfo} PlacementInfo */
 /** @typedef {import("./game-types.mjs").BestResult} BestResult */
 
+/** The system asks for less motion: the marks on the canvas glow steadily instead of pulsing. */
+const REDUCED_MOTION = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+
 export class Game extends GameInput {
   /**
    * @param {HTMLCanvasElement} canvas
@@ -245,7 +248,8 @@ export class Game extends GameInput {
   __renderMarks() {
     const g = this.ctx.ctx;
     const zoom = this.ctx.zoom;
-    const pulse = 0.5 + 0.5 * Math.sin((globalThis.performance?.now() ?? 0) / 220);
+    // (steady when the system asks for reduced motion)
+    const pulse = REDUCED_MOTION?.matches ? 0.6 : 0.5 + 0.5 * Math.sin((globalThis.performance?.now() ?? 0) / 220);
     const failed = this.failedLink;
     if (failed && this.scene.links.includes(failed)) {
       g.save();

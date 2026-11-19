@@ -212,6 +212,8 @@ export default {
   "guide.first.tap": "Tap the glowing dot.",
   "guide.second.click": "Now click the other glowing dot.",
   "guide.second.tap": "Now tap the other glowing dot.",
+  "guide.otherDot.click": "That's a different dot. Click it again to let go of it.",
+  "guide.otherDot.tap": "That's a different dot. Tap it again to let go of it.",
   "guide.remove.click": "The red piece isn't needed. Right-click it to take it away.",
   "guide.remove.tap": "The red piece isn't needed. Hold your finger on it to take it away.",
   "guide.wrong.click": "This piece should be {material}. Right-click it to take it away, then build it again.",

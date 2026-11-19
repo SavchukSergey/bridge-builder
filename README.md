@@ -222,6 +222,7 @@ src/
     speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     guide.mjs           "Build it with me": the order to build a reference bridge in, and how far along you are
+    guide-ui.mjs        "Build it with me" on screen: when it runs, and what it says for each step
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes

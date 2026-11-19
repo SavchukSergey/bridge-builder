@@ -104,7 +104,7 @@ describe("offline", () => {
   test("on install it fetches everything once", async () => {
     const { fire, stores } = loadWorker(() => { throw new Error("offline"); });
     await fire("install");
-    const cache = stores.get("bridge-builder-v5");
+    const cache = stores.get("bridge-builder-v6");
     assert.ok(cache.has("https://example.test/game/js/main.js"));
     assert.ok(cache.has("https://example.test/game/"));
   });
@@ -113,7 +113,7 @@ describe("offline", () => {
     const { fire, stores } = loadWorker((req) => ({ ok: true, body: `net ${req.url}`, clone() { return this; } }));
     const res = await fire("fetch", { request: request("js/level.mjs") });
     assert.equal(res.body, "net https://example.test/game/js/level.mjs");
-    assert.equal(stores.get("bridge-builder-v5").get("https://example.test/game/js/level.mjs").body, res.body);
+    assert.equal(stores.get("bridge-builder-v6").get("https://example.test/game/js/level.mjs").body, res.body);
   });
 
   test("offline: the kept copy, whatever the ?query, and the page for any address in it", async () => {
