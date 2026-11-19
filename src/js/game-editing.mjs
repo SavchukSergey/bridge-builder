@@ -142,6 +142,7 @@ export class GameEditing extends GameLevels {
           }
           this.scene.distributeMass();
         });
+        this.effects.events.push({ type: "place", material: material.name });
       }
     }
   }

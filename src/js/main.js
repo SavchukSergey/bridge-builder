@@ -769,7 +769,8 @@ document.addEventListener('DOMContentLoaded', function () {
   /** Plays what happened since the last frame, and keeps the engines and creaks going. */
   function updateSound() {
     for (const ev of game.drainEvents()) {
-      if (ev.type === 'break') sound.snap(ev.kind, ev.size);
+      if (ev.type === 'break') sound.snap(ev.kind, ev.size, ev.material);
+      else if (ev.type === 'place') sound.place(ev.material);
       else if (ev.type === 'splash') sound.splash(ev.size);
       else if (ev.type === 'thud') sound.thud(ev.size);
       else if (ev.type === 'crossed') sound.horn();

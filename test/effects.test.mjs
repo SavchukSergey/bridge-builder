@@ -5,7 +5,9 @@ import { alternatives } from "./solutions.mjs";
 import { Effects } from "../src/js/effects.mjs";
 import { creekLevel, pierLevel } from "../src/js/level.mjs";
 import { renderWaterFront } from "../src/js/scenery.mjs";
-import { Sound } from "../src/js/audio.mjs";
+import { BREAK_SOUNDS, PLACE_SOUNDS, Sound } from "../src/js/audio.mjs";
+import { materials } from "../src/js/materials/index.mjs";
+import { buildLink, ui } from "./helpers.mjs";
 import { RenderCtx } from "../src/js/render-ctx.mjs";
 
 /** Runs the test until a result, collecting every event. */
@@ -35,7 +37,7 @@ describe("effects", () => {
     }
     assert.ok(broke, "the deck broke");
     const breaks = events.filter(e => e.type === "break");
-    assert.ok(breaks.every(e => e.kind === "deck"));
+    assert.ok(breaks.every(e => e.kind === "deck" && e.material === "road"), "and says which material broke");
     assert.equal(debris, 2 * breaks.length, "two halves per broken member");
     assert.ok(game.effects.particles.some(p => p.kind === "dust"));
     assert.ok(shook);
@@ -174,5 +176,29 @@ describe("sound", () => {
     } finally {
       delete globalThis.AudioContext;
     }
+  });
+});
+
+describe("each material's sound", () => {
+  test("every material has its own sound when placed, and the ones that break their own way exist", () => {
+    for (const id of Object.keys(materials)) assert.ok(PLACE_SOUNDS[id]?.length, id);
+    const sounds = Object.values(PLACE_SOUNDS).map(parts => JSON.stringify(parts));
+    assert.equal(new Set(sounds).size, sounds.length, "no two sound the same");
+    for (const id of Object.keys(BREAK_SOUNDS)) assert.ok(materials[id], id);
+    for (const parts of [...Object.values(PLACE_SOUNDS), ...Object.values(BREAK_SOUNDS)]) {
+      for (const p of parts) assert.ok(p.dur > 0 && p.dur < 1 && p.vol > 0 && p.vol <= 0.35);
+    }
+  });
+
+  test("placing a piece asks for its material's sound; without Web Audio nothing plays", () => {
+    const game = createGame("brook");
+    game.drainEvents();
+    ui.material = "wood";
+    buildLink(game, -20, 10, -10, 10);
+    ui.material = "steel";
+    assert.deepEqual(game.drainEvents(), [{ type: "place", material: "wood" }]);
+    const sound = new Sound();
+    sound.place("wood");
+    sound.snap("beam", 1, "wood");
   });
 });

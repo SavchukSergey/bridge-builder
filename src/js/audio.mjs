@@ -9,6 +9,41 @@
 
 const MASTER_VOLUME = 0.6;
 
+/**
+ * A short sound, as parts to play together: tones sliding from one pitch to another, and
+ * bursts of filtered noise.
+ * @typedef {{ tone: OscillatorType, from: number, to: number, at?: number, dur: number, vol: number }
+ *   | { noise: BiquadFilterType, freq: number, q?: number, at?: number, dur: number, vol: number }} SoundPart
+ */
+
+/**
+ * What each material sounds like when a piece of it is placed: a road slab's thunk, steel's
+ * clank (light steel higher), wood's knock, a cable's zip, a winch's ratchet.
+ * @type {Record<string, SoundPart[]>}
+ */
+export const PLACE_SOUNDS = {
+  road: [{ tone: "sine", from: 140, to: 70, dur: 0.18, vol: 0.3 }, { noise: "lowpass", freq: 600, dur: 0.12, vol: 0.12 }],
+  rail: [{ tone: "sine", from: 130, to: 70, dur: 0.16, vol: 0.25 }, { tone: "triangle", from: 1500, to: 1450, at: 0.02, dur: 0.3, vol: 0.05 }],
+  steel: [{ tone: "triangle", from: 620, to: 560, dur: 0.22, vol: 0.12 }, { noise: "bandpass", freq: 2200, q: 6, dur: 0.08, vol: 0.18 }],
+  "steel-light": [{ tone: "triangle", from: 1050, to: 980, dur: 0.16, vol: 0.1 }, { noise: "bandpass", freq: 3200, q: 6, dur: 0.06, vol: 0.14 }],
+  wood: [{ tone: "sine", from: 320, to: 190, dur: 0.1, vol: 0.28 }, { noise: "bandpass", freq: 900, q: 2, dur: 0.05, vol: 0.18 }],
+  cable: [{ tone: "sawtooth", from: 260, to: 900, dur: 0.14, vol: 0.04 }, { noise: "highpass", freq: 3000, dur: 0.12, vol: 0.06 }],
+  "cable-thin": [{ tone: "sawtooth", from: 420, to: 1500, dur: 0.1, vol: 0.035 }, { noise: "highpass", freq: 4500, dur: 0.08, vol: 0.05 }],
+  winch: [0, 0.06, 0.12].map(at => ({ noise: /** @type {BiquadFilterType} */ ("bandpass"), freq: 2600, q: 4, at, dur: 0.035, vol: 0.2 })),
+};
+
+/**
+ * Extra parts of a break, for the materials that break their own way: wood splinters in a
+ * run of cracks, light steel pings higher than steel, and rail rings.
+ * @type {Record<string, SoundPart[]>}
+ */
+export const BREAK_SOUNDS = {
+  wood: [0, 0.05, 0.11, 0.2].map((at, i) => ({ noise: /** @type {BiquadFilterType} */ ("bandpass"), freq: 700 + 250 * i, q: 1.5, at, dur: 0.07, vol: 0.3 - 0.05 * i })),
+  "steel-light": [{ tone: "triangle", from: 2400, to: 900, dur: 0.3, vol: 0.07 }],
+  rail: [{ tone: "triangle", from: 1300, to: 1250, dur: 0.9, vol: 0.06 }],
+  winch: [{ tone: "sawtooth", from: 700, to: 90, dur: 0.4, vol: 0.06 }],
+};
+
 export class Sound {
   /** @type {AudioContext | undefined} */
   ctx = undefined;
@@ -84,11 +119,18 @@ export class Sound {
    * A member snapping: a sharp crack and, for heavier members, a low thump.
    * @param {"deck" | "beam" | "cable"} kind
    * @param {number} size - ~0.5 (cable) to ~1.6 (deck)
+   * @param {string} [material] - its material id, for the ones that break their own way
    */
-  snap(kind, size) {
+  snap(kind, size, material = "") {
     const { ctx } = this;
     if (!ctx) return;
     const t = ctx.currentTime;
+    this.__play(BREAK_SOUNDS[material] ?? [], t);
+    if (material === "wood") {
+      // wood doesn't ping or twang: its splinters and a dull thump
+      this.__tone("sine", 110, 45, t, 0.3, 0.3 * size);
+      return;
+    }
     const crack = this.__noiseSource(t, 0.25);
     const band = ctx.createBiquadFilter();
     band.type = kind === "cable" ? "highpass" : "bandpass";
@@ -217,6 +259,38 @@ export class Sound {
     low.type = "lowpass";
     low.frequency.value = 500;
     src.connect(low).connect(this.__envelope(t, 0.005, 0.3, 0.3 * size)).connect(/** @type {GainNode} */ (this.master));
+  }
+
+  /**
+   * A piece was placed: the sound of its material ({@link PLACE_SOUNDS}).
+   * @param {string} material - material id
+   */
+  place(material) {
+    const { ctx } = this;
+    if (!ctx) return;
+    this.__play(PLACE_SOUNDS[material] ?? PLACE_SOUNDS.steel, ctx.currentTime);
+  }
+
+  /**
+   * Plays the parts of a sound together.
+   * @param {SoundPart[]} parts
+   * @param {number} t
+   */
+  __play(parts, t) {
+    const ctx = /** @type {AudioContext} */ (this.ctx);
+    for (const part of parts) {
+      const at = t + (part.at ?? 0);
+      if ("tone" in part) {
+        this.__tone(part.tone, part.from, part.to, at, part.dur, part.vol);
+      } else {
+        const src = this.__noiseSource(at, part.dur + 0.05);
+        const filter = ctx.createBiquadFilter();
+        filter.type = part.noise;
+        filter.frequency.value = part.freq;
+        filter.Q.value = part.q ?? 0.8;
+        src.connect(filter).connect(this.__envelope(at, 0.003, part.dur, part.vol)).connect(/** @type {GainNode} */ (this.master));
+      }
+    }
   }
 
   /** @param {boolean} won */

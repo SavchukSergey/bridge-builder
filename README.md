@@ -215,6 +215,10 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+Every material has its own sound: placing a piece thunks (road), clanks (steel; light
+steel higher), knocks (wood), zips (cable) or ratchets (winch), and wood splinters when it
+breaks while light steel pings and rail rings.
+
 ## How it works
 
 The bridge is a mass–spring model: every link is an axial spring with stiffness *EA/L*,

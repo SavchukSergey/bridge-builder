@@ -46,7 +46,8 @@ const DEBRIS_FADE = 1.5;
 
 /**
  * Something that happened that is worth a sound.
- * @typedef {{ type: "break", kind: MaterialLook["kind"], size: number }
+ * @typedef {{ type: "break", kind: MaterialLook["kind"], size: number, material: string }
+ *   | { type: "place", material: string }
  *   | { type: "splash", size: number }
  *   | { type: "thud", size: number }
  *   | { type: "crossed" }} EffectEvent
@@ -118,7 +119,7 @@ export class Effects {
     if (look.kind === "cable") this.__burst(mx, my, 8, "spark", { speed: 6, life: 0.3, size: 0.08 });
 
     this.shake = Math.min(1.2, this.shake + 0.25 * heavy);
-    this.events.push({ type: "break", kind: look.kind, size: heavy });
+    this.events.push({ type: "break", kind: look.kind, size: heavy, material: link.material.name });
   }
 
   /**
