@@ -1612,7 +1612,8 @@ kbd {
 #settings,
 #sandbox,
 #ending,
-#real-bridge {
+#real-bridge,
+#grownups {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -1627,8 +1628,45 @@ kbd {
 #settings[hidden],
 #sandbox[hidden],
 #ending[hidden],
-#real-bridge[hidden] {
+#real-bridge[hidden],
+#grownups[hidden] {
   display: none;
+}
+
+/* ---------- for grown-ups ---------- */
+
+#grownups {
+  z-index: 47;
+}
+
+.grownups-card {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.grownups-card h3 {
+  margin: 14px 0 4px;
+  font-size: 14px;
+}
+
+.grownups-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.grownups-card li + li {
+  margin-top: 4px;
+}
+
+.grownups-card p {
+  margin: 0;
+}
+
+#grownups-progress {
+  color: var(--muted);
 }
 
 /* ---------- real bridges ---------- */

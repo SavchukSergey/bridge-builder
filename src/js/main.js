@@ -687,6 +687,32 @@ document.addEventListener('DOMContentLoaded', function () {
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
 
+  // ---- for grown-ups: what the game teaches, how to help, privacy, and progress so far
+  const grownups = {
+    root: byId('grownups', HTMLDivElement),
+    open: byId('setting-grownups', HTMLButtonElement),
+    close: byId('grownups-close', HTMLButtonElement),
+    progress: byId('grownups-progress', HTMLParagraphElement),
+  };
+  grownups.open.addEventListener('click', () => {
+    const { wins, levels: count, stars, maxStars, goals, maxGoals } = progress();
+    grownups.progress.textContent = t('grown.progress', { wins, levels: count, stars, maxStars, goals, maxGoals });
+    grownups.root.hidden = false;
+    grownups.close.focus();
+  });
+  const hideGrownups = () => {
+    grownups.root.hidden = true;
+    grownups.open.focus();
+  };
+  grownups.close.addEventListener('click', hideGrownups);
+  grownups.root.addEventListener('click', (ev) => { if (ev.target === grownups.root) hideGrownups(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !grownups.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideGrownups();
+    }
+  }, true);
+
   // ---- real bridges: a famous bridge built on the same idea as a level
   /** @param {string} id */
   function showRealBridge(id) {

@@ -344,6 +344,12 @@
         <span class="setting-note" data-i18n="ui.installNote">its own window, and it plays offline</span>
       </div>
 
+      <div class="setting">
+        <span class="setting-label" data-i18n="grown.button">For grown-ups</span>
+        <button type="button" id="setting-grownups" class="btn" data-i18n="grown.button">For grown-ups</button>
+        <span class="setting-note" data-i18n="grown.note">what the game teaches, and how to help</span>
+      </div>
+
       <div class="setting danger">
         <span class="setting-label" data-i18n="ui.progress">Progress</span>
         <button type="button" id="setting-reset" class="btn" data-i18n="ui.resetProgress">Reset progress&hellip;</button>
@@ -445,6 +451,33 @@
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
         <button type="button" id="result-next" class="btn primary"><span data-i18n="ui.nextLevel">Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
       </div>
+    </div>
+  </div>
+
+  <div id="grownups" hidden>
+    <div class="settings-card grownups-card" role="dialog" aria-modal="true" aria-labelledby="grownups-title">
+      <button type="button" id="grownups-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <h2 id="grownups-title" data-i18n="grown.title">For grown-ups</h2>
+      <p data-i18n="grown.intro">Bridge Builder is a building game for children from about nine. It shows how real bridges carry weight, in everyday words: every piece is either pulled or squashed.</p>
+      <h3 data-i18n="grown.learn.title">What they learn</h3>
+      <ul>
+        <li data-i18n="grown.learn1">Levels 1 to 5 each teach one idea: a road across, triangles, props from below, hanging the road from posts, and building the posts.</li>
+        <li data-i18n="grown.learn2">Later levels mix them: trusses, hanging bridges, arches, piers, a drawbridge and railway bridges.</li>
+        <li data-i18n="grown.learn3">Every level has a budget. The cheaper a bridge that still works, the more stars: strong enough, and no more, is what engineers aim for.</li>
+        <li data-i18n="grown.learn4">The stress view colours each piece by how hard it is pulled (blue) or squashed (orange).</li>
+      </ul>
+      <h3 data-i18n="grown.help.title">How to help</h3>
+      <ul>
+        <li data-i18n="grown.help1">Let them try and fail: a broken bridge is the best lesson. The slow-motion replay shows which piece broke and why.</li>
+        <li data-i18n="grown.help2">After a few tries a hint appears, then the outline of a bridge that works, then Build it with me, which guides them piece by piece.</li>
+        <li data-i18n="grown.help3">In Settings, Simple controls hides the extra tools. The speaker buttons read the words aloud.</li>
+      </ul>
+      <h3 data-i18n="grown.privacy.title">Privacy</h3>
+      <p data-i18n="grown.privacy">No accounts, no ads and no tracking. Progress, bridge names and scores stay in this browser, on this device. A shared link holds only the bridge and its level. Once loaded, the game also works offline.</p>
+      <h3 data-i18n="grown.progress.title">Progress so far</h3>
+      <p id="grownups-progress"></p>
     </div>
   </div>
 

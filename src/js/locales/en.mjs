@@ -307,4 +307,7 @@ export default {
   // ---- paint and name
   "looks.placeholder": "Name your bridge",
   "result.named": "“{name}”",
+
+  // ---- for grown-ups
+  "grown.progress": "Levels won: {wins} of {levels}. Stars: {stars} of {maxStars}. Extra goals: {goals} of {maxGoals}.",
 };

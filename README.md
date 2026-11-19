@@ -215,6 +215,9 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+**For grown-ups** (in Settings) says what the game teaches and how to help, what it keeps
+(nothing leaves the browser), and the progress so far.
+
 **Paint and name** (under the materials) gives each level's bridge a name, shown in the
 result, and a paint for its steel and wood: red, blue, green, yellow or purple.
 
