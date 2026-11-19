@@ -55,7 +55,13 @@ A link to a level the player hasn't unlocked yet doesn't open.
 
 Hover over any member to see its load: tension or compression in kN, and how much of its
 strength it uses (during a test, also its peak). **Stress view** colours the whole bridge
-by load.
+by load: pale when relaxed, deepening to blue in tension and to orange in compression, and
+compressed members are also dashed. The colours were picked to stay apart for the common
+kinds of colour blindness (a test checks this with simulated protanopia, deuteranopia and
+tritanopia).
+
+**Settings** (the gear) has the sound volume, screen shake (off by default if the system
+asks for reduced motion), the tutorial again, and a reset of all progress.
 
 ### Materials
 

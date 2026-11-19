@@ -154,6 +154,34 @@ describe("rendering", () => {
     assert.equal(rec.stackDepth, 0);
   });
 
+  test("screen shake can be turned off", () => {
+    const game = createGame("brook");
+    withRecorder(game);
+    const seen = [];
+    const original = game.__render.bind(game);
+    game.__render = () => { seen.push({ ...game.ctx.shift }); original(); };
+    game.effects.shake = 1;
+    game.screenShake = false;
+    game.render();
+    assert.deepEqual(seen[0], game.ctx.shift, "off: the view stays still");
+    game.screenShake = true;
+    game.render();
+    assert.notDeepEqual(seen[1], game.ctx.shift, "on: it shakes");
+    assert.deepEqual(seen[0], game.ctx.shift, "and the view itself never moves");
+  });
+
+  test("stress view dashes compressed members", () => {
+    const game = createGame("canyon"); // the example bridge
+    runFrames(game, 60 * 6);
+    game.showStress = true;
+    const rec = withRecorder(game);
+    const dashes = [];
+    rec.setLineDash = (d) => dashes.push(d);
+    game.render();
+    assert.ok(dashes.some(d => d.length === 2), "some compressed member drew dashed");
+    assert.deepEqual(dashes.at(-1), [], "and the dash is cleared after");
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);

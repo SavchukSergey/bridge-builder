@@ -10,6 +10,8 @@ const SOUND_KEY = 'bridge-builder:sound';
 const TUTORIAL_KEY = 'bridge-builder:tutorial';
 const SPEED_KEY = 'bridge-builder:speed';
 const FOLLOW_KEY = 'bridge-builder:follow';
+const VOLUME_KEY = 'bridge-builder:volume';
+const SHAKE_KEY = 'bridge-builder:shake';
 
 
 /**
@@ -77,12 +79,12 @@ function modeText(game) {
 }
 
 /**
- * Colour for a load fraction: green when relaxed, through amber, to red at the limit.
- * @param {number} fraction
+ * Colour of the load bar in the tooltip: the stress view's blue for tension and orange for
+ * compression (brightened for the dark tooltip), grey otherwise.
+ * @param {import('./game.js').LinkInfo['state']} state
  */
-function loadColor(fraction) {
-  const hue = 120 * (1 - Math.min(1, Math.max(0, fraction)));
-  return `hsl(${hue}, 75%, 50%)`;
+function loadColor(state) {
+  return state === 'tension' ? '#4f8fe0' : state === 'compression' ? '#f08a24' : '#8c949c';
 }
 
 /**
@@ -111,7 +113,7 @@ function updateTooltip(el, info, canvas) {
 
   const now = Math.min(1, info.utilization);
   el.meter.style.width = `${now * 100}%`;
-  el.meter.style.backgroundColor = loadColor(info.utilization);
+  el.meter.style.backgroundColor = loadColor(info.state);
   const peak = info.peakUtilization;
   el.peak.hidden = peak === undefined;
   if (peak !== undefined) el.peak.style.left = `calc(${Math.min(1, peak) * 100}% - 1px)`;
@@ -274,8 +276,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const chkStress = byId('toggle-stress', HTMLInputElement);
   game.showStress = chkStress.checked;
+  const stressKey = byId('stress-key', HTMLDivElement);
+  stressKey.hidden = !chkStress.checked;
   chkStress.addEventListener('change', () => {
     game.showStress = chkStress.checked;
+    stressKey.hidden = !chkStress.checked;
     chkStress.blur();
   });
 
@@ -714,8 +719,24 @@ document.addEventListener('DOMContentLoaded', function () {
   try { tutorialDone = localStorage.getItem(TUTORIAL_KEY) === 'done'; } catch { /* storage blocked */ }
   tutorial.skip.addEventListener('click', () => {
     tutorialDone = true;
+    tutorialReplay = false;
     try { localStorage.setItem(TUTORIAL_KEY, 'done'); } catch { /* ignore */ }
   });
+  /** Set by "Play it again": the tutorial runs even though Brook is already won. */
+  let tutorialReplay = false;
+  function resetTutorial() {
+    tutorialDone = false;
+    try { localStorage.removeItem(TUTORIAL_KEY); } catch { /* ignore */ }
+  }
+  /** Brook from scratch, with the tutorial (the old bridge is one Undo away). */
+  function replayTutorial() {
+    resetTutorial();
+    tutorialReplay = true;
+    hideResult();
+    if (game.level.id !== 'brook') game.selectLevel('brook');
+    game.restartLevel();
+    chkSimulation.checked = false;
+  }
   const roadCard = byId('material-road', HTMLLabelElement);
   const testButton = byId('test-label', HTMLLabelElement);
   /** @type {Element | undefined} */
@@ -727,7 +748,11 @@ document.addEventListener('DOMContentLoaded', function () {
    * @returns {{ n: number, text: string, focus?: Element, target?: { x: number, y: number } } | undefined}
    */
   function tutorialStep() {
-    if (tutorialDone || game.level.id !== 'brook' || game.isCompleted('brook')) return undefined;
+    if (tutorialDone || game.level.id !== 'brook') return undefined;
+    if (game.isCompleted('brook') && !(tutorialReplay && game.result?.kind !== 'success')) {
+      tutorialReplay = false;
+      return undefined;
+    }
     if (!game.isBuildMode) return game.result ? undefined : { n: 4, text: 'Watch the test: every vehicle has to reach the flag. Win within budget to unlock the next level.' };
     if (game.roadAcross && !game.isPlacing) {
       return { n: 4, text: 'That\u2019s a road across. Press Test to send the traffic over it.', focus: testButton };
@@ -800,6 +825,89 @@ document.addEventListener('DOMContentLoaded', function () {
     updateSound();
     requestAnimationFrame(tick);
   }
+
+  // ---- settings
+  const settings = {
+    root: byId('settings', HTMLDivElement),
+    button: byId('settings-button', HTMLButtonElement),
+    close: byId('settings-close', HTMLButtonElement),
+    volume: byId('setting-volume', HTMLInputElement),
+    volumeValue: byId('setting-volume-value', HTMLOutputElement),
+    shake: byId('setting-shake', HTMLInputElement),
+    tutorial: byId('setting-tutorial', HTMLButtonElement),
+    reset: byId('setting-reset', HTMLButtonElement),
+    confirm: byId('setting-reset-confirm', HTMLDivElement),
+    cancel: byId('setting-reset-cancel', HTMLButtonElement),
+    yes: byId('setting-reset-yes', HTMLButtonElement),
+  };
+  try {
+    const volume = Number(localStorage.getItem(VOLUME_KEY) ?? 100);
+    if (Number.isFinite(volume)) settings.volume.value = String(Math.min(100, Math.max(0, volume)));
+    const shake = localStorage.getItem(SHAKE_KEY);
+    settings.shake.checked = shake === null ? !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches : shake === 'on';
+  } catch {
+    settings.shake.checked = true;
+  }
+  const applyVolume = () => {
+    sound.setVolume(Number(settings.volume.value) / 100);
+    settings.volumeValue.textContent = `${settings.volume.value}%`;
+  };
+  applyVolume();
+  game.screenShake = settings.shake.checked;
+  settings.volume.addEventListener('input', () => {
+    applyVolume();
+    try { localStorage.setItem(VOLUME_KEY, settings.volume.value); } catch { /* ignore */ }
+  });
+  settings.volume.addEventListener('change', () => sound.horn()); // hear the new level
+  settings.shake.addEventListener('change', () => {
+    game.screenShake = settings.shake.checked;
+    try { localStorage.setItem(SHAKE_KEY, settings.shake.checked ? 'on' : 'off'); } catch { /* ignore */ }
+  });
+
+  function showSettings() {
+    hideResult();
+    if (!picker.root.hidden) hideLevels();
+    settings.confirm.hidden = true;
+    settings.reset.hidden = false;
+    settings.root.hidden = false;
+    settings.button.setAttribute('aria-expanded', 'true');
+    settings.close.focus();
+  }
+  function hideSettings() {
+    settings.root.hidden = true;
+    settings.button.setAttribute('aria-expanded', 'false');
+  }
+  settings.button.addEventListener('click', () => (settings.root.hidden ? showSettings() : hideSettings()));
+  settings.close.addEventListener('click', hideSettings);
+  settings.root.addEventListener('click', (ev) => { if (ev.target === settings.root) hideSettings(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !settings.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideSettings();
+    }
+  }, true);
+
+  settings.tutorial.addEventListener('click', () => {
+    hideSettings();
+    replayTutorial();
+  });
+  settings.reset.addEventListener('click', () => {
+    settings.reset.hidden = true;
+    settings.confirm.hidden = false;
+    settings.cancel.focus();
+  });
+  settings.cancel.addEventListener('click', () => {
+    settings.confirm.hidden = true;
+    settings.reset.hidden = false;
+    settings.reset.focus();
+  });
+  settings.yes.addEventListener('click', () => {
+    game.resetProgress();
+    chkSimulation.checked = false;
+    resetTutorial();
+    hideSettings();
+    showStatus('Progress reset: back to the first level.');
+  });
 
   openSharedBridge();
   tick();

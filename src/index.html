@@ -26,6 +26,7 @@
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
       <symbol id="icon-follow" viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3m8 0h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3m-8 0H5a2 2 0 0 1-2-2v-3m6-4h6m-3-3 3 3-3 3" /></symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2-1.2L14.5 3h-4l-.4 2.6a7.5 7.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7.5 7.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z" /></symbol>
       <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 20h14" /></symbol>
       <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></symbol>
       <symbol id="icon-star" viewBox="0 0 24 24"><path class="solid" d="m12 2.6 2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z" /></symbol>
@@ -99,7 +100,7 @@
       </label>
       <input type="checkbox" id="toggle-stress" class="visually-hidden" />
       <label for="toggle-stress" class="btn toggle"
-        title="Colour members by load: green relaxed, blue in tension, red in compression">
+        title="Colour members by load: pale when relaxed, blue in tension, orange and dashed in compression">
         <svg class="icon"><use href="#icon-stress" /></svg><span>Stress view</span>
       </label>
       <input type="checkbox" id="toggle-sound" class="visually-hidden" checked />
@@ -124,6 +125,10 @@
       <input type="file" id="import-file" accept=".json,application/json" hidden />
       <button type="button" id="share-structure" class="btn" title="Copy a link that opens this bridge">
         <svg class="icon"><use href="#icon-link" /></svg><span>Share</span>
+      </button>
+      <button type="button" id="settings-button" class="btn icon-only" title="Settings" aria-label="Settings"
+        aria-haspopup="dialog" aria-controls="settings">
+        <svg class="icon"><use href="#icon-settings" /></svg>
       </button>
     </div>
   </header>
@@ -235,6 +240,50 @@
   </aside>
 
   <div id="status-message" role="status"></div>
+
+  <div id="stress-key" hidden>
+    <span><i class="key relaxed"></i>Relaxed</span>
+    <span><i class="key tension"></i>Tension (pull)</span>
+    <span><i class="key compression"></i>Compression (push)</span>
+  </div>
+
+  <div id="settings" hidden>
+    <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <button type="button" id="settings-close" class="btn icon-only close" title="Close (Esc)" aria-label="Close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <h2 id="settings-title">Settings</h2>
+
+      <div class="setting">
+        <label for="setting-volume">Volume</label>
+        <input type="range" id="setting-volume" min="0" max="100" step="5" value="100" />
+        <output id="setting-volume-value" for="setting-volume">100%</output>
+      </div>
+
+      <div class="setting">
+        <label for="setting-shake">Screen shake</label>
+        <input type="checkbox" id="setting-shake" class="switch" />
+        <span class="setting-note">when members break or vehicles land</span>
+      </div>
+
+      <div class="setting">
+        <span class="setting-label">Tutorial</span>
+        <button type="button" id="setting-tutorial" class="btn">Play it again on Brook</button>
+      </div>
+
+      <div class="setting danger">
+        <span class="setting-label">Progress</span>
+        <button type="button" id="setting-reset" class="btn">Reset progress&hellip;</button>
+        <div id="setting-reset-confirm" class="confirm" hidden>
+          <p>This forgets every level you have won, your best costs and the bridges saved on each level. It can't be undone.</p>
+          <div class="confirm-actions">
+            <button type="button" id="setting-reset-cancel" class="btn">Keep my progress</button>
+            <button type="button" id="setting-reset-yes" class="btn danger">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="result" hidden>
     <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">

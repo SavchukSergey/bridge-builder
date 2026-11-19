@@ -3,6 +3,13 @@ import { createVec3F, lerpColor, vec3flen, vec3fmul } from "../math.js";
 /** Fraction of critical damping applied along each link. */
 export const DAMPING_RATIO = 0.1;
 
+/** Stress view colours (0..1 RGB): relaxed, and at the limit in tension and compression. */
+export const STRESS_COLORS = {
+  relaxed: { r: 0.86, g: 0.87, b: 0.88 },
+  tension: { r: 0.10, g: 0.33, b: 0.72 },
+  compression: { r: 0.90, g: 0.38, b: 0.0 },
+};
+
 export class Link {
 
   /**
@@ -70,6 +77,14 @@ export class Link {
     if (stress) {
       const clr = this.stressColor;
       strokeLine(g, a, b, `rgb(${clr.r * 255}, ${clr.g * 255}, ${clr.b * 255})`, width);
+      if (this.stressPressure < 0 && this.utilization > 0.05) {
+        // compression also shows as a dashed centre line, so it reads without colour
+        g.setLineDash([7 / ctx.zoom, 5 / ctx.zoom]);
+        g.lineCap = "butt";
+        strokeLine(g, a, b, "rgba(25, 20, 15, 0.7)", Math.max(width * 0.35, 1.5 / ctx.zoom));
+        g.setLineDash([]);
+        g.lineCap = "round";
+      }
       return;
     }
 
@@ -142,14 +157,19 @@ export class Link {
     return strain * this.material.youngModulus;
   }
 
+  /**
+   * Stress view colour: pale grey when relaxed, deepening to blue in tension and orange in
+   * compression as the load nears the limit. Blue and orange stay apart for the common
+   * kinds of colour blindness (unlike red and green).
+   */
   get stressColor() {
     const stressPressure = this.stressPressure;
     if (stressPressure < 0) {
-      const rel = -stressPressure / this.material.compressionStrength;
-      return lerpColor({ r: 0, g: 1, b: 0 }, { r: 1, g: 0, b: 0 }, rel);
+      const rel = Math.min(1, -stressPressure / this.material.compressionStrength);
+      return lerpColor(STRESS_COLORS.relaxed, STRESS_COLORS.compression, rel);
     } else {
-      const rel = stressPressure / this.material.tensileStrength;
-      return lerpColor({ r: 0, g: 1, b: 0 }, { r: 0, g: 0, b: 1 }, rel);
+      const rel = Math.min(1, stressPressure / this.material.tensileStrength);
+      return lerpColor(STRESS_COLORS.relaxed, STRESS_COLORS.tension, rel);
     }
   }
 

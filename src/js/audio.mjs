@@ -17,6 +17,8 @@ export class Sound {
   /** @type {AudioBuffer | undefined} */
   noise = undefined;
   muted = false;
+  /** 0..1, scales everything. */
+  volume = 1;
 
   /** @type {{ osc: OscillatorNode[], gain: GainNode, filter: BiquadFilterNode } | undefined} */
   __engine = undefined;
@@ -37,7 +39,7 @@ export class Sound {
     const ctx = new AudioCtx();
     this.ctx = ctx;
     this.master = ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : MASTER_VOLUME;
+    this.master.gain.value = this.__level();
     this.master.connect(ctx.destination);
 
     // two seconds of white noise, reused by every noisy sound
@@ -52,9 +54,21 @@ export class Sound {
   /** @param {boolean} muted */
   setMuted(muted) {
     this.muted = muted;
-    if (this.ctx && this.master) {
-      this.master.gain.setTargetAtTime(muted ? 0 : MASTER_VOLUME, this.ctx.currentTime, 0.05);
-    }
+    this.__applyLevel();
+  }
+
+  /** @param {number} volume - 0..1 */
+  setVolume(volume) {
+    this.volume = Math.min(1, Math.max(0, volume));
+    this.__applyLevel();
+  }
+
+  __level() {
+    return this.muted ? 0 : MASTER_VOLUME * this.volume;
+  }
+
+  __applyLevel() {
+    if (this.ctx && this.master) this.master.gain.setTargetAtTime(this.__level(), this.ctx.currentTime, 0.05);
   }
 
   /**

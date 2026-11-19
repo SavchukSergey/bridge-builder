@@ -6,6 +6,8 @@ class FakeStorage {
   setItem(key, value) { this.#data.set(key, String(value)); }
   removeItem(key) { this.#data.delete(key); }
   clear() { this.#data.clear(); }
+  key(i) { return [...this.#data.keys()][i] ?? null; }
+  get length() { return this.#data.size; }
 }
 
 /** 2D affine matrix [a c e; b d f], enough of DOMMatrix for the canvas transform. */

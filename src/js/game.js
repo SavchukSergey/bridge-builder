@@ -160,6 +160,9 @@ export class Game {
    */
   speed = 1;
 
+  /** Whether breaks and crashes shake the view. */
+  screenShake = true;
+
   /** Whether the view follows the traffic during a load test. Panning by hand turns it off. */
   follow = false;
 
@@ -400,6 +403,24 @@ export class Game {
     this.ctx.zoom = zoom;
     // The visible area's centre is offset from the canvas centre by half of each inset.
     this.ctx.shift = createVec3F((x0 + x1) / 2 + right / 2 / zoom, y + (top - bottom) / 2 / zoom, 0);
+  }
+
+  /**
+   * Forgets every level won, every best and every saved bridge, and goes back to the first
+   * level.
+   */
+  resetProgress() {
+    const keys = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === COMPLETED_KEY || key === BEST_KEY || key === LEVEL_KEY || key?.startsWith(`${AUTOSAVE_KEY}:`)) keys.push(key);
+      }
+      for (const key of keys) localStorage.removeItem(key);
+    } catch {
+      // storage blocked: nothing was saved either
+    }
+    this.selectLevel(levels[0].id);
   }
 
   /** Whether the level has been won within budget (ever, on this browser). */
@@ -1252,7 +1273,7 @@ export class Game {
 
   render() {
     const shift = this.ctx.shift;
-    const shake = this.effects.shake;
+    const shake = this.screenShake ? this.effects.shake : 0;
     if (shake > 0.01) {
       // shake the camera for this frame only, without moving the view
       this.ctx.shift = createVec3F(shift.x + (Math.random() - 0.5) * shake, shift.y + (Math.random() - 0.5) * shake, 0);
