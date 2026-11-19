@@ -348,4 +348,10 @@ export default {
   // ---- earthquakes
   "sandbox.quake.small": "Partway through, the ground shakes a little.",
   "sandbox.quake.big": "Partway through, a big earthquake shakes the ground: keep it low and well braced!",
+
+  // ---- the result: the scoreboard in one tap
+  "score.addName": "Add to scoreboard",
+  "score.addAs": "Add as {name}",
+  "score.notYou": "Not {name}?",
+  "score.placedName": "{name}: number {place} of {of} on this level.",
 };

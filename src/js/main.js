@@ -16,7 +16,7 @@ import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
 import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
-import { addScore, lastPlayer, players, scoresFor } from './scoreboard.mjs';
+import { addScore, lastPlayer, players, scoresFor, undoScore } from './scoreboard.mjs';
 import { drawPostcard, postcardFileName } from './postcard.mjs';
 import { QUAKE_ACCEL, quakeEnvelope } from './quake.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
@@ -244,6 +244,9 @@ document.addEventListener('DOMContentLoaded', function () {
     score: byId('result-score', HTMLFormElement),
     scoreName: byId('result-score-name', HTMLInputElement),
     scoreDone: byId('result-score-done', HTMLParagraphElement),
+    scoreDoneText: byId('result-score-done-text', HTMLSpanElement),
+    scoreChange: byId('result-score-change', HTMLButtonElement),
+    scoreOpen: byId('result-score-open', HTMLButtonElement),
     name: byId('result-name', HTMLParagraphElement),
     compare: byId('result-compare', HTMLDivElement),
     compareText: byId('result-compare-text', HTMLParagraphElement),
@@ -682,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // after a win: how it compares with the hint bridge
     const outline = result.kind === 'success' && !game.level.sandbox ? game.outline : undefined;
-    dlg.compare.hidden = !outline;
+    dlg.compareShow.hidden = !outline;
     if (outline) {
       const diff = Math.round(outline.cost - result.cost);
       const price = Math.abs(diff) < 50 ? t('compare.same', { ref: formatMoney(outline.cost) })
@@ -692,23 +695,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // after a failure, what to try; after a win, a piece that hardly worked, to save money on
     const idle = result.kind === 'success' ? result.idle : undefined;
-    dlg.tip.hidden = result.kind !== 'failed' && !idle;
     dlg.tip.classList.toggle('saver', Boolean(idle));
     dlg.tip.textContent = result.kind === 'failed'
       ? failureTip(result, game.level.track) + (result.failure ? t('result.marked') : '')
       : idle ? t('result.idle', { what: idle.label.toLowerCase(), to: idle.to.toLowerCase(), saving: formatMoney(idle.saving), n: Math.max(1, Math.round(idle.load * 100)) }) : '';
-    // after a win, how the bridge did on the level's challenges
-    dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
+    // after a win, the challenges done just now and the ones still to do: not old news
+    const worth = (/** @type {{ met: boolean, isNew: boolean }} */ c) => c.isNew || !c.met;
+    dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).filter(worth).map(c =>
       challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })),
-    ...(friendResult ? [challengeItem(t('friend.title'), friendResult.beat
+    ...(friendResult && worth({ met: friendResult.beat, isNew: friendResult.isNew }) ? [challengeItem(t('friend.title'), friendResult.beat
       ? t('friend.won', { cost: formatMoney(friendResult.goal.cost), diff: formatMoney(friendResult.goal.cost - result.cost) })
       : t('friend.notYet', { cost: formatMoney(friendResult.goal.cost) }),
     { earned: friendResult.beat, met: friendResult.beat, isNew: friendResult.isNew })] : []),
-    ...(dailyResult ? [challengeItem(t('daily.title'), dailyResult.isNew ? `${dailyResult.label} · ${t('daily.done', { n: streak(dayOf()) })}` : dailyResult.label,
+    ...(dailyResult && worth(dailyResult) ? [challengeItem(t('daily.title'), dailyResult.isNew ? `${dailyResult.label} · ${t('daily.done', { n: streak(dayOf()) })}` : dailyResult.label,
       { earned: dailyResult.met, met: dailyResult.met, isNew: dailyResult.isNew })] : []));
     dlg.cost.textContent = formatMoney(result.cost);
     dlg.budget.textContent = formatMoney(result.budget);
-    dlg.best.replaceChildren(result.best ? `${formatMoney(result.best.cost)} ${starText(result.best.stars)}` : '\u2014');
+    dlg.best.replaceChildren(result.best ? formatMoney(result.best.cost) : '\u2014');
+    if (result.best) {
+      const stars = document.createElement('span');
+      stars.className = 'fact-stars';
+      stars.textContent = starText(result.best.stars);
+      dlg.best.append(stars);
+    }
     if (result.newBest && result.previousBest) {
       const badge = document.createElement('span');
       badge.className = 'new-best';
@@ -744,14 +753,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // a win on a level built on the same idea as a famous bridge: a button to see it
     const famous = result.kind === 'success' ? realBridgeFor(game.level.id) : undefined;
-    dlg.real.hidden = !famous;
+    // One extra at most, the most useful: after a failure what to try; after a win, a
+    // cheaper piece while there are stars to get, else the real bridge, else the saving,
+    // else how it compares with the hint bridge.
+    const extra = result.kind === 'failed' ? 'tip'
+      : idle && result.stars < 3 ? 'tip'
+        : famous ? 'real'
+          : idle ? 'tip'
+            : outline ? 'compare' : undefined;
+    dlg.tip.hidden = extra !== 'tip';
+    dlg.real.hidden = extra !== 'real';
+    dlg.compare.hidden = extra !== 'compare';
     dlg.friend.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
     dlg.picture.hidden = result.kind !== 'success';
-    // a win: put a name to it on the family scoreboard
-    dlg.score.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
-    dlg.score.classList.remove('added');
+    // a win: put a name to it on the family scoreboard, in one tap for the last name used
+    const scorable = result.kind === 'success' && game.level.sandbox === undefined;
+    const who = lastPlayer();
+    dlg.scoreOpen.hidden = !scorable;
+    lastChild(dlg.scoreOpen).textContent = who ? t('score.addAs', { name: who }) : t('score.addName');
+    dlg.score.hidden = true;
     dlg.scoreDone.hidden = true;
-    dlg.scoreName.value = lastPlayer();
+    placedScore = undefined;
+    dlg.scoreName.value = who;
     dlg.scoreName.placeholder = t('score.placeholder');
     if (famous) {
       const picture = dlg.real.firstElementChild;
@@ -805,7 +828,7 @@ document.addEventListener('DOMContentLoaded', function () {
       name: looks.name,
       cost: win?.cost ?? best?.cost,
       stars: win?.stars ?? best?.stars ?? 0,
-      player: scoresFor(game.level.id).length || dlg.score.classList.contains('added') ? lastPlayer() : '',
+      player: placedScore?.name ?? (scoresFor(game.level.id).length ? lastPlayer() : ''),
       date: new Date(),
     };
     const canvas = drawPostcard(info);
@@ -861,18 +884,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---- the family scoreboard: names put to wins, on this browser
   dlg.scoreName.addEventListener('keydown', (ev) => ev.stopPropagation()); // typing isn't building
-  dlg.score.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    const result = game.result;
-    if (result?.kind !== 'success') return;
-    const placed = addScore(game.level.id, dlg.scoreName.value, result.cost, result.stars);
+  /** The score this result just added, to take back with "Not ...?". @type {ReturnType<typeof addScore>} */
+  let placedScore;
+  /** Puts the name to this win. @param {string} name */
+  function placeScore(name) {
+    const win = lastWin?.level === game.level.id ? lastWin : undefined;
+    if (!win) return;
+    const placed = addScore(game.level.id, name, win.cost, win.stars);
     if (!placed) {
       dlg.scoreName.focus();
       return;
     }
-    dlg.score.classList.add('added');
+    placedScore = placed;
+    dlg.score.hidden = true;
+    dlg.scoreOpen.hidden = true;
     dlg.scoreDone.hidden = false;
-    dlg.scoreDone.textContent = t('score.placed', { place: placed.place, of: placed.of });
+    dlg.scoreDoneText.textContent = t('score.placedName', { name: placed.name, place: placed.place, of: placed.of });
+    dlg.scoreChange.textContent = t('score.notYou', { name: placed.name });
+  }
+  /** The name box, to type a name. */
+  function askName() {
+    dlg.score.hidden = false;
+    dlg.scoreOpen.hidden = true;
+    dlg.scoreDone.hidden = true;
+    dlg.scoreName.focus();
+    dlg.scoreName.select();
+  }
+  dlg.scoreOpen.addEventListener('click', () => {
+    const who = lastPlayer();
+    if (who) placeScore(who);
+    else askName();
+  });
+  dlg.scoreChange.addEventListener('click', () => {
+    // someone else built it: take the score back, then ask who
+    if (placedScore) undoScore(game.level.id, placedScore.name, placedScore.before);
+    placedScore = undefined;
+    dlg.scoreName.value = '';
+    askName();
+  });
+  dlg.score.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    placeScore(dlg.scoreName.value);
   });
   const board = {
     root: byId('scoreboard', HTMLDivElement),

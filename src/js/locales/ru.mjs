@@ -630,4 +630,10 @@ export default {
   "ui.quake.big": "Сильное",
   "sandbox.quake.small": "Посреди проверки земля немного трясётся.",
   "sandbox.quake.big": "Посреди проверки сильное землетрясение: строй пониже и хорошо укрепляй!",
+
+  // ---- итоги: таблица в одно касание
+  "score.addName": "В таблицу",
+  "score.addAs": "В таблицу: {name}",
+  "score.notYou": "Это не {name}?",
+  "score.placedName": "{name}: место {place} из {of} на этом уровне.",
 };

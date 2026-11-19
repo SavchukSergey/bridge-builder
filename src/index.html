@@ -450,12 +450,14 @@
       <h2 id="result-title"></h2>
       <p id="result-text"></p>
       <dl class="result-facts">
-        <dt data-i18n="ui.cost">Cost</dt><dd id="result-cost"></dd>
-        <dt data-i18n="ui.money">Money</dt><dd id="result-budget"></dd>
-        <dt data-i18n="ui.best">Best</dt><dd id="result-best"></dd>
+        <div><dt data-i18n="ui.cost">Cost</dt><dd id="result-cost"></dd></div>
+        <div><dt data-i18n="ui.money">Money</dt><dd id="result-budget"></dd></div>
+        <div><dt data-i18n="ui.best">Best</dt><dd id="result-best"></dd></div>
       </dl>
-      <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
+      <p id="result-hint"></p>
       <ul class="badges result-badges" id="result-badges" aria-label="Badges" data-i18n-aria="ui.badges"></ul>
+      <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
+      <!-- one extra at most: what to try, a cheaper piece, a real bridge, or the hint bridge -->
       <button type="button" id="result-real" class="real-teaser" hidden>
         <span class="real-teaser-picture"></span>
         <span class="real-teaser-text"><span data-i18n="real.like">A real bridge like yours</span><strong id="result-real-name"></strong></span>
@@ -463,24 +465,26 @@
       <p id="result-tip" hidden></p>
       <div id="result-compare" class="result-compare" hidden>
         <p id="result-compare-text"></p>
-        <button type="button" id="result-compare-show" class="btn" title="See the hint bridge drawn over yours" data-i18n-title="compare.title"><svg class="icon"><use href="#icon-bulb" /></svg><span data-i18n="compare.show">Compare</span></button>
       </div>
-      <form id="result-score" class="result-score" hidden>
-        <label for="result-score-name" data-i18n="score.who">Who built it?</label>
-        <input type="text" id="result-score-name" maxlength="20" autocomplete="off" spellcheck="false" />
-        <button type="submit" class="btn" data-i18n="score.add">Add to the scoreboard</button>
-        <p id="result-score-done" hidden></p>
-      </form>
-      <p id="result-hint"></p>
       <div class="result-actions">
-        <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
-        <button type="button" id="result-picture" class="btn" title="A picture of your bridge to keep" data-i18n-title="postcard.makeTitle"><svg class="icon"><use href="#icon-camera" /></svg><span data-i18n="postcard.short">Picture</span></button>
-        <button type="button" id="result-friend" class="btn" title="Copy a link that dares a friend to build this level for less" data-i18n-title="friend.shareTitle"><svg class="icon"><use href="#icon-star" /></svg><span data-i18n="friend.share">Challenge a friend</span></button>
         <button type="button" id="result-replay" class="btn" title="Watch the moment it broke again, in slow motion" data-i18n-title="ui.replayTitle"><svg class="icon"><use href="#icon-play" /></svg><span data-i18n="ui.replay">Watch it break</span></button>
         <button type="button" id="result-help" class="btn"><svg class="icon"><use href="#icon-bulb" /></svg><span></span></button>
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
         <button type="button" id="result-next" class="btn primary"><span data-i18n="ui.nextLevel">Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
       </div>
+      <div class="result-tools" id="result-tools">
+        <button type="button" id="result-picture" class="btn chip" title="A picture of your bridge to keep" data-i18n-title="postcard.makeTitle"><svg class="icon"><use href="#icon-camera" /></svg><span data-i18n="postcard.short">Picture</span></button>
+        <button type="button" id="result-share" class="btn chip" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
+        <button type="button" id="result-friend" class="btn chip" title="Copy a link that dares a friend to build this level for less" data-i18n-title="friend.shareTitle"><svg class="icon"><use href="#icon-star" /></svg><span data-i18n="friend.share">Challenge a friend</span></button>
+        <button type="button" id="result-compare-show" class="btn chip" title="See the hint bridge drawn over yours" data-i18n-title="compare.title"><svg class="icon"><use href="#icon-bulb" /></svg><span data-i18n="compare.show">Compare</span></button>
+        <button type="button" id="result-score-open" class="btn chip"><svg class="icon"><use href="#icon-trophy" /></svg><span></span></button>
+      </div>
+      <form id="result-score" class="result-score" hidden>
+        <label for="result-score-name" data-i18n="score.who">Who built it?</label>
+        <input type="text" id="result-score-name" maxlength="20" autocomplete="off" spellcheck="false" />
+        <button type="submit" class="btn primary" data-i18n="score.add">Add to the scoreboard</button>
+      </form>
+      <p id="result-score-done" class="result-score-done" hidden><span id="result-score-done-text"></span> <button type="button" id="result-score-change" class="link-button"></button></p>
     </div>
   </div>
 

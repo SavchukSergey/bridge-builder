@@ -630,4 +630,10 @@ export default {
   "ui.quake.big": "Сильний",
   "sandbox.quake.small": "Посеред перевірки земля трохи труситься.",
   "sandbox.quake.big": "Посеред перевірки сильний землетрус: будуй нижче й добре зміцнюй!",
+
+  // ---- підсумки: таблиця в один дотик
+  "score.addName": "До таблиці",
+  "score.addAs": "До таблиці: {name}",
+  "score.notYou": "Це не {name}?",
+  "score.placedName": "{name}: місце {place} з {of} на цьому рівні.",
 };

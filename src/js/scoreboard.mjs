@@ -37,9 +37,10 @@ const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 /**
  * Puts a player's name to a win, keeping their cheapest on the level.
  * @param {string} levelId @param {string} name @param {number} cost @param {number} stars
- * @returns {{ place: number, of: number, better: boolean } | undefined} their place on the
- *   level (from 1), out of how many, and whether this beat their own earlier score;
- *   undefined for an empty name
+ * @returns {{ name: string, place: number, of: number, better: boolean, before: Score | undefined } | undefined}
+ *   the name as kept, their place on the level (from 1), out of how many, whether this beat
+ *   their own earlier score, and that score (to undo it with {@link undoScore}); undefined
+ *   for an empty name
  */
 export function addScore(levelId, name, cost, stars) {
   const who = tidyName(name);
@@ -52,7 +53,19 @@ export function addScore(levelId, name, cost, stars) {
   all[levelId] = [...scores.filter(s => !same(s.name, who)), kept].sort((a, b) => a.cost - b.cost);
   storageSet(SCORES_KEY, JSON.stringify(all));
   storageSet(PLAYER_KEY, who);
-  return { place: all[levelId].indexOf(kept) + 1, of: all[levelId].length, better: better && old !== undefined };
+  return { name: who, place: all[levelId].indexOf(kept) + 1, of: all[levelId].length, better: better && old !== undefined, before: old };
+}
+
+/**
+ * Takes back a score just added: the player's earlier score on the level comes back, or,
+ * if they had none, they are taken off it.
+ * @param {string} levelId @param {string} name @param {Score | undefined} before
+ */
+export function undoScore(levelId, name, before) {
+  const all = allScores();
+  const rest = (all[levelId] ?? []).filter(s => !same(s.name, name));
+  all[levelId] = (before ? [...rest, before] : rest).sort((a, b) => a.cost - b.cost);
+  storageSet(SCORES_KEY, JSON.stringify(all));
 }
 
 /** A level's scores, cheapest first. @param {string} levelId */
