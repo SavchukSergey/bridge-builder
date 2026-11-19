@@ -7,8 +7,20 @@ import { levels } from "../src/js/level.mjs";
 import { materials } from "../src/js/materials/index.mjs";
 import { cable, thinCable } from "../src/js/materials/cable.mjs";
 import { lightSteel, steel } from "../src/js/materials/steel.mjs";
+import { wood } from "../src/js/materials/wood.mjs";
 
 describe("member sizes", () => {
+  test("wood is the cheapest beam per metre, but no cheaper than light steel for the strength", () => {
+    const beams = Object.values(materials).filter(m => m.canCompress && !m.drivable);
+    const cheapest = Math.min(...beams.map(m => m.costPerMeter));
+    assert.equal(wood.costPerMeter, cheapest);
+    const perNewton = (m, strength) => m.costPerMeter / (m[strength] * m.crossSectionalArea);
+    for (const strength of ["tensileStrength", "compressionStrength"]) {
+      assert.ok(perNewton(wood, strength) > perNewton(lightSteel, strength), strength);
+    }
+    assert.ok(wood.label === "Wood" && wood.canCompress);
+  });
+
   test("every material has an id, a label and a price", () => {
     for (const [id, m] of Object.entries(materials)) {
       assert.equal(m.name, id);

@@ -137,6 +137,7 @@ younger player doesn't need. Turn it off for every tool.
 | Rail | $400/m | Steel railway deck: lighter than road, stronger in tension; trains only |
 | Steel | $200/m | 20 × 20 cm; takes tension and compression |
 | Light steel | $70/m | A quarter of the section and strength |
+| Wood | $30/m | 20 × 20 cm timber: the cheapest, but weaker than light steel per dollar |
 | Cable | $60/m | Wire rope; tension only, goes slack when pushed |
 | Thin cable | $20/m | A fifth of the section and strength |
 | Winch | $150/m | Drawbridge only: a cable that pulls itself in during the test, then lets out |

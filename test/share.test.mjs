@@ -78,7 +78,7 @@ describe("bridges in links", () => {
   });
 
   test("unknown materials can't be packed", () => {
-    assert.throws(() => encodeBridge({ version: 1, level: "brook", joints: [{ x: 0, y: 0 }, { x: 1, y: 0 }], links: [{ a: 0, b: 1, material: "wood" }] }));
+    assert.throws(() => encodeBridge({ version: 1, level: "brook", joints: [{ x: 0, y: 0 }, { x: 1, y: 0 }], links: [{ a: 0, b: 1, material: "marble" }] }));
   });
 
   test("the address: a #bridge= hash on the page's own address", () => {

@@ -515,6 +515,12 @@ input:checked + .btn.toggle {
   background: linear-gradient(#4c5b69 0 28%, #7a8a99 28% 72%, #4c5b69 72%);
 }
 
+.swatch.wood {
+  height: 6px;
+  border-radius: 1px;
+  background: repeating-linear-gradient(90deg, #9a6a3c 0 9px, #8a5d33 9px 10px, #b07d4c 10px 14px);
+}
+
 .swatch.steel-light {
   height: 4px;
   background: linear-gradient(#6b7a87 0 25%, #9eabb6 25% 75%, #6b7a87 75%);

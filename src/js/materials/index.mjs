@@ -1,6 +1,7 @@
 import { cable, thinCable, winch } from "./cable.mjs";
 import { rail, road } from "./road.mjs";
 import { lightSteel, steel } from "./steel.mjs";
+import { wood } from "./wood.mjs";
 
 /**
  * All materials by name. Saved structures reference materials by these names.
@@ -10,6 +11,7 @@ export const materials = {
   road,
   steel,
   [lightSteel.name]: lightSteel,
+  wood,
   cable,
   [thinCable.name]: thinCable,
   rail,
