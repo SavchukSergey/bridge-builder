@@ -98,7 +98,7 @@ export class Vehicle {
       const x = this.x + dx;
       // the road under this axle, near the height the vehicle is at (allowing for slopes)
       const reach = STEP_UP + Math.abs(dx) * 0.3;
-      const road = findRoad(scene, x, this.y + reach);
+      const road = findRoad(scene, x, this.y + reach, this.type.track);
       if (!road || road.y < this.y - reach - STEP_DOWN) continue;
       const ground = this.level.groundAt(x);
       if (ground !== undefined && ground > road.y + 1e-6) continue; // on the bank
@@ -189,7 +189,7 @@ export class Vehicle {
    * @returns {{ y: number, road: RoadContact | undefined } | undefined}
    */
   __support(scene, maxY) {
-    const road = findRoad(scene, this.x, maxY);
+    const road = findRoad(scene, this.x, maxY, this.type.track);
     const ground = this.level.groundAt(this.x);
     const groundOk = ground !== undefined && ground <= maxY;
     if (road && (!groundOk || road.y >= /** @type {number} */ (ground))) return { y: road.y, road };
@@ -235,7 +235,7 @@ export class Vehicle {
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
    */
   renderLights(ctx) {
-    if (this.state === "fell") return;
+    if (this.state === "fell" || this.type.id === "wagon") return;
     const g = ctx.ctx;
     g.save();
     g.translate(this.x, this.y);
@@ -251,17 +251,19 @@ export class Vehicle {
 
 
 /**
- * The highest drivable road surface under x that is no higher than maxY.
+ * The highest deck surface of the given kind (road, or rail for trains) under x that is no
+ * higher than maxY.
  * @param {import("./scene.js").Scene} scene
  * @param {number} x
  * @param {number} maxY
+ * @param {"road" | "rail"} [track]
  * @returns {RoadContact | undefined}
  */
-export function findRoad(scene, x, maxY) {
+export function findRoad(scene, x, maxY, track = "road") {
   /** @type {RoadContact | undefined} */
   let best = undefined;
   for (const link of scene.links) {
-    if (link.broken || !link.material.drivable) continue;
+    if (link.broken || link.material.carries !== track) continue;
     const ax = link.a.position.x, bx = link.b.position.x;
     const dx = bx - ax;
     if (Math.abs(dx) < 1e-9) continue; // vertical: nothing to drive on

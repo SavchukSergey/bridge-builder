@@ -437,6 +437,17 @@ input:checked + .btn.toggle {
   background: linear-gradient(#3d4045 0 28%, #b5afa4 28% 80%, #8f8a81 80%);
 }
 
+.swatch.rail {
+  height: 9px;
+  background:
+    repeating-linear-gradient(90deg, #3a2c20 0 2px, transparent 2px 5px) top / 100% 3px no-repeat,
+    linear-gradient(#b9c0c7 0 28%, #56616c 28% 80%, #3f4850 80%);
+}
+
+.material-option[hidden] {
+  display: none;
+}
+
 .swatch.steel {
   height: 7px;
   background: linear-gradient(#4c5b69 0 28%, #7a8a99 28% 72%, #4c5b69 72%);

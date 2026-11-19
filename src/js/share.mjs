@@ -18,6 +18,7 @@ const MATERIAL_CODES = {
   "steel-light": "L",
   cable: "C",
   "cable-thin": "T",
+  rail: "W",
 };
 const MATERIAL_NAMES = Object.fromEntries(Object.entries(MATERIAL_CODES).map(([name, code]) => [code, name]));
 

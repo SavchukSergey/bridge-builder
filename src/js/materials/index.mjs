@@ -1,5 +1,5 @@
 import { cable, thinCable } from "./cable.mjs";
-import { road } from "./road.mjs";
+import { rail, road } from "./road.mjs";
 import { lightSteel, steel } from "./steel.mjs";
 
 /**
@@ -12,4 +12,5 @@ export const materials = {
   [lightSteel.name]: lightSteel,
   cable,
   [thinCable.name]: thinCable,
+  rail,
 };

@@ -66,6 +66,11 @@ export class Level {
     this.theme = THEMES[opts.theme ?? "summer"];
   }
 
+  /** What the convoy needs to drive on: road, or rail for a train. */
+  get track() {
+    return VEHICLE_TYPES[this.convoy[0]].track;
+  }
+
   /**
    * Height of the ground at x, or undefined over a gap.
    * @param {number} x
@@ -120,6 +125,7 @@ export class Level {
 
   /** What to call the convoy's vehicles: their kind if all alike ("truck"), else "vehicle". */
   get vehicleNoun() {
+    if (this.track === "rail") return { one: "train", many: "train" };
     const kinds = new Set(this.convoy);
     if (kinds.size !== 1) return { one: "vehicle", many: "vehicles" };
     const type = VEHICLE_TYPES[this.convoy[0]];
@@ -148,6 +154,11 @@ export class Level {
    * kind in order, e.g. "1 car · 1 bus".
    */
   get convoySummary() {
+    if (this.track === "rail") {
+      const tonnes = this.convoy.reduce((sum, id) => sum + VEHICLE_TYPES[id].mass, 0) / 1000;
+      const wagons = this.convoy.length - 1;
+      return `${tonnes} t train: locomotive + ${wagons} wagon${wagons === 1 ? "" : "s"}`;
+    }
     /** @type {Map<string, number>} */
     const counts = new Map();
     for (const id of this.convoy) counts.set(id, (counts.get(id) ?? 0) + 1);
@@ -192,6 +203,10 @@ const FAR = 10000;
 
 /** @param {number} n */
 const trucks = (n) => /** @type {import("./vehicle-types.mjs").VehicleTypeId[]} */ (Array(n).fill("truck"));
+
+/** A locomotive pulling `wagons` loaded wagons. */
+const train = (/** @type {number} */ wagons) => /** @type {import("./vehicle-types.mjs").VehicleTypeId[]} */ (
+  ["locomotive", ...Array(wagons).fill("wagon")]);
 
 /** Two cliffs either side of a gap from x0 to x1. */
 const cliffs = (/** @type {number} */ x0, /** @type {number} */ x1, leftY = 10, rightY = 10) => [
@@ -436,9 +451,66 @@ export const grandLevel = new Level({
 });
 
 /** All levels, in play order. */
+/** The first railway: trains are long and heavy, and run only on rail. */
+export const branchLineLevel = new Level({
+  id: "branch-line",
+  name: "Branch line",
+  description: "The railway arrives: a 40 m gap and a 240 t train. Trains run only on Rail.",
+  terrain: cliffs(-20, 20),
+  anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
+  startX: -26,
+  finishX: 28,
+  convoy: train(2),
+  vehicleGap: 1,
+  budget: 23000, // a light suspension bridge, as at the creek: ~$20,400
+  stars: { two: 22000, three: 21000 },
+  view: { x0: -45, x1: 45, y: 12 },
+  water: -2,
+});
+
+/** The whole train is on the bridge at once. */
+export const freightLevel = new Level({
+  id: "freight",
+  theme: "desert",
+  name: "Freight",
+  description: "An 80 m canyon and a 380 t freight train, nearly as long as the bridge.",
+  terrain: cliffs(-40, 40),
+  anchors: [{ x: -50, y: 10 }, { x: -40, y: 10 }, { x: 40, y: 10 }, { x: 50, y: 10 }],
+  startX: -46,
+  finishX: 48,
+  convoy: train(4),
+  vehicleGap: 1,
+  budget: 63000, // a 6 m truss with light diagonals: ~$56,500 (cables stretch too much)
+  stars: { two: 60000, three: 57500 },
+  view: { x0: -65, x1: 65, y: 15 },
+  water: -14,
+});
+
+/** A long freight over a wide valley, with a rock for a pier. */
+export const mountainLevel = new Level({
+  id: "mountain",
+  theme: "snow",
+  name: "Mountain railway",
+  description: "A 120 m valley with a rock in the middle, 16 m down. A 520 t freight train.",
+  terrain: [...cliffs(-60, 60), { x0: -4, x1: 4, y: -6 }],
+  anchors: [
+    { x: -70, y: 10 }, { x: -60, y: 10 }, { x: 60, y: 10 }, { x: 70, y: 10 },
+    { x: -4, y: -6 }, { x: 4, y: -6 },
+  ],
+  startX: -66,
+  finishX: 68,
+  convoy: train(6),
+  vehicleGap: 1,
+  budget: 99000, // two 4 m trusses on an A-frame pier: ~$88,000
+  stars: { two: 94000, three: 89500 },
+  view: { x0: -85, x1: 85, y: 10 },
+  water: -12,
+});
+
 export const levels = [
   brookLevel, creekLevel, ledgesLevel, canyonLevel, stepLevel, heavyLevel,
   downhillLevel, rushLevel, pierLevel, longSpanLevel, viaductLevel, gorgeLevel, grandLevel,
+  branchLineLevel, freightLevel, mountainLevel,
 ];
 levels.forEach((level, i) => { level.number = i + 1; });
 

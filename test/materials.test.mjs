@@ -21,7 +21,7 @@ describe("member sizes", () => {
 
   for (const [heavy, light] of [[steel, lightSteel], [cable, thinCable]]) {
     test(`${light.label} is ${heavy.label.toLowerCase()} with a smaller section: weaker, lighter and cheaper per metre`, () => {
-      for (const key of ["youngModulus", "tensileStrength", "compressionStrength", "density", "canCompress", "drivable"]) {
+      for (const key of ["youngModulus", "tensileStrength", "compressionStrength", "density", "canCompress", "drivable", "carries"]) {
         assert.equal(light[key], heavy[key], key);
       }
       const ratio = light.crossSectionalArea / heavy.crossSectionalArea;

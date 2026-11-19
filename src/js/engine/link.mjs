@@ -228,8 +228,31 @@ function renderDeck(g, a, b, depth, look, zoom) {
   quad(-depth * 0.85, -depth, "rgba(0, 0, 0, 0.18)"); // shadowed underside
   quad(0, -Math.min(0.2, depth * 0.25), look.surface ?? "#444");
 
-  // guard rail: posts every ~2 m and a rail 1 m above the road
   if (zoom < 3) return;
+  if (look.track) {
+    // sleepers every 0.8 m and the rail on them
+    g.lineCap = "butt";
+    g.strokeStyle = "#3a2c20";
+    g.lineWidth = Math.max(0.12, 1 / zoom);
+    g.beginPath();
+    const sleepers = Math.max(1, Math.round(len / 0.8));
+    for (let i = 0; i <= sleepers; i++) {
+      const t = i / sleepers;
+      const x = a.x + dx * t, y = a.y + dy * t;
+      g.moveTo(x - dx / len * 0.15, y - dy / len * 0.15);
+      g.lineTo(x + dx / len * 0.15 + nx * 0.14, y + dy / len * 0.15 + ny * 0.14);
+    }
+    g.stroke();
+    g.strokeStyle = "#b9c0c7";
+    g.lineWidth = Math.max(0.1, 1.5 / zoom);
+    g.beginPath();
+    g.moveTo(a.x + nx * 0.2, a.y + ny * 0.2);
+    g.lineTo(b.x + nx * 0.2, b.y + ny * 0.2);
+    g.stroke();
+    g.lineCap = "round";
+    return;
+  }
+  // guard rail: posts every ~2 m and a rail 1 m above the road
   const RAIL = 1.0;
   g.strokeStyle = "#c3c7cc";
   g.lineWidth = Math.max(0.06, 1 / zoom);

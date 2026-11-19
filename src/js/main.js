@@ -55,6 +55,9 @@ function formatMoney(value) {
 function modeText(game) {
   const paused = game.evalCtx.simulation ? '' : ' (paused)';
   const { one, many } = game.level.vehicleNoun;
+  const train = game.level.track === 'rail';
+  const a = train ? 'The train' : `A ${one}`;
+  const all = train ? 'The train' : `All ${many}`;
   switch (game.testState) {
     case 'building':
       return { text: 'Build mode', kind: '' };
@@ -63,13 +66,13 @@ function modeText(game) {
     case 'driving':
       return { text: `${capitalize(many)} crossing...` + paused, kind: '' };
     case 'falling':
-      return { text: `A ${one} is falling!` + paused, kind: 'failure' };
+      return { text: `${a} is falling!` + paused, kind: 'failure' };
     case 'crossed':
       return game.overBudget
-        ? { text: `All ${many} crossed, but over budget. Reset and make it cheaper.`, kind: 'failure' }
-        : { text: `Success! All ${many} crossed.`, kind: 'success' };
+        ? { text: `${all} crossed, but over budget. Reset and make it cheaper.`, kind: 'failure' }
+        : { text: `Success! ${all} crossed.`, kind: 'success' };
     case 'fell':
-      return { text: `A ${one} fell. Reset and try again.`, kind: 'failure' };
+      return { text: `${a} fell. Reset and try again.`, kind: 'failure' };
   }
 }
 
@@ -331,7 +334,22 @@ document.addEventListener('DOMContentLoaded', function () {
     showStatus('Level restarted (Undo to go back)');
   });
 
+  // Road on road levels, Rail on railway levels: the other deck is no use there
+  const railCard = byId('material-rail', HTMLLabelElement);
+  const roadCardForTrack = byId('material-road', HTMLLabelElement);
+  function showDecks() {
+    const rail = game.level.track === 'rail';
+    railCard.hidden = !rail;
+    roadCardForTrack.hidden = rail;
+    const hiddenPick = (rail ? roadCardForTrack : railCard).querySelector('input');
+    if (hiddenPick instanceof HTMLInputElement && hiddenPick.checked) {
+      const deck = (rail ? railCard : roadCardForTrack).querySelector('input');
+      if (deck instanceof HTMLInputElement) deck.checked = true;
+    }
+  }
+
   function refreshLevels() {
+    showDecks();
     txtLevelName.textContent = `${game.level.number}. ${game.level.name}`;
     txtLevel.textContent = game.level.description;
     if (!picker.root.hidden) renderLevelCards();
@@ -348,23 +366,25 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.root.className = result.kind;
     dlg.stars.forEach((star, i) => star.classList.toggle('earned', i < result.stars));
     const over = result.cost - result.budget;
+    const train = game.level.track === 'rail';
     if (result.kind === 'success') {
       dlg.title.textContent = ['', 'Bridge holds!', 'Great bridge!', 'Perfect bridge!'][result.stars];
       const n = game.level.vehicleCount;
-      dlg.text.textContent = n === 1 ? 'It made it across.' : n === 2 ? 'Both made it across.' : `All ${n} made it across.`;
+      dlg.text.textContent = train ? 'The train made it across.'
+        : n === 1 ? 'It made it across.' : n === 2 ? 'Both made it across.' : `All ${n} made it across.`;
     } else if (result.kind === 'over-budget') {
       dlg.title.textContent = 'Over budget';
-      dlg.text.textContent = `All ${game.level.vehicleNoun.many} crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
+      dlg.text.textContent = `${train ? 'The train' : `All ${game.level.vehicleNoun.many}`} crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
     } else {
       dlg.title.textContent = 'Bridge failed';
-      const a = `A ${game.level.vehicleNoun.one}`;
+      const a = train ? 'The train' : `A ${game.level.vehicleNoun.one}`;
       const how = { fell: `${a} fell into the gap.`, crashed: `${a} crashed into the cliff.`, 'hard landing': `${a} landed too hard.` };
       const broke = result.broken ? ` ${result.broken} member${result.broken === 1 ? '' : 's'} broke.` : '';
       dlg.text.textContent = (how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
     dlg.tip.hidden = result.kind !== 'failed';
     dlg.tip.textContent = result.kind === 'failed'
-      ? failureTip(result) + (result.failure ? ' It is marked in red on your bridge.' : '')
+      ? failureTip(result, game.level.track) + (result.failure ? ' It is marked in red on your bridge.' : '')
       : '';
     dlg.cost.textContent = formatMoney(result.cost);
     dlg.budget.textContent = formatMoney(result.budget);

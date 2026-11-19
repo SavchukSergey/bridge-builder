@@ -13,6 +13,23 @@ export const road = new Material({
   tensileStrength: 30e6, // effective, with rebar: ~0.1% strain before failure
   compressionStrength: 30e6,
   costPerMeter: 300,
-  drivable: true,
+  carries: "road",
   look: { kind: "deck", color: "#b5afa4", surface: "#3d4045", width: 0.9, minPx: 6 },
+});
+
+/**
+ * Railway deck: a steel girder with sleepers and a rail on top. Only trains run on it.
+ * Lighter than the road slab and stronger in tension, but dearer.
+ */
+export const rail = new Material({
+  name: "rail",
+  label: "Rail",
+  density: 7850,
+  crossSectionalArea: 0.03,
+  youngModulus: 200000e6,
+  tensileStrength: 250e6,
+  compressionStrength: 250e6,
+  costPerMeter: 400,
+  carries: "rail",
+  look: { kind: "deck", color: "#56616c", surface: "#5b4a3a", width: 0.9, minPx: 6, track: true },
 });

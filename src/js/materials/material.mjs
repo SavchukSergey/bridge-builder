@@ -14,7 +14,10 @@ export class Material {
     this.label = opts.label ?? opts.name;
     this.canCompress = opts.canCompress ?? true;
     this.costPerMeter = opts.costPerMeter;
-    this.drivable = opts.drivable ?? false;
+    /** What drives on it, if it is a deck. */
+    this.carries = opts.carries;
+    /** Something drives on it. */
+    this.drivable = opts.carries !== undefined;
     /** @type {import("./material.types.mjs").MaterialLook} */
     this.look = opts.look ?? { kind: "beam", color: "#666", highlight: "#888", width: 0.3, minPx: 2 };
   }

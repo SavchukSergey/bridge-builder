@@ -93,7 +93,7 @@ describe("test results", () => {
   });
 
   test("the last level has no next level", () => {
-    const game = createGame("grand");
+    const game = createGame("mountain");
     const result = runTest(game);
     assert.equal(result.nextLevel, undefined);
   });

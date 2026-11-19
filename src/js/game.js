@@ -243,7 +243,7 @@ export class Game {
     const { startX, finishX } = this.level;
     for (let x = startX; x <= finishX; x += 0.5) {
       if (this.level.groundAt(x) !== undefined) continue;
-      if (!findRoad(this.scene, x, Infinity)) return false;
+      if (!findRoad(this.scene, x, Infinity, this.level.track)) return false;
     }
     return true;
   }

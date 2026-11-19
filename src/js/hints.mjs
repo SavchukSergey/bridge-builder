@@ -5,21 +5,27 @@
 /**
  * Advice for a failed test: what the first member to break tells you, or what was missing.
  * @param {import('./game.js').TestResult} result
+ * @param {'road' | 'rail'} [track] - what the level's traffic runs on
  * @returns {string}
  */
-export function failureTip(result) {
+export function failureTip(result, track = 'road') {
   const f = result.failure;
   if (!f) {
-    if (result.roadAcross === false) return 'There is a gap in the road. Vehicles need road (the deck) all the way from bank to bank.';
+    if (result.roadAcross === false) {
+      return track === 'rail'
+        ? 'There is a gap in the track. Trains run only on Rail, all the way from bank to bank.'
+        : 'There is a gap in the road. Vehicles need road (the deck) all the way from bank to bank.';
+    }
     if (result.reason === 'crashed') return 'The road ends below the far bank, so it ran into the cliff. Bring the road up to the top of the bank.';
     if (result.reason === 'hard landing') return 'The road drops too steeply. Keep it level with the banks where it meets them.';
     return 'Nothing broke, but the road sagged too far. Hold it up from above or below.';
   }
   const what = f.label.toLowerCase();
   if (f.kind === 'deck') {
+    const deck = f.material === 'rail' ? 'The rail deck' : 'The road';
     return f.mode === 'tension'
-      ? 'The road was stretched until it snapped: it sagged under the load. Hold it up from above (towers and cables, or a truss) or prop it from below.'
-      : 'The road was crushed end to end. Brace it with triangles so the deck isn\u2019t pushed along its length.';
+      ? `${deck} was stretched until it snapped: it sagged under the load. Hold it up from above (towers and cables, or a truss) or prop it from below.`
+      : `${deck} was crushed end to end. Brace it with triangles so the deck isn\u2019t pushed along its length.`;
   }
   if (f.kind === 'cable') {
     return f.material === 'cable-thin'

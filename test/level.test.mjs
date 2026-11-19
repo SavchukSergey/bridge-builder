@@ -73,6 +73,8 @@ describe("level balance", () => {
     ["creek", "bare deck"], ["step", "bare ramp"], ["pier", "bare deck + A-frame"],
     ["ledges", "bare deck"], ["heavy", "creek's light suspension"], ["downhill", "bare ramp"],
     ["rush", "bare deck"], ["long-span", "bare deck"], ["viaduct", "bare deck"], ["gorge", "bare deck"],
+    ["branch-line", "bare rail"], ["branch-line", "road suspension"], ["freight", "bare rail"],
+    ["freight", "truss h6 lean"], ["freight", "suspension top 20 sag 6"], ["mountain", "bare rail + A-frame"],
   ]) {
     test(`${levelId}: a ${design} is not enough`, () => {
       const level = findLevel(levelId);

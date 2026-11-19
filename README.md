@@ -1,8 +1,9 @@
 # Bridge Builder
 
 A bridge-building physics puzzle in the browser. Span a gap with steel beams, cables and
-road deck, stay within budget, then press **Test** and watch the traffic (cars, buses,
-40-tonne trucks, a 200-tonne heavy hauler) find out whether your design holds.
+road or rail deck, stay within budget, then press **Test** and watch the traffic (cars,
+buses, 40-tonne trucks, a 200-tonne heavy hauler, and freight trains) find out whether your
+design holds.
 
 No build step and no dependencies at runtime: plain JavaScript modules and a canvas.
 
@@ -60,7 +61,8 @@ by load.
 
 | Material | Price | Notes |
 | --- | --- | --- |
-| Road | $300/m | Concrete deck; the only thing trucks can drive on |
+| Road | $300/m | Concrete deck; the only thing road vehicles can drive on |
+| Rail | $400/m | Steel railway deck: lighter than road, stronger in tension; trains only |
 | Steel | $200/m | 20 × 20 cm; takes tension and compression |
 | Light steel | $70/m | A quarter of the section and strength |
 | Cable | $60/m | Wire rope; tension only, goes slack when pushed |
@@ -90,6 +92,9 @@ is won within budget.
 | 11 | Viaduct | 180 m with two rocks: three spans |
 | 12 | Deep gorge | low ledges: an arch is cheaper than a truss |
 | 13 | Grand crossing | 160 m, climbing, six trucks |
+| 14 | Branch line | the railway: 40 m and a 240 t train, on Rail |
+| 15 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
+| 16 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
 
 | Vehicle | Mass | Length | Axles |
 | --- | --- | --- | --- |
@@ -97,6 +102,8 @@ is won within budget.
 | Bus | 18 t | 12 m | 2 |
 | Truck | 40 t | 12 m | 5 |
 | Heavy hauler | 200 t | 22 m | 9 |
+| Locomotive | 100 t | 20 m | 4 (two bogies) |
+| Wagon | 70 t | 15 m | 4 (two bogies) |
 
 Every level has a reference bridge in the tests that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
@@ -122,7 +129,7 @@ src/
     level.mjs           level definitions, star thresholds
     level-preview.mjs   level thumbnails for the level-select screen
     vehicle.mjs         driving, falling and axle loads
-    vehicle-types.mjs   cars, buses, trucks, heavy haulers: sizes, axles, drawings
+    vehicle-types.mjs   cars, buses, trucks, haulers, locomotives, wagons: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
     hints.mjs           advice after a failed test
     share.mjs           bridges packed into links

@@ -7,7 +7,7 @@
  */
 
 /**
- * @typedef {"car" | "bus" | "truck" | "hauler"} VehicleTypeId
+ * @typedef {"car" | "bus" | "truck" | "hauler" | "locomotive" | "wagon"} VehicleTypeId
  */
 
 /**
@@ -34,6 +34,7 @@
  * @property {number} height - m
  * @property {number} speed - m/s, when driving alone
  * @property {number} wheelRadius - m
+ * @property {"road" | "rail"} track - what it drives on: road, or rail for trains
  * @property {Axle[]} axles
  * @property {[number, number]} lamp - headlight position in the vehicle's frame
  * @property {(g: CanvasRenderingContext2D, opts: DrawOpts) => void} draw
@@ -122,6 +123,7 @@ const car = {
   height: 1.45,
   speed: 7,
   wheelRadius: 0.32,
+  track: "road",
   axles: [{ dx: 1.35, share: 0.55 }, { dx: -1.35, share: 0.45 }],
   lamp: [2.22, 0.68],
   draw(g, o) {
@@ -148,6 +150,7 @@ const bus = {
   height: 3.2,
   speed: 5,
   wheelRadius: 0.5,
+  track: "road",
   axles: [{ dx: 3.6, share: 0.35 }, { dx: -2.9, share: 0.65 }],
   lamp: [6.04, 1.3],
   draw(g, o) {
@@ -177,6 +180,7 @@ const truck = {
   height: 3.5,
   speed: 5,
   wheelRadius: 0.5,
+  track: "road",
   // steer axle, two drive axles under the fifth wheel, two trailer axles
   axles: [
     { dx: 4.8, share: 0.14 }, { dx: 3.1, share: 0.18 }, { dx: 2.05, share: 0.18 },
@@ -229,6 +233,7 @@ const hauler = {
   height: 4.2,
   speed: 3.5,
   wheelRadius: 0.45,
+  track: "road",
   axles: [
     { dx: 9.6, share: 0.06 }, { dx: 7.7, share: 0.1 }, { dx: 6.6, share: 0.1 },
     ...[-0.8, -2.0, -3.2, -4.4, -5.6, -6.8].map(dx => ({ dx, share: 0.74 / 6 })),
@@ -268,4 +273,95 @@ const hauler = {
 };
 
 /** @type {Record<VehicleTypeId, VehicleType>} */
-export const VEHICLE_TYPES = { car, bus, truck, hauler };
+/**
+ * A rail bogie: two small wheels close together, under a frame.
+ * @param {CanvasRenderingContext2D} g
+ * @param {number} x - bogie centre
+ * @param {number} r - wheel radius
+ * @param {number} spin
+ */
+function bogie(g, x, r, spin) {
+  poly(g, [[x - 1.55, r * 0.9], [x + 1.55, r * 0.9], [x + 1.4, r * 1.9], [x - 1.4, r * 1.9]], "#2b2d30");
+  wheel(g, x - 0.9, r, spin);
+  wheel(g, x + 0.9, r, spin);
+}
+
+/** Locomotive liveries, by paint index. */
+const LIVERIES = [["#b8322a", "#f1c40f"], ["#1f5f99", "#e9eef2"], ["#1e7a4a", "#f0d58c"]];
+
+/** @type {VehicleType} */
+const locomotive = {
+  id: "locomotive",
+  label: "locomotive",
+  plural: "locomotives",
+  mass: 100000,
+  length: 20,
+  height: 4.3,
+  speed: 6,
+  wheelRadius: 0.5,
+  track: "rail",
+  // two bogies of two axles
+  axles: [7.4, 5.6, -5.6, -7.4].map(dx => ({ dx, share: 0.25 })),
+  lamp: [10.0, 1.9],
+  draw(g, o) {
+    const [body, stripe] = o.lost ? [LOST_PAINT, "#888"] : LIVERIES[o.paint % LIVERIES.length];
+    const glass = o.lost ? LOST_GLASS : GLASS;
+    poly(g, [[-10, 1.0], [10, 1.0], [10, 1.35], [-10, 1.35]], "#26282b"); // frame
+    // body with a sloped cab front
+    poly(g, [[-9.8, 1.35], [9.0, 1.35], [10, 2.0], [10, 3.0], [8.6, 4.2], [-9.8, 4.2]], body);
+    poly(g, [[-9.8, 1.9], [9.6, 1.9], [9.85, 2.3], [-9.8, 2.3]], stripe);
+    poly(g, [[8.2, 3.0], [9.75, 3.0], [8.55, 3.95], [8.2, 3.95]], glass); // windscreen
+    poly(g, [[6.6, 2.75], [7.8, 2.75], [7.8, 3.75], [6.6, 3.75]], glass); // cab side window
+    poly(g, [[-9.8, 4.2], [8.4, 4.2], [8.1, 4.45], [-9.6, 4.45]], "rgba(0, 0, 0, 0.25)"); // roof
+    g.strokeStyle = "rgba(0, 0, 0, 0.18)";
+    g.lineWidth = 0.06;
+    g.beginPath();
+    for (let x = -8.6; x < 5.5; x += 1.4) { // engine-room louvres
+      g.moveTo(x, 2.7);
+      g.lineTo(x, 3.8);
+    }
+    g.stroke();
+    poly(g, [[9.85, 1.55], [10.15, 1.55], [10.15, 1.85], [9.85, 1.85]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
+    bogie(g, 6.5, locomotive.wheelRadius, o.spin);
+    bogie(g, -6.5, locomotive.wheelRadius, o.spin);
+  },
+};
+
+/** Wagon load colours, by paint index: grain, coal, gravel... */
+const LOADS = ["#c9a227", "#2e2f33", "#9a8f80", "#b5651d"];
+
+/** @type {VehicleType} */
+const wagon = {
+  id: "wagon",
+  label: "wagon",
+  plural: "wagons",
+  mass: 70000,
+  length: 15,
+  height: 3.6,
+  speed: 6,
+  wheelRadius: 0.45,
+  track: "rail",
+  axles: [6.1, 4.5, -4.5, -6.1].map(dx => ({ dx, share: 0.25 })),
+  lamp: [7.5, 1.6], // (a wagon has no headlight; see renderLights)
+  draw(g, o) {
+    const side = o.lost ? LOST_PAINT : "#6b4a33";
+    poly(g, [[-7.5, 0.95], [7.5, 0.95], [7.5, 1.25], [-7.5, 1.25]], "#26282b"); // frame
+    // an open hopper, heaped with its load
+    poly(g, [[-7.2, 3.0], [-6.4, 3.75], [6.4, 3.75], [7.2, 3.0]], o.lost ? "#777" : LOADS[o.paint % LOADS.length]);
+    poly(g, [[-7.3, 1.25], [7.3, 1.25], [7.3, 3.25], [-7.3, 3.25]], side);
+    g.strokeStyle = "rgba(0, 0, 0, 0.25)";
+    g.lineWidth = 0.08;
+    g.beginPath();
+    for (let x = -5.4; x < 6; x += 1.8) { // ribs
+      g.moveTo(x, 1.3);
+      g.lineTo(x, 3.2);
+    }
+    g.stroke();
+    poly(g, [[-7.6, 1.05], [-7.3, 1.05], [-7.3, 1.35], [-7.6, 1.35]], "#1b1c1e"); // couplers
+    poly(g, [[7.3, 1.05], [7.6, 1.05], [7.6, 1.35], [7.3, 1.35]], "#1b1c1e");
+    bogie(g, 5.3, wagon.wheelRadius, o.spin);
+    bogie(g, -5.3, wagon.wheelRadius, o.spin);
+  },
+};
+
+export const VEHICLE_TYPES = { car, bus, truck, hauler, locomotive, wagon };

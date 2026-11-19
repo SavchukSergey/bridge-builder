@@ -38,17 +38,17 @@ export class Builder {
  * it: top chord and verticals in steel, diagonals (in tension, Pratt layout) in `diagonal`.
  * Returns the builder and the deck/top joint indices.
  */
-export function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel", vertical = "steel" } = {}) {
+export function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "steel", vertical = "steel", deck: deckMaterial = "road", chord = "steel" } = {}) {
   const n = Math.round((x1 - x0) / step);
   const yAt = (x) => y0 + (y1 - y0) * (x - x0) / (x1 - x0);
   const xs = Array.from({ length: n + 1 }, (_, i) => x0 + i * step);
   const deck = xs.map(x => b.joint(x, yAt(x)));
-  b.chain(deck, "road");
+  b.chain(deck, deckMaterial);
   const top = xs.map((x, i) => (i === 0 || i === n) ? undefined : b.joint(x, yAt(x) + h));
   // end posts, top chord, verticals
-  b.link(deck[0], top[1], "steel");
-  b.link(deck[n], top[n - 1], "steel");
-  b.chain(top.slice(1, n), "steel");
+  b.link(deck[0], top[1], chord);
+  b.link(deck[n], top[n - 1], chord);
+  b.chain(top.slice(1, n), chord);
   for (let i = 1; i < n; i++) b.link(deck[i], top[i], vertical);
   // Pratt diagonals slope down towards mid-span
   for (let i = 1; i < n - 1; i++) {
@@ -59,12 +59,12 @@ export function trussDeck(b, x0, y0, x1, y1, { step = 10, h = 6, diagonal = "ste
 }
 
 /** Suspension bridge between anchors at ±half (deck y = 10), towers to `top`, cable sag `sag`. */
-export function suspension(level, half, top, sag, { backstay = "cable", tower = "steel", hanger = "cable" } = {}) {
+export function suspension(level, half, top, sag, { backstay = "cable", tower = "steel", hanger = "cable", deck: deckMaterial = "road", main = "cable" } = {}) {
   const b = new Builder(level);
   const xs = [];
   for (let x = -half; x <= half; x += 10) xs.push(x);
   const deck = xs.map(x => b.joint(x, 10));
-  b.chain(deck, "road");
+  b.chain(deck, deckMaterial);
   const towerL = b.joint(-half, top), towerR = b.joint(half, top);
   b.link(deck[0], towerL, tower);
   b.link(deck.at(-1), towerR, tower);
@@ -78,15 +78,15 @@ export function suspension(level, half, top, sag, { backstay = "cable", tower = 
     b.link(r, deck[i], hanger);
   }
   rope.push(towerR);
-  b.chain(rope, "cable");
+  b.chain(rope, main);
   return b.build();
 }
 
 /** Just a road from (x0, y0) to (x1, y1), joints every 10 m: should never be enough. */
-export function bareDeck(level, x0, y0, x1, y1) {
+export function bareDeck(level, x0, y0, x1, y1, deck = "road") {
   const b = new Builder(level);
   const n = Math.round((x1 - x0) / 10);
-  b.chain(Array.from({ length: n + 1 }, (_, i) => b.joint(x0 + i * 10, y0 + (y1 - y0) * i / n)), "road");
+  b.chain(Array.from({ length: n + 1 }, (_, i) => b.joint(x0 + i * 10, y0 + (y1 - y0) * i / n)), deck);
   return b.build();
 }
 
@@ -196,6 +196,19 @@ export const solutions = {
   // ~$40,700: thin cables are enough for the posts, as the light X-bracing carries the
   // deck's load down to the ring
   gorge: (level) => bracedArch(level, { post: "cable-thin" }),
+  // ~$20,400: the creek's light suspension bridge, in rail
+  "branch-line": (level) => suspension(level, 20, 14, 3, { tower: "steel-light", hanger: "cable-thin", deck: "rail" }),
+  // ~$56,500: a 6 m truss; light diagonals, as cables stretch too much under 380 t
+  freight: (level) => truss(level, -40, 10, 40, 10, { h: 6, diagonal: "steel-light", vertical: "steel-light", deck: "rail" }),
+  // ~$88,000: two 60 m trusses meeting over an A-frame pier on the rock
+  mountain: (level) => {
+    const b = new Builder(level);
+    const opts = { h: 4, diagonal: "steel-light", vertical: "steel-light", deck: "rail" };
+    const left = trussDeck(b, -60, 10, 0, 10, opts);
+    trussDeck(b, 0, 10, 60, 10, opts);
+    aFrame(b, -4, 4, -6, left.deck.at(-1));
+    return b.build();
+  },
   // ~$105,200: two 80 m spans meeting over the rock
   grand: (level) => {
     const b = new Builder(level);
@@ -249,6 +262,26 @@ export const alternatives = {
   },
   viaduct: {
     "bare deck": (level) => bareDeck(level, -90, 10, 90, 10),
+  },
+  "branch-line": {
+    "bare rail": (level) => bareDeck(level, -20, 10, 20, 10, "rail"),
+    // the creek's answer as it was, with a road deck: the train has no rail to run on
+    "road suspension": (level) => suspension(level, 20, 14, 3, { tower: "steel-light", hanger: "cable-thin" }),
+  },
+  freight: {
+    "bare rail": (level) => bareDeck(level, -40, 10, 40, 10, "rail"),
+    "truss h6 lean": (level) => truss(level, -40, 10, 40, 10, { h: 6, ...LEAN, deck: "rail" }),
+    "suspension top 20 sag 6": (level) => suspension(level, 40, 20, 6, { deck: "rail" }),
+  },
+  mountain: {
+    "bare rail + A-frame": (level) => {
+      const b = new Builder(level);
+      const deck = [];
+      for (let x = -60; x <= 60; x += 10) deck.push(b.joint(x, 10));
+      b.chain(deck, "rail");
+      aFrame(b, -4, 4, -6, deck[6]);
+      return b.build();
+    },
   },
   gorge: {
     "bare deck": (level) => bareDeck(level, -40, 10, 40, 10),
