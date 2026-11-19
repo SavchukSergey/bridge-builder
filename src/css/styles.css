@@ -1659,3 +1659,7 @@ select.field option {
 .level-challenges.all {
   color: var(--accent);
 }
+
+.setting[hidden] {
+  display: none;
+}

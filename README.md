@@ -16,6 +16,10 @@ npm start
 
 Then open <http://localhost:8080>.
 
+Served over HTTP(S), the game can be installed as an app (from the browser's menu or
+**Settings → Install**) and plays offline: a service worker (`src/sw.js`) keeps a copy of
+every file. Online it always asks the network first, so it never hides a newer version.
+
 ### Goal
 
 Get every vehicle to the chequered flag without spending more than the budget. Crossing
@@ -182,6 +186,9 @@ src/
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
     audio.mjs           synthesized sound (Web Audio)
+  sw.js                 service worker: offline play (its SHELL lists every file in src/)
+  manifest.webmanifest  install as an app
+  icons/                app icons (scripts/make-icons.mjs draws the PNGs)
 test/                   node:test suites
 ```
 

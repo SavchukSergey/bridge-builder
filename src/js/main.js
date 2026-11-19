@@ -1096,6 +1096,8 @@ document.addEventListener('DOMContentLoaded', function () {
     volumeValue: byId('setting-volume-value', HTMLOutputElement),
     shake: byId('setting-shake', HTMLInputElement),
     tutorial: byId('setting-tutorial', HTMLButtonElement),
+    installRow: byId('setting-install-row', HTMLDivElement),
+    install: byId('setting-install', HTMLButtonElement),
     reset: byId('setting-reset', HTMLButtonElement),
     confirm: byId('setting-reset-confirm', HTMLDivElement),
     cancel: byId('setting-reset-cancel', HTMLButtonElement),
@@ -1147,6 +1149,27 @@ document.addEventListener('DOMContentLoaded', function () {
       hideSettings();
     }
   }, true);
+
+  // ---- installable, and playable offline
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Offline play is not available:', err));
+  }
+  /** The browser's offer to install the game, kept for the Settings button. @type {any} */
+  let installOffer;
+  window.addEventListener('beforeinstallprompt', (ev) => {
+    ev.preventDefault();
+    installOffer = ev;
+    settings.installRow.hidden = false;
+  });
+  window.addEventListener('appinstalled', () => { settings.installRow.hidden = true; });
+  settings.install.addEventListener('click', async () => {
+    if (!installOffer) return;
+    const offer = installOffer;
+    installOffer = undefined;
+    settings.installRow.hidden = true;
+    hideSettings();
+    await offer.prompt();
+  });
 
   settings.tutorial.addEventListener('click', () => {
     hideSettings();

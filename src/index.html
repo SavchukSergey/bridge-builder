@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bridge Builder Game</title>
+  <meta name="description" content="A bridge-building physics puzzle: span the gap within budget, then send the traffic over.">
+  <meta name="theme-color" content="#121a24">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 
@@ -282,6 +287,12 @@
       <div class="setting">
         <span class="setting-label">Tutorial</span>
         <button type="button" id="setting-tutorial" class="btn">Play it again on Brook</button>
+      </div>
+
+      <div class="setting" id="setting-install-row" hidden>
+        <span class="setting-label">App</span>
+        <button type="button" id="setting-install" class="btn">Install Bridge Builder</button>
+        <span class="setting-note">its own window, and it plays offline</span>
       </div>
 
       <div class="setting danger">

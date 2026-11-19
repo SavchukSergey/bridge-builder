@@ -9,7 +9,11 @@ export default [
     languageOptions: { ecmaVersion: 2024, sourceType: "module", globals: globals.browser },
   },
   {
-    files: ["test/**/*.mjs", "eslint.config.js"],
+    files: ["src/sw.js"],
+    languageOptions: { ecmaVersion: 2024, sourceType: "script", globals: globals.serviceworker },
+  },
+  {
+    files: ["test/**/*.mjs", "eslint.config.js", "scripts/**/*.mjs"],
     languageOptions: { ecmaVersion: 2024, sourceType: "module", globals: globals.node },
   },
   {
