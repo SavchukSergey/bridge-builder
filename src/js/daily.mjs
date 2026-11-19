@@ -9,6 +9,8 @@ import { Scene } from "./scene.js";
 import { storageGet, storageSet } from "./storage.mjs";
 
 export const DAILY_KEY = "bridge-builder:daily";
+/** The day's challenge once picked, so opening a level later in the day doesn't change it. */
+export const DAILY_PICK_KEY = "bridge-builder:daily-pick";
 
 /**
  * @typedef {Object} Daily
@@ -65,6 +67,24 @@ export function dailyFor(date, open) {
   const twists = twistsFor(level);
   const [kind, param] = twists[Math.floor(h / playable.length) % twists.length];
   return { date, level: level.id, kind, param };
+}
+
+/**
+ * Today's challenge for this player: the one already picked today, if any, else a new pick
+ * ({@link dailyFor}), kept for the rest of the day. Winning a level for the first time opens
+ * the next, which would otherwise move the pick to another level in the middle of the win.
+ * @param {string} date - YYYY-MM-DD
+ * @param {import("./level.mjs").Level[]} open - levels the player can play, in order
+ * @returns {Daily | undefined}
+ */
+export function dailyToday(date, open) {
+  try {
+    const kept = JSON.parse(storageGet(DAILY_PICK_KEY) ?? "null");
+    if (kept?.date === date && open.some(l => l.id === kept.level) && kept.kind in CHALLENGE_KINDS) return kept;
+  } catch { /* not kept, or spoilt: pick again */ }
+  const daily = dailyFor(date, open);
+  if (daily) storageSet(DAILY_PICK_KEY, JSON.stringify(daily));
+  return daily;
 }
 
 /** What the challenge asks for, in words. @param {Daily} daily */

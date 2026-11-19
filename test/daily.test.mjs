@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createGame } from "./helpers.mjs";
 import { solutions } from "./solutions.mjs";
 import { levels } from "../src/js/level.mjs";
-import { DAILY_KEY, dailyFor, dailyMet, dayOf, daysDone, markDone, streak, twistsFor } from "../src/js/daily.mjs";
+import { DAILY_KEY, DAILY_PICK_KEY, dailyToday, dailyFor, dailyMet, dayOf, daysDone, markDone, streak, twistsFor } from "../src/js/daily.mjs";
 import { CHALLENGE_KINDS } from "../src/js/challenges.mjs";
 
 describe("the daily challenge", () => {
@@ -56,5 +56,19 @@ describe("the daily challenge", () => {
     markDone("2026-11-19");
     game.resetProgress();
     assert.equal(localStorage.getItem(DAILY_KEY), null);
+  });
+
+  test("today's challenge stays put when a win opens another level", () => {
+    localStorage.clear();
+    // a day whose pick moves once a level more is open
+    const date = Array.from({ length: 60 }, (_, i) => dayOf(new Date(2026, 10, 1 + i)))
+      .find(d => dailyFor(d, levels.slice(0, 5)).level !== dailyFor(d, levels.slice(0, 6)).level);
+    const first = dailyToday(date, levels.slice(0, 5));
+    assert.deepEqual(dailyToday(date, levels.slice(0, 6)), first, "the same all day");
+    const next = new Date(`${date}T12:00:00`);
+    next.setDate(next.getDate() + 1);
+    assert.equal(dailyToday(dayOf(next), levels.slice(0, 6))?.date, dayOf(next), "a new pick the next day");
+    localStorage.setItem(DAILY_PICK_KEY, "{oops");
+    assert.equal(dailyToday(date, levels.slice(0, 5))?.date, date, "a spoilt pick is picked again");
   });
 });

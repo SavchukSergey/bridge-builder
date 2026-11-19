@@ -14,7 +14,7 @@ import { Guide } from './guide-ui.mjs';
 import { endingSummary, isFinished } from './ending.mjs';
 import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
-import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
+import { dailyToday, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
 import { addScore, lastPlayer, players, scoresFor, undoScore } from './scoreboard.mjs';
 import { drawPostcard, postcardFileName } from './postcard.mjs';
@@ -527,9 +527,9 @@ document.addEventListener('DOMContentLoaded', function () {
   let friendResult;
 
   // ---- the daily challenge: one open level, with a twist, each day
-  /** Today's challenge, among the levels open now. */
+  /** Today's challenge: picked among the open levels, then kept all day. */
   function today() {
-    return dailyFor(dayOf(), levels.filter(l => game.isUnlocked(l.id)));
+    return dailyToday(dayOf(), levels.filter(l => game.isUnlocked(l.id)));
   }
   function renderDaily() {
     const daily = today();
