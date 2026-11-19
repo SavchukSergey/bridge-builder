@@ -230,7 +230,7 @@ export class Scene {
    */
   /**
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
-   * @param {{ stress?: boolean }} [opts]
+   * @param {{ stress?: boolean, paint?: { color: string, highlight: string } }} [opts]
    */
   renderStructure(ctx, opts) {
     this.content.render(ctx, opts);
@@ -502,7 +502,7 @@ export class CompositeScene {
   /**
    * Decks first, then steel, then cables, with the joints on top.
    * @param {import("./render-ctx.mjs").RenderCtx} ctx
-   * @param {{ stress?: boolean }} [opts]
+   * @param {{ stress?: boolean, paint?: { color: string, highlight: string } }} [opts]
    */
   render(ctx, opts) {
     for (const kind of LAYERS) {

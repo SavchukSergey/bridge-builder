@@ -490,6 +490,12 @@ export class GameCore {
     storageSet(TRIES_KEY, JSON.stringify({ ...this.__tries(), [this.level.id]: this.triesWithoutWin() + 1 }));
   }
 
+  /**
+   * The player's paint for the beams of this level's bridge (looks.mjs), if any.
+   * @type {{ color: string, highlight: string } | undefined}
+   */
+  paint = undefined;
+
   /** Draw the {@link outline} over the build area. */
   showOutline = false;
 

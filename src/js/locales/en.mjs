@@ -303,4 +303,8 @@ export default {
   "compare.dearer": "The hint bridge costs {ref}, {diff} less than yours.",
   "compare.same": "Yours costs the same as the hint bridge ({ref}).",
   "compare.pieces": "Pieces: yours {n}, the hint bridge {m}.",
+
+  // ---- paint and name
+  "looks.placeholder": "Name your bridge",
+  "result.named": "“{name}”",
 };

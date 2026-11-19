@@ -532,4 +532,17 @@ export default {
   "compare.dearer": "Мост-подсказка стоит {ref}, на {diff} дешевле твоего.",
   "compare.same": "Твой мост стоит столько же, сколько мост-подсказка ({ref}).",
   "compare.pieces": "Деталей: у тебя {n}, у моста-подсказки {m}.",
+
+  // ---- цвет и имя
+  "looks.title": "Цвет и имя",
+  "looks.name": "Имя",
+  "looks.paint": "Цвет",
+  "looks.placeholder": "Назови свой мост",
+  "result.named": "«{name}»",
+  "paint.plain": "Без краски",
+  "paint.red": "Красный",
+  "paint.blue": "Синий",
+  "paint.green": "Зелёный",
+  "paint.yellow": "Жёлтый",
+  "paint.purple": "Фиолетовый",
 };

@@ -94,7 +94,7 @@ export class Game extends GameInput {
     if (draw && boat && (boat.state === "waiting" || boat.state === "sailing")) renderClearance(this.ctx, draw, water);
     if (boat) boat.render(this.ctx, this.evalCtx.time);
     if (this.isBuildMode) this.__renderSelection("under");
-    this.scene.renderStructure(this.ctx, { stress: this.showStress });
+    this.scene.renderStructure(this.ctx, { stress: this.showStress, paint: this.paint });
     if (this.isBuildMode) {
       this.__renderSelection("over");
       this.__renderMarks();

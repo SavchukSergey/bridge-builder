@@ -70,12 +70,14 @@ export class Link {
    * (green relaxed; towards red in compression, blue in tension); otherwise only members
    * close to breaking glow, amber to red.
    * @param {import("../render-ctx.mjs").RenderCtx} ctx
-   * @param {{ stress?: boolean }} [opts]
+   * @param {{ stress?: boolean, paint?: { color: string, highlight: string } }} [opts] - paint:
+   *   the player's colour for beams
    */
-  render(ctx, { stress = false } = {}) {
+  render(ctx, { stress = false, paint } = {}) {
     const g = ctx.ctx;
     const { a, b } = this;
-    const look = this.material.look;
+    const own = this.material.look;
+    const look = paint && own.kind === "beam" ? { ...own, ...paint } : own;
     const width = this.drawnWidth(ctx.zoom);
     g.lineCap = "round";
 

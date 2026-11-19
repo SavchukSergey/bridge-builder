@@ -215,6 +215,9 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+**Paint and name** (under the materials) gives each level's bridge a name, shown in the
+result, and a paint for its steel and wood: red, blue, green, yellow or purple.
+
 Every material has its own sound: placing a piece thunks (road), clanks (steel; light
 steel higher), knocks (wood), zips (cable) or ratchets (winch), and wood splinters when it
 breaks while light steel pings and rail rings.
@@ -245,6 +248,7 @@ src/
     engine/             joints and links
     materials/          material properties and looks
     level.mjs           level definitions, star thresholds
+    looks.mjs           paint and name: each level's bridge name and paint
     sandbox.mjs         sandbox levels the player designs
     level-preview.mjs   level thumbnails for the level-select screen
     vehicle.mjs         driving, falling and axle loads

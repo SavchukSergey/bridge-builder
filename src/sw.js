@@ -44,6 +44,7 @@ const SHELL = [
   "js/i18n.mjs",
   "js/level-preview.mjs",
   "js/level.mjs",
+  "js/looks.mjs",
   "js/locales/en.mjs",
   "js/locales/ru.mjs",
   "js/locales/uk.mjs",

@@ -246,6 +246,21 @@
       </div>
     </section>
 
+    <details id="looks">
+      <summary data-i18n="looks.title">Paint and name</summary>
+      <label class="looks-name"><span data-i18n="looks.name">Name</span>
+        <input type="text" id="bridge-name" maxlength="30" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="paints" role="radiogroup" aria-label="Paint" data-i18n-aria="looks.paint">
+          <label class="paint-swatch" title="Plain" data-i18n-title="paint.plain"><input type="radio" name="paint" value="plain" class="visually-hidden" aria-label="Plain" data-i18n-aria="paint.plain" checked /><span style="--paint: #8a96a1"></span></label>
+          <label class="paint-swatch" title="Red" data-i18n-title="paint.red"><input type="radio" name="paint" value="red" class="visually-hidden" aria-label="Red" data-i18n-aria="paint.red" /><span style="--paint: #b8382c"></span></label>
+          <label class="paint-swatch" title="Blue" data-i18n-title="paint.blue"><input type="radio" name="paint" value="blue" class="visually-hidden" aria-label="Blue" data-i18n-aria="paint.blue" /><span style="--paint: #2f63a8"></span></label>
+          <label class="paint-swatch" title="Green" data-i18n-title="paint.green"><input type="radio" name="paint" value="green" class="visually-hidden" aria-label="Green" data-i18n-aria="paint.green" /><span style="--paint: #2d7d50"></span></label>
+          <label class="paint-swatch" title="Yellow" data-i18n-title="paint.yellow"><input type="radio" name="paint" value="yellow" class="visually-hidden" aria-label="Yellow" data-i18n-aria="paint.yellow" /><span style="--paint: #d39a16"></span></label>
+          <label class="paint-swatch" title="Purple" data-i18n-title="paint.purple"><input type="radio" name="paint" value="purple" class="visually-hidden" aria-label="Purple" data-i18n-aria="paint.purple" /><span style="--paint: #6f45a3"></span></label>
+      </div>
+    </details>
+
     <details id="help" open>
       <summary data-i18n="ui.controls">Controls</summary>
       <p data-i18n-html="ui.helpIntro">Get every car to the flag without spending too much. Press <b>Test</b> to try your bridge.</p>
@@ -402,7 +417,8 @@
         <svg class="big-star"><use href="#icon-star" /></svg>
         <svg class="big-star"><use href="#icon-star" /></svg>
       </div>
-      <button type="button" class="btn icon-only speak result-speak" data-speak="#result-title, #result-text, #result-tip, #result-hint" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
+      <button type="button" class="btn icon-only speak result-speak" data-speak="#result-name, #result-title, #result-text, #result-tip, #result-hint" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
+      <p id="result-name" hidden></p>
       <h2 id="result-title"></h2>
       <p id="result-text"></p>
       <dl class="result-facts">

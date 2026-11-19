@@ -13,6 +13,7 @@ import { confetti } from './confetti.mjs';
 import { Guide } from './guide-ui.mjs';
 import { endingSummary, isFinished } from './ending.mjs';
 import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
+import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -229,6 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
     challenges: byId('result-challenges', HTMLUListElement),
     badges: byId('result-badges', HTMLUListElement),
     real: byId('result-real', HTMLButtonElement),
+    name: byId('result-name', HTMLParagraphElement),
     compare: byId('result-compare', HTMLDivElement),
     compareText: byId('result-compare-text', HTMLParagraphElement),
     compareShow: byId('result-compare-show', HTMLButtonElement),
@@ -444,9 +446,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // ---- paint and name your bridge: kept for each level
+  const nameInput = byId('bridge-name', HTMLInputElement);
+  const paintPicks = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('input[name="paint"]')]);
+  function showLooks() {
+    const looks = loadLooks(game.level.id);
+    if (document.activeElement !== nameInput) nameInput.value = looks.name;
+    nameInput.placeholder = t('looks.placeholder');
+    for (const pick of paintPicks) pick.checked = pick.value === looks.paint;
+    game.paint = PAINTS[looks.paint];
+  }
+  nameInput.addEventListener('input', () => saveLooks(game.level.id, { name: nameInput.value }));
+  nameInput.addEventListener('change', () => { nameInput.value = saveLooks(game.level.id, { name: nameInput.value }).name; });
+  // typing a name mustn't build or delete: the game's keys are for the canvas
+  nameInput.addEventListener('keydown', (ev) => {
+    ev.stopPropagation();
+    if (ev.key === 'Enter' || ev.key === 'Escape') nameInput.blur();
+  });
+  for (const pick of paintPicks) {
+    pick.addEventListener('change', () => {
+      if (pick.checked) game.paint = PAINTS[saveLooks(game.level.id, { paint: pick.value }).paint];
+    });
+  }
+
   function refreshLevels() {
     showDecks();
     showWinch();
+    showLooks();
     txtLevelName.textContent = game.level.sandbox ? game.level.name : `${game.level.number}. ${game.level.name}`;
     if (txtLevel.textContent !== game.level.description) stopReading?.();
     txtLevel.textContent = game.level.description;
@@ -560,6 +586,9 @@ document.addEventListener('DOMContentLoaded', function () {
   /** @param {import('./game.js').TestResult} result */
   function showResult(result) {
     dlg.root.className = result.kind;
+    const named = loadLooks(game.level.id).name;
+    dlg.name.hidden = !named;
+    dlg.name.textContent = named ? t('result.named', { name: named }) : '';
     dlg.stars.forEach((star, i) => star.classList.toggle('earned', i < result.stars));
     const over = result.cost - result.budget;
     const train = game.level.track === 'rail';

@@ -532,4 +532,17 @@ export default {
   "compare.dearer": "Міст-підказка коштує {ref}, на {diff} дешевше за твій.",
   "compare.same": "Твій міст коштує стільки ж, скільки міст-підказка ({ref}).",
   "compare.pieces": "Деталей: у тебе {n}, у мосту-підказки {m}.",
+
+  // ---- колір та ім’я
+  "looks.title": "Колір та ім’я",
+  "looks.name": "Ім’я",
+  "looks.paint": "Колір",
+  "looks.placeholder": "Назви свій міст",
+  "result.named": "«{name}»",
+  "paint.plain": "Без фарби",
+  "paint.red": "Червоний",
+  "paint.blue": "Синій",
+  "paint.green": "Зелений",
+  "paint.yellow": "Жовтий",
+  "paint.purple": "Фіолетовий",
 };
