@@ -11,6 +11,7 @@ import { setUpReading } from './speech.mjs';
 import { BADGES, earnedBadges, newBadges } from './badges.mjs';
 import { confetti } from './confetti.mjs';
 import { Guide } from './guide-ui.mjs';
+import { endingSummary, isFinished } from './ending.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -167,6 +168,18 @@ document.addEventListener('DOMContentLoaded', function () {
     total: byId('levels-total', HTMLSpanElement),
     badges: byId('levels-badges', HTMLUListElement),
     close: byId('levels-close', HTMLButtonElement),
+    trophy: byId('levels-trophy', HTMLButtonElement),
+  };
+  const ending = {
+    root: byId('ending', HTMLDivElement),
+    text: byId('ending-text', HTMLParagraphElement),
+    stars: byId('ending-stars', HTMLSpanElement),
+    goals: byId('ending-goals', HTMLSpanElement),
+    badges: byId('ending-badges', HTMLSpanElement),
+    next: byId('ending-next', HTMLParagraphElement),
+    close: byId('ending-close', HTMLButtonElement),
+    levels: byId('ending-levels', HTMLButtonElement),
+    sandbox: byId('ending-sandbox', HTMLButtonElement),
   };
   const tooltip = {
     root: byId('link-tooltip', HTMLDivElement),
@@ -573,12 +586,61 @@ document.addEventListener('DOMContentLoaded', function () {
       fresh = newBadges(have, toldBadges());
       try { localStorage.setItem(BADGES_KEY, JSON.stringify(have)); } catch { /* ignore */ }
     }
+    // the win that finishes the game: its result leads on to the ending
+    endingDue = fresh.includes('allLevels');
+    if (endingDue) {
+      dlg.next.hidden = false;
+      (/** @type {HTMLElement} */ (dlg.next.firstElementChild)).textContent = t('ending.see');
+    } else {
+      (/** @type {HTMLElement} */ (dlg.next.firstElementChild)).textContent = t('ui.nextLevel', {}, 'Next level');
+    }
     dlg.badges.replaceChildren(...fresh.map(id => badgeItem(id, true, { isNew: true })));
     dlg.badges.hidden = fresh.length === 0;
     dlg.root.hidden = false;
     if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
+
+  /** The result on show is the win that finished the game: its button opens the ending. */
+  let endingDue = false;
+
+  // ---- the ending: every level won
+  function showEnding() {
+    hideResult();
+    if (!picker.root.hidden) hideLevels();
+    const p = progress();
+    const s = endingSummary(p, earnedBadges(p), BADGES.length);
+    ending.text.textContent = t('ending.text', { n: s.levels });
+    ending.stars.textContent = t('ending.stars', { n: s.stars, max: s.maxStars });
+    ending.goals.textContent = t('ending.goals', { n: s.goals, max: s.maxGoals });
+    ending.badges.textContent = t('ending.badges', { n: s.badges, max: s.maxBadges });
+    ending.next.textContent = s.everything ? t('ending.everything')
+      : s.starsLeft > 0 ? t('ending.moreStars', { n: s.starsLeft }) : t('ending.moreGoals');
+    ending.root.hidden = false;
+    ending.levels.focus();
+    confetti(window, 5);
+  }
+  function hideEnding() {
+    ending.root.hidden = true;
+    stopReading?.();
+  }
+  ending.close.addEventListener('click', hideEnding);
+  ending.root.addEventListener('click', (ev) => { if (ev.target === ending.root) hideEnding(); });
+  ending.levels.addEventListener('click', () => {
+    hideEnding();
+    showLevels();
+  });
+  ending.sandbox.addEventListener('click', () => {
+    hideEnding();
+    showSandbox();
+  });
+  picker.trophy.addEventListener('click', showEnding);
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !ending.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideEnding();
+    }
+  });
 
   function hideResult() {
     dlg.root.hidden = true;
@@ -719,6 +781,11 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   dlg.next.addEventListener('click', () => {
     hideResult();
+    if (endingDue) {
+      endingDue = false;
+      showEnding();
+      return;
+    }
     const next = game.result?.nextLevel;
     if (next) game.selectLevel(next);
     chkSimulation.checked = false;
@@ -845,6 +912,7 @@ document.addEventListener('DOMContentLoaded', function () {
     picker.total.textContent = `${earned} / ${max}`;
     const have = earnedBadges(progress());
     picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id), { how: true })));
+    picker.trophy.hidden = !isFinished(progress());
   }
 
   function showLevels() {

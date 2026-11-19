@@ -226,4 +226,18 @@ export default {
   "guide.why.cable": "A cable pulls the road up, like the ropes of a swing.",
   "guide.why.cable-thin": "A thin cable is cheap, and strong enough to hold up a bit of road.",
   "guide.why.remove": "Every piece costs money, so take away the ones this bridge doesn't need.",
+
+  // ---- the ending
+  "ending.title": "You built every bridge!",
+  "ending.text": "All {n} levels, from the little brook to the mountain railway. Every truck and every train got across.",
+  "ending.stars": "{n} of {max} stars",
+  "ending.goals": "{n} of {max} extra goals",
+  "ending.badges": "{n} of {max} badges",
+  "ending.moreStars": { one: "1 more star is still waiting: build a bridge cheaper to win it.", other: "{n} more stars are still waiting: build those bridges cheaper to win them." },
+  "ending.moreGoals": "Every star! A few extra goals are still waiting in the levels.",
+  "ending.everything": "Every star, every goal, every badge. You're a real bridge engineer!",
+  "ending.see": "See your trophy",
+  "ending.again": "You built every bridge: see your trophy",
+  "ending.levels": "Back to the levels",
+  "ending.sandbox": "Build your own",
 };

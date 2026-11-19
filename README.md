@@ -88,6 +88,10 @@ and earns **badges** for milestones over the whole game: the first bridge, 10 an
 5 extra goals, a railway level, every level, every goal and every star. They show in the
 level list, and a result announces the ones it earned.
 
+The win that completes the last level leads to the **ending**: a trophy, the stars, extra
+goals and badges won out of all there are, and how many stars are still waiting. The level
+list keeps a button back to it.
+
 The speaker buttons on the level text, the hint, the result and the tutorial **read them
 aloud** with the browser's own voices, in the game's language. They hide themselves on a
 device with no voice for it.
@@ -219,6 +223,7 @@ src/
     challenges.mjs      each level's challenges
     badges.mjs          milestones over the whole game
     confetti.mjs        the confetti for a win
+    ending.mjs          the ending, once every level is won
     speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     guide.mjs           "Build it with me": the order to build a reference bridge in, and how far along you are
