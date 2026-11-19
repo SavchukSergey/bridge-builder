@@ -110,8 +110,7 @@ export class GameEditing extends GameLevels {
     const moved = new Set(placed.map(p => p.joint));
     for (const link of this.scene.links) {
       if (!moved.has(link.a) && !moved.has(link.b)) continue;
-      link.length = vec3flen(vec3fsub(link.b.position, link.a.position));
-      link.preEval();
+      link.rest();
     }
     this.scene.distributeMass();
   }

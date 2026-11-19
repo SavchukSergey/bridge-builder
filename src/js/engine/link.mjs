@@ -1,4 +1,4 @@
-import { createVec3F, lerpColor, vec3flen, vec3fmul } from "../math.js";
+import { createVec3F, lerpColor, vec3flen, vec3fmul, vec3fsub } from "../math.js";
 
 /** Fraction of critical damping applied along each link. */
 export const DAMPING_RATIO = 0.1;
@@ -28,6 +28,12 @@ export class Link {
     const dz = this.b.position.z - this.a.position.z;
     this.length = Math.sqrt(dx * dx + dy * dy + dz * dz);
     this.actualLength = this.length;
+    /**
+     * Which side of a-to-b the top of a deck is on, as built: 1 to the left (a road laid left
+     * to right), -1 to the right. It stays with the piece, so a broken road swinging past
+     * upright keeps its surface and rail on the same side instead of flipping over.
+     */
+    this.side = Math.sign(dx) || 1;
 
     this.direction = createVec3F(dx, dy, dz);
     this.directionN = vec3fmul(this.direction, 1 / this.length);
@@ -40,6 +46,13 @@ export class Link {
     this.pull = 1;
     /** Highest {@link utilization} reached since the simulation started. */
     this.peakUtilization = 0;
+  }
+
+  /** Its new rest shape, after its ends were moved while building. */
+  rest() {
+    this.length = vec3flen(vec3fsub(this.b.position, this.a.position));
+    this.side = Math.sign(this.b.position.x - this.a.position.x) || 1;
+    this.preEval();
   }
 
   preEval() {
@@ -96,7 +109,7 @@ export class Link {
     }
 
     if (look.kind === "deck") {
-      renderDeck(g, a.position, b.position, width, look, ctx.zoom);
+      renderDeck(g, a.position, b.position, width, look, ctx.zoom, this.side);
     } else {
       strokeLine(g, a, b, look.color, width);
       if (look.kind === "beam" && look.highlight && width * ctx.zoom >= 3) {
@@ -233,14 +246,14 @@ function strokeLine(g, a, b, color, width) {
  * @param {number} depth - slab depth (m)
  * @param {import("../materials/material.types.mjs").MaterialLook} look
  * @param {number} zoom
+ * @param {number} side - {@link Link.side}
  */
-function renderDeck(g, a, b, depth, look, zoom) {
+function renderDeck(g, a, b, depth, look, zoom, side) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
   if (len === 0) return;
-  // upward normal
-  let nx = -dy / len, ny = dx / len;
-  if (ny < 0) { nx = -nx; ny = -ny; }
+  // towards the top as built (up, while the deck is in its place)
+  const nx = -dy / len * side, ny = dx / len * side;
 
   const quad = (/** @type {number} */ top, /** @type {number} */ bottom, /** @type {string} */ fill) => {
     g.beginPath();
