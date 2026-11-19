@@ -33,6 +33,7 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @property {{ x0: number, x1: number, y: number }} view - area to fit on screen
  * @property {number} [water] - height of the river surface in the gap, if there is one
  * @property {import("./themes.mjs").ThemeId} [theme] - scenery look; summer by default
+ * @property {import("./wind.mjs").WindId} [wind] - wind on the bridge in a test; calm by default
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
  *   instead of bare anchors
  * @property {import("./drawbridge.mjs").DrawbridgeSpec} [drawbridge] - a boat sails through
@@ -73,6 +74,7 @@ export class Level {
     this.theme = THEMES[opts.theme ?? "summer"];
     this.sandbox = opts.sandbox;
     this.drawbridge = opts.drawbridge;
+    this.wind = opts.wind ?? "calm";
   }
 
   /** The level's name, in the player's language. */

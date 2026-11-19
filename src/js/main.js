@@ -1596,6 +1596,7 @@ document.addEventListener('DOMContentLoaded', function () {
     traffic: byId('sandbox-traffic', HTMLSelectElement),
     budget: byId('sandbox-budget', HTMLInputElement),
     theme: byId('sandbox-theme', HTMLSelectElement),
+    wind: byId('sandbox-wind', HTMLSelectElement),
   };
   sandbox.traffic.replaceChildren(...Object.keys(SANDBOX_TRAFFIC).map((key) => {
     const option = document.createElement('option');
@@ -1623,6 +1624,7 @@ document.addEventListener('DOMContentLoaded', function () {
       traffic: sandbox.traffic.value,
       budget: Number(sandbox.budget.value),
       theme: /** @type {import('./themes.mjs').ThemeId} */ (sandbox.theme.value),
+      wind: /** @type {import('./wind.mjs').WindId} */ (sandbox.wind.value),
     });
   }
 
@@ -1658,6 +1660,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sandbox.traffic.value = spec.traffic;
     sandbox.budget.value = String(spec.budget);
     sandbox.theme.value = spec.theme;
+    sandbox.wind.value = spec.wind;
     updateSandboxForm();
     sandbox.root.hidden = false;
     sandbox.gap.focus();

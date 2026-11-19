@@ -72,6 +72,7 @@ const SHELL = [
   "js/themes.mjs",
   "js/vehicle-types.mjs",
   "js/vehicle.mjs",
+  "js/wind.mjs",
 ];
 
 self.addEventListener("install", (event) => {

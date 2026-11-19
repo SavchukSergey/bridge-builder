@@ -7,6 +7,7 @@
 import { Level } from "./level.mjs";
 import { THEMES } from "./themes.mjs";
 import { t } from "./i18n.mjs";
+import { WINDS } from "./wind.mjs";
 
 /** @typedef {import("./themes.mjs").ThemeId} ThemeId */
 /** @typedef {import("./vehicle-types.mjs").VehicleTypeId} VehicleTypeId */
@@ -19,10 +20,11 @@ import { t } from "./i18n.mjs";
  * @property {string} traffic - a key of {@link SANDBOX_TRAFFIC}
  * @property {number} budget
  * @property {ThemeId} theme
+ * @property {import("./wind.mjs").WindId} wind
  */
 
 /** @type {SandboxSpec} */
-export const SANDBOX_DEFAULT = { gap: 60, far: 0, rock: false, traffic: "trucks2", budget: 40000, theme: "summer" };
+export const SANDBOX_DEFAULT = { gap: 60, far: 0, rock: false, traffic: "trucks2", budget: 40000, theme: "summer", wind: "calm" };
 
 /** Allowed values: ranges with their steps. */
 export const SANDBOX_LIMITS = {
@@ -57,7 +59,8 @@ export const SANDBOX_TRAFFIC = {
 };
 
 const PREFIX = "sandbox-";
-const ID_PATTERN = /^sandbox-g(\d+)-f([ud])(\d+)-r([01])-t([a-z0-9]+)-b(\d+)-([a-z]+)$/;
+// a windy one ends -w1 (a breeze) or -w2 (a storm); calm ones have no ending, as before wind
+const ID_PATTERN = /^sandbox-g(\d+)-f([ud])(\d+)-r([01])-t([a-z0-9]+)-b(\d+)-([a-z]+)(?:-w([12]))?$/;
 
 /** Whether an id names a sandbox level (well-formed or not). */
 export function isSandboxId(/** @type {string | null | undefined} */ id) {
@@ -81,6 +84,7 @@ export function normalizeSandbox(spec) {
     traffic: Object.hasOwn(SANDBOX_TRAFFIC, s.traffic) ? s.traffic : SANDBOX_DEFAULT.traffic,
     budget: fit(s.budget, SANDBOX_LIMITS.budget),
     theme: Object.hasOwn(THEMES, s.theme) ? s.theme : SANDBOX_DEFAULT.theme,
+    wind: WINDS.includes(s.wind) ? s.wind : "calm",
   };
 }
 
@@ -92,7 +96,8 @@ export function normalizeSandbox(spec) {
 export function sandboxId(spec) {
   const s = normalizeSandbox(spec);
   const far = s.far < 0 ? `d${-s.far}` : `u${s.far}`;
-  return `${PREFIX}g${s.gap}-f${far}-r${s.rock ? 1 : 0}-t${s.traffic}-b${s.budget}-${s.theme}`;
+  const wind = s.wind === "calm" ? "" : `-w${WINDS.indexOf(s.wind)}`;
+  return `${PREFIX}g${s.gap}-f${far}-r${s.rock ? 1 : 0}-t${s.traffic}-b${s.budget}-${s.theme}${wind}`;
 }
 
 /**
@@ -104,10 +109,10 @@ export function sandboxId(spec) {
 export function parseSandboxId(id) {
   const m = typeof id === "string" ? ID_PATTERN.exec(id) : null;
   if (!m) return undefined;
-  const [, gap, dir, far, rock, traffic, budget, theme] = m;
+  const [, gap, dir, far, rock, traffic, budget, theme, wind] = m;
   const spec = {
     gap: Number(gap), far: (dir === "d" ? -1 : 1) * Number(far), rock: rock === "1", traffic,
-    budget: Number(budget), theme: /** @type {ThemeId} */ (theme),
+    budget: Number(budget), theme: /** @type {ThemeId} */ (theme), wind: WINDS[Number(wind ?? 0)],
   };
   return sandboxId(spec) === id ? normalizeSandbox(spec) : undefined;
 }
@@ -140,7 +145,7 @@ const FAR = 10000;
  * @returns {Level}
  */
 function sandboxLevel(spec) {
-  const { gap, far, rock, traffic, budget, theme } = spec;
+  const { gap, far, rock, traffic, budget, theme, wind } = spec;
   const half = gap / 2;
   const nearY = 10, farY = 10 + far;
   const low = Math.min(nearY, farY);
@@ -162,7 +167,7 @@ function sandboxLevel(spec) {
       bank: far === 0 ? "" : t(far > 0 ? "sandbox.bankHigher" : "sandbox.bankLower", { m: Math.abs(far) }),
       rock: rock ? t("sandbox.rockInMiddle") : "",
       traffic: t(`traffic.${traffic}`),
-    }),
+    }) + (wind === "calm" ? "" : ` ${t(`sandbox.wind.${wind}`)}`),
     terrain,
     anchors,
     startX: -half - 6,
@@ -174,6 +179,7 @@ function sandboxLevel(spec) {
     view: { x0: -half - 25, x1: half + 25, y: (nearY + farY) / 2 + Math.max(0, 5 - gap / 30) },
     water,
     theme,
+    wind,
     sandbox: spec,
   });
 }

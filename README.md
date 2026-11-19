@@ -195,8 +195,10 @@ stops the boat, and the test is lost.
 
 **Sandbox** (the last card in the level list) lets you design your own gap: its width (20
 to 200 m), how much higher or lower the far bank is, a rock in the middle for a pier, the
-traffic (cars, trucks, rush hour, a town convoy, the heavy hauler or a train), the budget and the scenery.
-A sandbox is always open and doesn't count towards progress. Its level id spells out the
+traffic (cars, trucks, rush hour, a town convoy, the heavy hauler or a train), the budget, the scenery and the wind.
+A breeze or a storm blows from the left in gusts and pushes on whatever stands up into it
+(towers and posts far more than a flat deck), so tall bridges need bracing; it is far
+stronger than real wind, which hardly troubles steel. A sandbox is always open and doesn't count towards progress. Its level id spells out the
 whole design, so its bridge is saved like any other, and **Share** sends the level along
 with the bridge.
 
@@ -269,6 +271,7 @@ src/
     sandbox.mjs         sandbox levels the player designs
     level-preview.mjs   level thumbnails for the level-select screen
     vehicle.mjs         driving, falling and axle loads
+    wind.mjs            wind for sandboxes: its gusts, its push on the bridge and its streaks
     vehicle-types.mjs   cars, buses, trucks, haulers, locomotives, wagons: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
     hints.mjs           advice after a failed test, and a hint for each level

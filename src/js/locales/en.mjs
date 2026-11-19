@@ -332,4 +332,8 @@ export default {
   // ---- the family scoreboard
   "score.placeholder": "Your name",
   "score.placed": "On the scoreboard: number {place} of {of} on this level.",
+
+  // ---- wind
+  "sandbox.wind.breeze": "A breeze blows from the left.",
+  "sandbox.wind.storm": "A storm blows from the left: brace anything tall!",
 };

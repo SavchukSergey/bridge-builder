@@ -13,4 +13,7 @@ export class EvalCtx {
 
     targetGravity = createVec3F(0, -9.81, 0);
 
+    /** The wind's push now, N per metre of member standing up into it (wind.mjs). */
+    wind = 0;
+
 }

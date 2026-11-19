@@ -1,3 +1,4 @@
+import { applyWind } from "./wind.mjs";
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
@@ -358,6 +359,7 @@ export class Scene {
     for (const load of loads) {
       load.joint.force.y += load.fy;
     }
+    if (evalCtx.wind) applyWind(this.links, evalCtx.wind);
     for (const link of this.links) {
       if (!link.broken) {
         link.preEval();

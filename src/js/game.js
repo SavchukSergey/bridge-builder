@@ -9,6 +9,7 @@
  * - game.js (this): wiring it up, and drawing
  */
 
+import { renderWind } from "./wind.mjs";
 import { GameInput } from "./game-input.mjs";
 import { LEVEL_KEY, storageGet } from "./storage.mjs";
 import { findLevel, levels } from "./level.mjs";
@@ -58,6 +59,7 @@ export class Game extends GameInput {
     this.ctx.clear();
     renderBackground(this.ctx, this.level.startY, this.level.theme);
     this.level.render(this.ctx);
+    renderWind(this.ctx, this.level.wind, (typeof performance === "object" ? performance.now() : 0) / 1000);
     if (this.isBuildMode) this.scene.grid.render(this.ctx);
     if (this.isBuildMode && this.showOutline) this.__renderOutline();
     if (this.isBuildMode && this.mirror) {

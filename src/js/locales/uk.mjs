@@ -600,4 +600,12 @@ export default {
   "score.cheapest": "Найдешевше",
   "score.byLevel": "Найдешевший міст на кожному рівні",
   "score.placed": "У таблиці: місце {place} з {of} на цьому рівні.",
+
+  // ---- вітер
+  "ui.wind": "Вітер",
+  "ui.wind.calm": "Тихо",
+  "ui.wind.breeze": "Вітерець",
+  "ui.wind.storm": "Буря",
+  "sandbox.wind.breeze": "Зліва дме вітерець.",
+  "sandbox.wind.storm": "Зліва дме буря: зміцни все високе!",
 };

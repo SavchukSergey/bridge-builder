@@ -600,4 +600,12 @@ export default {
   "score.cheapest": "Дешевле всех",
   "score.byLevel": "Самый дешёвый мост на каждом уровне",
   "score.placed": "В таблице: место {place} из {of} на этом уровне.",
+
+  // ---- ветер
+  "ui.wind": "Ветер",
+  "ui.wind.calm": "Тихо",
+  "ui.wind.breeze": "Ветерок",
+  "ui.wind.storm": "Буря",
+  "sandbox.wind.breeze": "Слева дует ветерок.",
+  "sandbox.wind.storm": "Слева дует буря: укрепи всё высокое!",
 };

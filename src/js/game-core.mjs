@@ -8,6 +8,7 @@
  * it or the layers below it define.
  */
 
+import { windAt } from "./wind.mjs";
 import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, HINT_AFTER, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
 import { COMPLETED_KEY, BEST_KEY, CHALLENGES_KEY, TRIES_KEY, storageGet, storageSet } from "./storage.mjs";
 import { challengesFor } from "./challenges.mjs";
@@ -588,6 +589,7 @@ export class GameCore {
       const pull = winchPull(draw, this.evalCtx.time);
       for (const link of this.scene.links) if (link.material.winch) link.pull = pull;
     }
+    this.evalCtx.wind = windAt(this.level.wind, this.evalCtx.time);
     const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
     const dt = this.scene.tick(this.evalCtx, loads);
     for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
