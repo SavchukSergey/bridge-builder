@@ -88,6 +88,9 @@ and earns **badges** for milestones over the whole game: the first bridge, 10 an
 5 extra goals, a railway level, every level, every goal and every star. They show in the
 level list, and a result announces the ones it earned.
 
+A win also compares the bridge with the level's hint bridge (cost and pieces), and
+**Compare** goes back to building with the hint bridge drawn over yours.
+
 After a win, a **money saver** may point at a piece that hardly worked: it is marked in
 green, with the cheaper piece of the same sort that would still be strong enough there (steel
 to light steel or wood, cable to thin cable) and what that saves. It suggests a swap, never

@@ -1236,6 +1236,30 @@ kbd {
   line-height: 1.45;
 }
 
+.result-compare {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.result-compare[hidden] {
+  display: none;
+}
+
+.result-compare p {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+}
+
+.result-compare .btn {
+  flex: none;
+}
+
 #result-tip.saver {
   background: rgba(90, 200, 120, 0.1);
   border-color: rgba(90, 200, 120, 0.35);

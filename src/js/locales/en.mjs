@@ -297,4 +297,10 @@ export default {
 
   // ---- a piece that hardly worked
   "result.idle": "Money saver: the {what} piece marked in green only did {n}% of the work it can. A {to} piece there would be strong enough, and saves {saving}.",
+
+  // ---- comparing with the hint bridge
+  "compare.cheaper": "Yours cost {diff} less than the hint bridge ({ref}). Brilliant!",
+  "compare.dearer": "The hint bridge costs {ref}, {diff} less than yours.",
+  "compare.same": "Yours costs the same as the hint bridge ({ref}).",
+  "compare.pieces": "Pieces: yours {n}, the hint bridge {m}.",
 };

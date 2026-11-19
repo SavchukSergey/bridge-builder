@@ -229,6 +229,9 @@ document.addEventListener('DOMContentLoaded', function () {
     challenges: byId('result-challenges', HTMLUListElement),
     badges: byId('result-badges', HTMLUListElement),
     real: byId('result-real', HTMLButtonElement),
+    compare: byId('result-compare', HTMLDivElement),
+    compareText: byId('result-compare-text', HTMLParagraphElement),
+    compareShow: byId('result-compare-show', HTMLButtonElement),
     realName: byId('result-real-name', HTMLElement),
   };
   const real = {
@@ -575,6 +578,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const broke = result.broken ? t('result.broke', { n: result.broken }) : '';
       dlg.text.textContent = say(how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
+    // after a win: how it compares with the hint bridge
+    const outline = result.kind === 'success' && !game.level.sandbox ? game.outline : undefined;
+    dlg.compare.hidden = !outline;
+    if (outline) {
+      const diff = Math.round(outline.cost - result.cost);
+      const price = Math.abs(diff) < 50 ? t('compare.same', { ref: formatMoney(outline.cost) })
+        : diff > 0 ? t('compare.cheaper', { diff: formatMoney(diff), ref: formatMoney(outline.cost) })
+          : t('compare.dearer', { diff: formatMoney(-diff), ref: formatMoney(outline.cost) });
+      dlg.compareText.textContent = `${price} ${t('compare.pieces', { n: game.bridgeStats.members, m: outline.structure.links.length })}`;
+    }
     // after a failure, what to try; after a win, a piece that hardly worked, to save money on
     const idle = result.kind === 'success' ? result.idle : undefined;
     dlg.tip.hidden = result.kind !== 'failed' && !idle;
@@ -845,6 +858,16 @@ document.addEventListener('DOMContentLoaded', function () {
     sound.jingle(result.kind === 'success');
   };
   dlg.close.addEventListener('click', hideResult);
+  // after a win: back to building, with the hint bridge drawn over yours
+  dlg.compareShow.addEventListener('click', () => {
+    hideResult();
+    game.reset();
+    chkSimulation.checked = false;
+    hintLevel = game.level.id;
+    hintStage = 2;
+    game.showOutline = true;
+    updateHint();
+  });
   dlg.help.addEventListener('click', () => {
     hideResult();
     game.reset();
