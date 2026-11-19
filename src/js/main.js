@@ -14,6 +14,7 @@ import { Guide } from './guide-ui.mjs';
 import { endingSummary, isFinished } from './ending.mjs';
 import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
+import { dialogOpen, watchDialogs } from './dialogs.mjs';
 import { dailyToday, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
 import { addScore, lastPlayer, players, scoresFor, undoScore } from './scoreboard.mjs';
@@ -352,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const target = ev.target;
     if (target instanceof Element && target.closest('input[type=text], input[type=number], textarea, select, [contenteditable]')) return;
-    if (!picker.root.hidden || !dlg.root.hidden || !settings.root.hidden || !sandbox.root.hidden) return;
+    if (dialogOpen()) return; // not behind a window
     const n = Number(ev.key);
     if (Number.isInteger(n) && n >= 1) {
       const input = materialInputs()[n - 1];
@@ -365,6 +366,8 @@ document.addEventListener('DOMContentLoaded', function () {
       chkSimulation.dispatchEvent(new Event('change'));
     }
   });
+  watchDialogs(["settings", "sandbox", "result", "scoreboard", "postcard", "grownups", "real-bridge", "ending", "levels"]
+    .map(id => /** @type {HTMLElement} */ (document.getElementById(id))));
 
   btnUndo.addEventListener('click', () => game.undo());
   btnRedo.addEventListener('click', () => game.redo());

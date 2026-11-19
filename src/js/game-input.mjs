@@ -7,6 +7,7 @@ import { GameEditing } from "./game-editing.mjs";
 import { DRAG_THRESHOLD_PX, SPEEDS, LONG_PRESS_MS, MIN_ZOOM, MAX_ZOOM, SNAP_STEP } from "./game-config.mjs";
 import { createVec3F, vec3fsub } from "./math.js";
 import { CompositeScene } from "./scene.js";
+import { dialogOpen } from "./dialogs.mjs";
 
 export class GameInput extends GameEditing {
   /** Listens to the canvas and the keyboard; {@link destroy} stops. */
@@ -486,6 +487,7 @@ export class GameInput extends GameEditing {
   __handleKeyDown(ev) {
     const target = /** @type {HTMLElement | null} */ (ev.target);
     if (target?.closest?.("input[type=text], input[type=number], textarea, [contenteditable]")) return;
+    if (dialogOpen()) return; // a window is open: nothing happens to the bridge behind it
     // a focused button, menu or slider keeps its own arrows, Enter and Space
     const onControl = Boolean(target?.closest?.("button, select, input, a, summary, [role=dialog]"));
     if (!onControl && ev.key !== "Escape" && this.__handleBuildKey(ev)) return;

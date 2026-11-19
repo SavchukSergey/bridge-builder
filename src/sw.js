@@ -25,6 +25,7 @@ const SHELL = [
   "js/challenges.mjs",
   "js/confetti.mjs",
   "js/daily.mjs",
+  "js/dialogs.mjs",
   "js/drawbridge.mjs",
   "js/effects.mjs",
   "js/ending.mjs",
