@@ -54,8 +54,8 @@ describe("hovering", () => {
 
     const info = game.hoverInfo;
     assert.equal(info.material, "cable");
-    assert.ok(Math.abs(info.length - 5.625) < 1e-9);
-    assert.ok(Math.abs(info.cost - 5.625 * 60) < 1e-9);
+    assert.ok(Math.abs(info.length - 6) < 1e-9);
+    assert.ok(Math.abs(info.cost - 6 * 60) < 1e-9);
     assert.equal(info.state, "unloaded", "nothing is loaded before the simulation runs");
     assert.equal(info.peakUtilization, undefined, "no peak in build mode");
   });

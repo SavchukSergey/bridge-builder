@@ -84,7 +84,8 @@ export class Scene {
     // Main cable hung as a parabola: a straight cable can't carry vertical load until it
     // stretches into a sag, and the deck would fail first.
     const ropeJoints = [-30, -20, -10, 0, 10, 20, 30].map(x =>
-      new Joint(createVec3F(x, DEMO_TOWER_TOP - DEMO_CABLE_SAG * (1 - (x / 40) ** 2), 0)));
+      // on the 1 m building grid, so a player can put a joint in the same place
+      new Joint(createVec3F(x, Math.round(DEMO_TOWER_TOP - DEMO_CABLE_SAG * (1 - (x / 40) ** 2)), 0)));
     const ropeEnds = [jointAH, ...ropeJoints, jointBH];
     const ropeLinks = ropeEnds.slice(1).map((joint, i) => new Link(ropeEnds[i], joint, cable));
 

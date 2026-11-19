@@ -285,7 +285,7 @@ export const stepLevel = new Level({
   startX: -36,
   finishX: 38,
   convoy: trucks(3),
-  budget: 49500, // a Pratt truss over the ramp with light verticals: ~$34,600
+  budget: 49500, // a Pratt truss over the ramp with light verticals: ~$34,600 (on the grid)
   stars: { two: 36000, three: 34900 },
   view: { x0: -55, x1: 55, y: 18 },
   water: 3,

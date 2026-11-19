@@ -30,7 +30,8 @@ test("the demo bridge survives 15 s, stays finite and settles", () => {
   assert.ok(late < 0.3, `nearly at rest (peak ${late.toFixed(3)} m/s)`);
 
   const midDeck = game.scene.joints.find(j => !j.fixed && Math.abs(j.position.x) < 1 && j.position.y < 12);
-  assert.ok(midDeck.position.y < 10 && midDeck.position.y > 8, `deck sags a little under gravity (y = ${midDeck.position.y})`);
+  // its cable is hung on the 1 m grid, close to a parabola: the deck stays about level
+  assert.ok(Math.abs(midDeck.position.y - 10) < 0.5, `deck stays about level (y = ${midDeck.position.y})`);
 });
 
 test("a very short steel link does not blow up the simulation", () => {

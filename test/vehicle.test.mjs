@@ -269,7 +269,7 @@ describe("budget", () => {
 
   test("the demo bridge works but is over the demo level's budget", () => {
     const game = createGame();
-    assert.ok(Math.abs(game.cost - 45351) < 1, `cost ${game.cost}`);
+    assert.ok(Math.abs(game.cost - 45486) < 1, `cost ${game.cost}`);
     assert.equal(game.overBudget, true);
   });
 

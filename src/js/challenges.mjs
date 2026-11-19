@@ -59,7 +59,7 @@ const LEVEL_CHALLENGES = {
   creek: [["light"], ["cost", 16400]],
   ledges: [["noCables"], ["members", 7]],
   canyon: [["cost", 35400], ["members", 27]],
-  step: [["cost", 34600], ["members", 21]],
+  step: [["cost", 34700], ["members", 21]],
   heavy: [["noCables"], ["cost", 22300]],
   downhill: [["cost", 34200], ["members", 21]],
   rush: [["light"], ["cost", 23700]],

@@ -3,6 +3,10 @@
 // used to calibrate the budgets).
 
 import { SAVE_FORMAT_VERSION } from "./scene.js";
+import { SNAP_STEP } from "./game-config.mjs";
+
+/** On the building grid, so a player can put a joint in the same place. @param {number} v */
+const onGrid = (v) => Math.round(v / SNAP_STEP) * SNAP_STEP;
 
 /** @typedef {import("./level.mjs").Level} Level */
 /** @typedef {import("./scene.js").SavedStructure} SavedStructure */
@@ -23,11 +27,13 @@ export class Builder {
   }
 
   /**
-   * Index of the joint at (x, y), adding it if needed.
+   * Index of the joint at (x, y), on the grid, adding it if needed.
    * @param {number} x
    * @param {number} y
    */
   joint(x, y) {
+    x = onGrid(x);
+    y = onGrid(y);
     const i = this.joints.findIndex(j => Math.abs(j.x - x) < 1e-9 && Math.abs(j.y - y) < 1e-9);
     if (i >= 0) return i;
     this.joints.push({ x, y });
