@@ -26,6 +26,13 @@ const MAX_FRAME_TIME = 0.1;
 const MAX_SUBSTEPS = 1000;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */
 const PICK_RADIUS_PX = 12;
+/** A fingertip covers more than a mouse pointer: pick within this radius on touch. */
+const TOUCH_PICK_RADIUS_PX = 24;
+/** Holding a finger still this long deletes what is under it (the touch right-click). */
+const LONG_PRESS_MS = 500;
+/** View zoom limits, pixels per metre. */
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 80;
 /** Grid step (in metres) that new joints snap to. */
 const SNAP_STEP = 1;
 /** Longest single link (m); longer ones are split into segments when built. */
@@ -84,6 +91,8 @@ export class Game {
     canvas.addEventListener("contextmenu", this.__handleContextMenu);
     this.__handlePointerLeave = this.__handlePointerLeave.bind(this);
     canvas.addEventListener("pointerleave", this.__handlePointerLeave);
+    this.__handlePointerCancel = this.__handlePointerCancel.bind(this);
+    canvas.addEventListener("pointercancel", this.__handlePointerCancel);
     window.addEventListener("keydown", this.__handleKeyDown);
   }
 
@@ -95,6 +104,8 @@ export class Game {
     this.canvas.removeEventListener("click", this.__handleClick)
     this.canvas.removeEventListener("contextmenu", this.__handleContextMenu)
     this.canvas.removeEventListener("pointerleave", this.__handlePointerLeave)
+    this.canvas.removeEventListener("pointercancel", this.__handlePointerCancel)
+    this.__clearLongPress();
     window.removeEventListener("keydown", this.__handleKeyDown)
   }
 
@@ -354,17 +365,17 @@ export class Game {
    * Screen pixels covered by UI panels drawn over the canvas, so {@link fitView} centres
    * the level in the part of the canvas that is actually visible.
    */
-  viewInsets = { top: 0, right: 0 };
+  viewInsets = { top: 0, right: 0, bottom: 0 };
 
   /** Centres and zooms the view on the current level, inside {@link viewInsets}. */
   fitView() {
     const { x0, x1, y } = this.level.view;
-    const { top, right } = this.viewInsets;
+    const { top, right, bottom = 0 } = this.viewInsets;
     const visibleWidth = Math.max(100, (this.canvas.width / this.ctx.pixelRatio || 800) - right);
     const zoom = Math.max(1, visibleWidth / (x1 - x0));
     this.ctx.zoom = zoom;
     // The visible area's centre is offset from the canvas centre by half of each inset.
-    this.ctx.shift = createVec3F((x0 + x1) / 2 + right / 2 / zoom, y + top / 2 / zoom, 0);
+    this.ctx.shift = createVec3F((x0 + x1) / 2 + right / 2 / zoom, y + (top - bottom) / 2 / zoom, 0);
   }
 
   /** Whether the level has been won within budget (ever, on this browser). */
@@ -542,6 +553,21 @@ export class Game {
    */
   __handleMouseDown(ev) {
     const client = this.__getPointerClient(ev);
+    this.pointerType = ev.pointerType === "touch" || ev.pointerType === "pen" ? ev.pointerType : "mouse";
+    if (ev.pointerType === "touch") {
+      this.__touches.set(ev.pointerId ?? 0, client);
+      if (this.__touches.size >= 2) {
+        this.__startPinch();
+        return;
+      }
+      this.__hoverClient = client; // the tooltip shows while the finger is down
+      if (this.__clickState) {
+        // aiming the second end: slide the finger, lift it to place (or just tap)
+        this.__placingTouch = { startClient: client, moved: false };
+        this.__updatePreview(client, ev.altKey);
+        return;
+      }
+    }
     const clientToGlobal = this.ctx.getClientToGlobalMatrix();
     const startGlobal = clientToGlobal.transformPoint(client);
 
@@ -560,6 +586,100 @@ export class Game {
       moved: false,
       moves,
     };
+    if (ev.pointerType === "touch" && this.isBuildMode) {
+      this.__clearLongPress();
+      this.__longPressTimer = setTimeout(() => this.__longPress(), LONG_PRESS_MS);
+    }
+  }
+
+  /**
+   * What last pointed at the canvas. Touch picks within a larger radius, and long-press
+   * stands in for right-click.
+   * @type {"mouse" | "touch" | "pen"}
+   */
+  pointerType = "mouse";
+
+  /** Fingers on the canvas: pointer id → client position. @type {Map<number, import("./math.js").Vec3F>} */
+  __touches = new Map();
+
+  /**
+   * Two fingers down: the zoom and the world point under their midpoint when they landed.
+   * @type {{ distance: number, zoom: number, anchor: import("./math.js").Vec3F } | undefined}
+   */
+  __pinch = undefined;
+
+  /** A finger placing the second end of a link. @type {{ startClient: import("./math.js").Vec3F, moved: boolean } | undefined} */
+  __placingTouch = undefined;
+
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  __longPressTimer = undefined;
+
+  __clearLongPress() {
+    if (this.__longPressTimer !== undefined) clearTimeout(this.__longPressTimer);
+    this.__longPressTimer = undefined;
+  }
+
+  /** A finger held still: delete the joint or link under it, as right-click would. */
+  __longPress() {
+    this.__longPressTimer = undefined;
+    const drag = this.__dragState;
+    if (!drag || drag.moved || !this.isBuildMode) return;
+    this.__cancelDrag();
+    this.__dragState = undefined;
+    this.__suppressClick = true; // the finger lifting is not a tap
+    this.__hoverClient = undefined;
+    if (this.__deleteAt(drag.startGlobal)) globalThis.navigator?.vibrate?.(15);
+  }
+
+  /** The midpoint of the first two fingers and the distance between them. */
+  __pinchGeometry() {
+    const [a, b] = [...this.__touches.values()];
+    return {
+      mid: createVec3F((a.x + b.x) / 2, (a.y + b.y) / 2, 0),
+      distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+    };
+  }
+
+  /** A second finger landed: whatever the first was doing turns into a pinch. */
+  __startPinch() {
+    this.__clearLongPress();
+    this.__cancelDrag();
+    this.__dragState = undefined;
+    this.__placingTouch = undefined;
+    this.__hoverClient = undefined;
+    const { mid, distance } = this.__pinchGeometry();
+    this.__pinch = { distance, zoom: this.ctx.zoom, anchor: this.ctx.clientToGlobal(mid) };
+  }
+
+  /** Zoom by how far the fingers spread, keeping the world point under them in place. */
+  __movePinch() {
+    const pinch = this.__pinch;
+    if (!pinch) return;
+    const { mid, distance } = this.__pinchGeometry();
+    this.ctx.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.zoom * distance / pinch.distance));
+    const under = this.ctx.clientToGlobal(mid);
+    this.ctx.shift = vec3fsub(this.ctx.shift, vec3fsub(under, pinch.anchor));
+  }
+
+  /** A finger lifted or was taken by the browser. */
+  __releaseTouch(/** @type {PointerEvent} */ ev) {
+    this.__touches.delete(ev.pointerId ?? 0);
+    if (!this.__pinch) return false;
+    if (this.__touches.size < 2) this.__pinch = undefined;
+    // the remaining finger does nothing until it lifts too
+    this.__suppressClick = true;
+    return true;
+  }
+
+  /** @param {PointerEvent} ev */
+  __handlePointerCancel(ev) {
+    this.__clearLongPress();
+    this.__touches.delete(ev.pointerId ?? 0);
+    if (this.__touches.size < 2) this.__pinch = undefined;
+    this.__placingTouch = undefined;
+    this.__cancelDrag();
+    this.__dragState = undefined;
+    this.__hoverClient = undefined;
   }
 
   /**
@@ -658,8 +778,20 @@ export class Game {
         this.scene.preview = preview;
       }
     } else {
+      this.__finishLink(globalPoint, !ev.altKey);
+    }
+  }
+
+  /**
+   * Places the link being built, ending at `globalPoint`.
+   * @param {import("./math.js").Vec3F} globalPoint
+   * @param {boolean} allowSnap
+   */
+  __finishLink(globalPoint, allowSnap) {
+    if (!this.__clickState) return;
+    {
       const material = this.__getCurrentMaterial();
-      const path = this.__buildLink(this.__clickState.jointA, globalPoint, material, !ev.altKey);
+      const path = this.__buildLink(this.__clickState.jointA, globalPoint, material, allowSnap);
       const start = this.__clickState.jointA;
       this.__cancelLink();
 
@@ -686,7 +818,20 @@ export class Game {
    */
   __handleMouseMove(ev) {
     const client = this.__getPointerClient(ev);
+    if (ev.pointerType === "touch") {
+      if (!this.__touches.has(ev.pointerId ?? 0)) return; // (a finger only moves while down)
+      this.__touches.set(ev.pointerId ?? 0, client);
+      if (this.__pinch) {
+        this.__movePinch();
+        return;
+      }
+    }
     this.__hoverClient = client;
+    const placing = this.__placingTouch;
+    if (placing && !placing.moved) {
+      const dx = client.x - placing.startClient.x, dy = client.y - placing.startClient.y;
+      placing.moved = dx * dx + dy * dy >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX;
+    }
     if (this.__dragState) {
       if (!this.__dragState.moved) {
         const dx = client.x - this.__dragState.startClient.x;
@@ -695,6 +840,7 @@ export class Game {
           return;
         }
         this.__dragState.moved = true;
+        this.__clearLongPress();
       }
       if (this.__dragState.cancelled) return;
       if (this.__dragState.moves) {
@@ -710,8 +856,19 @@ export class Game {
       const newPos = vec3fsub(this.__dragState.original, deltaGlobal);
       this.ctx.shift = newPos;
     } else if (this.__clickState) {
+      this.__updatePreview(client, ev.altKey);
+    }
+  }
+
+  /**
+   * Shows the link that a click at `client` would place.
+   * @param {import("./math.js").Vec3F} client
+   * @param {boolean} [altKey]
+   */
+  __updatePreview(client, altKey = false) {
+    if (this.__clickState) {
       const material = this.__getCurrentMaterial();
-      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material, !ev.altKey);
+      const path = this.__buildLink(this.__clickState.jointA, this.ctx.clientToGlobal(client), material, !altKey);
       const image = this.mirror && path.links.length
         ? this.__mirrorPath(this.__clickState.jointA, path, material)
         : { joints: [], links: [] };
@@ -839,6 +996,8 @@ export class Game {
    */
   __handleContextMenu(ev) {
     ev.preventDefault();
+    // a long press on a touch screen: handled by the long-press timer
+    if (this.pointerType === "touch" || /** @type {PointerEvent} */ (ev).pointerType === "touch") return;
     if (this.__suppressClick) {
       // released after a right-button pan
       this.__suppressClick = false;
@@ -849,9 +1008,19 @@ export class Game {
       this.__cancelLink();
       return;
     }
-    const globalPoint = this.ctx.clientToGlobal(this.__getPointerClient(ev));
+    this.__deleteAt(this.ctx.clientToGlobal(this.__getPointerClient(ev)));
+  }
+
+  /**
+   * Deletes the joint under `globalPoint` (with its links), or else the link there; with
+   * mirror on, their mirror images too.
+   * @param {import("./math.js").Vec3F} globalPoint
+   * @returns {boolean} whether something was deleted
+   */
+  __deleteAt(globalPoint) {
     const radius = this.__pickRadius();
     const joint = this.scene.findJoint(globalPoint, radius);
+    const before = this.scene.links.length + this.scene.joints.length;
     if (joint) {
       // Fixed anchors are not removable; don't fall through to deleting a link attached to one.
       this.__edit(() => {
@@ -861,7 +1030,7 @@ export class Game {
         if (removed && image && image !== joint && this.scene.joints.includes(image)) this.scene.removeJoint(image);
         return removed;
       });
-      return;
+      return this.scene.links.length + this.scene.joints.length < before;
     }
     const link = this.scene.findLink(globalPoint, radius);
     if (link) this.__edit(() => {
@@ -874,6 +1043,7 @@ export class Game {
       if (image && this.scene.links.includes(image)) this.scene.removeLink(image);
       return removed;
     });
+    return this.scene.links.length + this.scene.joints.length < before;
   }
 
   /**
@@ -907,6 +1077,7 @@ export class Game {
   __hoverClient = undefined;
 
   __handlePointerLeave() {
+    if (this.__pinch) return;
     this.__hoverClient = undefined;
   }
 
@@ -948,14 +1119,27 @@ export class Game {
 
   /** Pick radius in world units, constant on screen regardless of zoom. */
   __pickRadius() {
-    return PICK_RADIUS_PX / this.ctx.zoom;
+    return (this.pointerType === "touch" ? TOUCH_PICK_RADIUS_PX : PICK_RADIUS_PX) / this.ctx.zoom;
   }
 
   /**
    * 
-   * @param {PointerEvent} _ev 
+   * @param {PointerEvent} [ev]
    */
-  __handleMouseUp(_ev) {
+  __handleMouseUp(ev) {
+    this.__clearLongPress();
+    if (ev?.pointerType === "touch") {
+      this.__hoverClient = undefined; // a lifted finger no longer points at anything
+      if (this.__releaseTouch(ev)) return;
+      const placing = this.__placingTouch;
+      this.__placingTouch = undefined;
+      if (placing) {
+        // slid to aim: place where the finger lifted (a tap places through the click)
+        this.__suppressClick = placing.moved;
+        if (placing.moved) this.__finishLink(this.ctx.clientToGlobal(this.__getPointerClient(ev)), !ev.altKey);
+        return;
+      }
+    }
     const drag = this.__dragState;
     this.__suppressClick = drag?.moved ?? false;
     this.__dragState = undefined;
@@ -998,7 +1182,7 @@ export class Game {
       const oldGlobalPoint = this.ctx.clientToGlobal(client);
 
       const kz = ev.deltaY < 0 ? 1.1 : 1 / 1.1;
-      this.ctx.zoom *= kz;
+      this.ctx.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, this.ctx.zoom * kz));
 
       const newGlobalPoint = this.ctx.clientToGlobal(client);
 

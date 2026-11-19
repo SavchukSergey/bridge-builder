@@ -40,6 +40,10 @@ of the budget would be left. Brook has a short step-by-step tutorial.
 When a test fails, the results name the member that broke first and how (pulled apart or
 crushed) with a tip, and it stays marked in red on the bridge until you change it.
 
+On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to place a link;
+hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along
+the bottom.
+
 Hover over any member to see its load: tension or compression in kN, and how much of its
 strength it uses (during a test, also its peak). **Stress view** colours the whole bridge
 by load.

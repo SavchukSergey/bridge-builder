@@ -229,7 +229,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const top = toolbar.offsetHeight;
     // the side panel runs under the toolbar; keep its content below it
     document.documentElement.style.setProperty('--toolbar-height', `${top}px`);
-    game.viewInsets = { top, right: sidePanel.offsetWidth };
+    // phones: the panel is a sheet along the bottom instead of a column on the right
+    const sheet = sidePanel.offsetWidth >= window.innerWidth - 1;
+    game.viewInsets = sheet
+      ? { top, right: 0, bottom: sidePanel.offsetHeight }
+      : { top, right: sidePanel.offsetWidth, bottom: 0 };
   };
   // on short windows start with the controls help folded, so the materials stay in view
   const help = byId('help', HTMLDetailsElement);
@@ -548,8 +552,16 @@ document.addEventListener('DOMContentLoaded', function () {
       : `${formatMoney(-info.remaining)} over budget`;
     placeTip.root.classList.toggle('over', info.remaining < 0);
     const rect = canvas.getBoundingClientRect();
-    placeTip.root.style.left = `${rect.left + info.client.x + 18}px`;
-    placeTip.root.style.top = `${rect.top + info.client.y + 18}px`;
+    if (game.pointerType === 'touch') {
+      // above the finger, where it can be seen
+      const w = placeTip.root.offsetWidth;
+      const x = Math.min(Math.max(8, rect.left + info.client.x - w / 2), window.innerWidth - w - 8);
+      placeTip.root.style.left = `${x}px`;
+      placeTip.root.style.top = `${Math.max(8, rect.top + info.client.y - 90)}px`;
+    } else {
+      placeTip.root.style.left = `${rect.left + info.client.x + 18}px`;
+      placeTip.root.style.top = `${rect.top + info.client.y + 18}px`;
+    }
   }
 
   // ---- tutorial on the first level
@@ -582,8 +594,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const xs = game.level.anchors.map(a => a.x);
     const left = Math.max(...xs.filter(x => x < 0)), right = Math.min(...xs.filter(x => x > 0));
     const y = game.level.anchors[0].y;
-    if (!game.isPlacing) return { n: 2, text: 'Click the anchor at the edge of the brook to start the road.', target: { x: left, y } };
-    return { n: 3, text: 'Now click the anchor on the far bank. Esc or right-click cancels.', target: { x: right, y } };
+    const touch = game.pointerType === 'touch' || window.matchMedia?.('(pointer: coarse)').matches;
+    const click = touch ? 'Tap' : 'Click';
+    if (!game.isPlacing) return { n: 2, text: `${click} the anchor at the edge of the brook to start the road.`, target: { x: left, y } };
+    return {
+      n: 3,
+      text: touch ? 'Now tap the anchor on the far bank. Tap the first anchor again to cancel.'
+        : 'Now click the anchor on the far bank. Esc or right-click cancels.',
+      target: { x: right, y },
+    };
   }
 
   function updateTutorial() {
