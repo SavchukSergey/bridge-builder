@@ -1442,7 +1442,8 @@ kbd {
 
 #settings,
 #sandbox,
-#ending {
+#ending,
+#real-bridge {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -1456,8 +1457,157 @@ kbd {
 
 #settings[hidden],
 #sandbox[hidden],
-#ending[hidden] {
+#ending[hidden],
+#real-bridge[hidden] {
   display: none;
+}
+
+/* ---------- real bridges ---------- */
+
+#real-bridge {
+  z-index: 46;
+}
+
+.real-drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.real-drawing .sky { fill: #a9d3ee; }
+.real-drawing .water { fill: #3f88c5; }
+.real-drawing .bank { fill: #8a6a4a; }
+.real-drawing .stone { fill: #b9b2a5; stroke: #7d766a; stroke-width: 0.8; }
+.real-drawing .deck { stroke: #3b3f45; stroke-width: 3; }
+.real-drawing .steel { stroke: #c0392b; stroke-width: 1.8; }
+.real-drawing .tower { stroke: #b03a2e; stroke-width: 4; }
+.real-drawing .cable { stroke: #b03a2e; stroke-width: 1.8; }
+.real-drawing .hanger { stroke: #b03a2e; stroke-width: 0.7; }
+.real-drawing .train { fill: #2e7d4f; }
+.real-drawing .ship { fill: #f4f1e8; stroke: #3b3f45; stroke-width: 0.8; }
+
+.real-card {
+  text-align: left;
+}
+
+.real-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+#real-name {
+  margin: 12px 0 2px;
+  font-size: 20px;
+}
+
+#real-place {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+#real-fact {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.real-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.real-note {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* in the result: a button that opens it */
+.real-teaser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid rgba(242, 178, 51, 0.45);
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.real-teaser:hover {
+  background: var(--raised-hover);
+}
+
+.real-teaser[hidden] {
+  display: none;
+}
+
+.real-teaser-picture {
+  flex: none;
+  width: 78px;
+}
+
+.real-teaser-text {
+  display: grid;
+  gap: 1px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.real-teaser-text strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* in the level list: the collection, locked until their level is won */
+.real-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.real-item {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.real-item:hover:not(:disabled) {
+  background: var(--raised-hover);
+}
+
+.real-item:disabled {
+  cursor: default;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.real-item:disabled .real-drawing {
+  filter: grayscale(1) brightness(0.55);
 }
 
 /* ---------- the ending: every level won ---------- */

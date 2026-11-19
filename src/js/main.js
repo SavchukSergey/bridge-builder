@@ -12,6 +12,7 @@ import { BADGES, earnedBadges, newBadges } from './badges.mjs';
 import { confetti } from './confetti.mjs';
 import { Guide } from './guide-ui.mjs';
 import { endingSummary, isFinished } from './ending.mjs';
+import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -169,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
     badges: byId('levels-badges', HTMLUListElement),
     close: byId('levels-close', HTMLButtonElement),
     trophy: byId('levels-trophy', HTMLButtonElement),
+    real: byId('levels-real', HTMLDivElement),
   };
   const ending = {
     root: byId('ending', HTMLDivElement),
@@ -219,6 +221,16 @@ document.addEventListener('DOMContentLoaded', function () {
     replay: byId('result-replay', HTMLButtonElement),
     challenges: byId('result-challenges', HTMLUListElement),
     badges: byId('result-badges', HTMLUListElement),
+    real: byId('result-real', HTMLButtonElement),
+    realName: byId('result-real-name', HTMLElement),
+  };
+  const real = {
+    root: byId('real-bridge', HTMLDivElement),
+    picture: byId('real-picture', HTMLDivElement),
+    name: byId('real-name', HTMLElement),
+    place: byId('real-place', HTMLParagraphElement),
+    fact: byId('real-fact', HTMLParagraphElement),
+    close: byId('real-close', HTMLButtonElement),
   };
   const placeTip = {
     root: byId('place-tip', HTMLDivElement),
@@ -586,6 +598,15 @@ document.addEventListener('DOMContentLoaded', function () {
       fresh = newBadges(have, toldBadges());
       try { localStorage.setItem(BADGES_KEY, JSON.stringify(have)); } catch { /* ignore */ }
     }
+    // a win on a level built on the same idea as a famous bridge: a button to see it
+    const famous = result.kind === 'success' ? realBridgeFor(game.level.id) : undefined;
+    dlg.real.hidden = !famous;
+    if (famous) {
+      const picture = dlg.real.firstElementChild;
+      if (picture) picture.innerHTML = bridgeDrawing(famous.kind);
+      dlg.realName.textContent = t(`realBridge.${famous.id}.name`);
+      dlg.real.dataset.bridge = famous.id;
+    }
     // the win that finishes the game: its result leads on to the ending
     endingDue = fresh.includes('allLevels');
     if (endingDue) {
@@ -599,6 +620,51 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.root.hidden = false;
     if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
+  }
+
+  // ---- real bridges: a famous bridge built on the same idea as a level
+  /** @param {string} id */
+  function showRealBridge(id) {
+    const bridge = REAL_BRIDGES.find(b => b.id === id);
+    if (!bridge) return;
+    const name = t(`realBridge.${id}.name`);
+    real.picture.innerHTML = bridgeDrawing(bridge.kind, name);
+    real.name.textContent = name;
+    real.place.textContent = t(`realBridge.${id}.place`);
+    real.fact.textContent = t(`realBridge.${id}.fact`);
+    real.root.hidden = false;
+    real.close.focus();
+  }
+  function hideRealBridge() {
+    real.root.hidden = true;
+    stopReading?.();
+  }
+  dlg.real.addEventListener('click', () => showRealBridge(dlg.real.dataset.bridge ?? ''));
+  real.close.addEventListener('click', hideRealBridge);
+  real.root.addEventListener('click', (ev) => { if (ev.target === real.root) hideRealBridge(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !real.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideRealBridge();
+    }
+  }, true);
+  /** The level list's collection: the real bridges of the levels won, the others locked. */
+  function renderRealBridges() {
+    picker.real.replaceChildren(...REAL_BRIDGES.map((bridge) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'real-item';
+      const open = game.isCompleted(bridge.level);
+      const level = levels.find(l => l.id === bridge.level);
+      const number = levels.indexOf(/** @type {any} */ (level)) + 1;
+      button.innerHTML = bridgeDrawing(bridge.kind);
+      const label = document.createElement('span');
+      label.textContent = open ? t(`realBridge.${bridge.id}.name`) : t('real.locked', { n: number });
+      button.append(label);
+      button.disabled = !open;
+      if (open) button.addEventListener('click', () => showRealBridge(bridge.id));
+      return button;
+    }));
   }
 
   /** The result on show is the win that finished the game: its button opens the ending. */
@@ -913,6 +979,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const have = earnedBadges(progress());
     picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id), { how: true })));
     picker.trophy.hidden = !isFinished(progress());
+    renderRealBridges();
   }
 
   function showLevels() {

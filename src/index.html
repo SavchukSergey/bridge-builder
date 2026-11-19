@@ -396,6 +396,10 @@
       </dl>
       <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
       <ul class="badges result-badges" id="result-badges" aria-label="Badges" data-i18n-aria="ui.badges"></ul>
+      <button type="button" id="result-real" class="real-teaser" hidden>
+        <span class="real-teaser-picture"></span>
+        <span class="real-teaser-text"><span data-i18n="real.like">A real bridge like yours</span><strong id="result-real-name"></strong></span>
+      </button>
       <p id="result-tip" hidden></p>
       <p id="result-hint"></p>
       <div class="result-actions">
@@ -404,6 +408,23 @@
         <button type="button" id="result-help" class="btn"><svg class="icon"><use href="#icon-bulb" /></svg><span></span></button>
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
         <button type="button" id="result-next" class="btn primary"><span data-i18n="ui.nextLevel">Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="real-bridge" hidden>
+    <div class="settings-card real-card" role="dialog" aria-modal="true" aria-labelledby="real-name">
+      <button type="button" id="real-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <p class="real-kicker" data-i18n="real.like">A real bridge like yours</p>
+      <div id="real-picture"></div>
+      <h2 id="real-name"></h2>
+      <p id="real-place"></p>
+      <p id="real-fact"></p>
+      <div class="real-footer">
+        <button type="button" class="btn icon-only speak" data-speak="#real-name, #real-place, #real-fact" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
+        <span class="real-note" data-i18n="real.note">The drawing shows the kind of bridge, not the bridge itself.</span>
       </div>
     </div>
   </div>
@@ -446,6 +467,8 @@
       <h3 class="badges-title" data-i18n="ui.badges">Badges</h3>
       <ul class="badges" id="levels-badges"></ul>
       <div id="levels-grid"></div>
+      <h3 class="badges-title" data-i18n="real.collection">Real bridges</h3>
+      <div class="real-collection" id="levels-real"></div>
     </div>
   </div>
 
