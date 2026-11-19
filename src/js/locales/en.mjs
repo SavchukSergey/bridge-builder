@@ -60,7 +60,7 @@ export default {
   "result.across": { one: "It made it across!", other: "All {n} made it across!" },
   "result.across.both": "Both made it across!",
   "result.across.train": "The train made it across!",
-  "result.overBudget": "Too expensive",
+  "result.overBudget": "It held! Now make it cheaper",
   "result.overBudgetText": "All the {many} made it, but the bridge costs {over} too much.",
   "result.overBudgetText.train": "The train made it, but the bridge costs {over} too much.",
   "result.failed": "Oh no!",

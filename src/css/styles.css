@@ -787,7 +787,7 @@ kbd {
 
 #result.success #result-title { color: var(--accent); }
 #result.failed #result-title,
-#result.over-budget #result-title { color: var(--bad); }
+#result.over-budget #result-title { color: var(--accent); } /* it held: a step on the way, not a crash */
 
 #result-text {
   color: var(--muted);

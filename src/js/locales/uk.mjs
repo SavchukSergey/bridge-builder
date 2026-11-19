@@ -62,7 +62,7 @@ export default {
   "result.across": { one: "Вийшло!", few: "Усі {n} доїхали!", many: "Усі {n} доїхали!", other: "Усі {n} доїхали!" },
   "result.across.both": "Обидва доїхали!",
   "result.across.train": "Потяг доїхав!",
-  "result.overBudget": "Задорого",
+  "result.overBudget": "Міст витримав! Тепер зроби його дешевшим",
   "result.overBudgetText": "Усі {many} доїхали, але міст дорожчий, ніж можна, на {over}.",
   "result.overBudgetText.train": "Потяг доїхав, але міст дорожчий, ніж можна, на {over}.",
   "result.failed": "Ой!",
