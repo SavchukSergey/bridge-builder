@@ -919,6 +919,41 @@ kbd {
   gap: 14px;
 }
 
+/* phones: two smaller cards a row, so the whole list isn't a long scroll */
+@media (max-width: 480px) {
+  #levels-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  #levels-grid .level-card {
+    padding: 6px 6px 8px;
+    gap: 4px;
+  }
+
+  #levels-grid .level-title {
+    gap: 6px;
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  #levels-grid .level-title > :last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #levels-grid .level-stars .icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  #levels-grid .level-detail {
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+}
+
 .level-card {
   display: flex;
   flex-direction: column;
@@ -1485,9 +1520,32 @@ kbd {
     grid-column: 1 / -1;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 4px 16px;
     margin-top: 4px;
+  }
+
+  .budget .goals .best {
+    margin-left: auto;
+  }
+
+  /* the challenges and a friend's price take a row of their own, in columns */
+  .budget .goals .friend-goal,
+  .budget .goals .challenges {
+    flex: 1 1 100%;
+  }
+
+  .budget .goals .challenges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px 12px;
+    margin-top: 2px;
+    padding-top: 5px;
+  }
+
+  .budget .goals .challenges:empty {
+    display: none;
   }
 
   .materials {
