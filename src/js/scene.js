@@ -1,4 +1,5 @@
 import { applyWind } from "./wind.mjs";
+import { applyQuake } from "./quake.mjs";
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { Grid } from "./grid.mjs";
@@ -360,6 +361,7 @@ export class Scene {
       load.joint.force.y += load.fy;
     }
     if (evalCtx.wind) applyWind(this.links, evalCtx.wind);
+    if (evalCtx.quake) applyQuake(this.joints, evalCtx.quake);
     for (const link of this.links) {
       if (!link.broken) {
         link.preEval();

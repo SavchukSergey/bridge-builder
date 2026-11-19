@@ -344,4 +344,8 @@ export default {
   "postcard.saved": "Picture saved.",
   "postcard.failed": "Couldn’t make the picture.",
   "postcard.empty": "Build something first, then take its picture.",
+
+  // ---- earthquakes
+  "sandbox.quake.small": "Partway through, the ground shakes a little.",
+  "sandbox.quake.big": "Partway through, a big earthquake shakes the ground: keep it low and well braced!",
 };

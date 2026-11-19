@@ -103,6 +103,7 @@ describe("sound", () => {
     sound.unlock();
     sound.snap("beam", 1);
     sound.engines(3);
+    sound.rumble(1);
     sound.creak(0.95);
     sound.horn();
     sound.splash(1);
@@ -164,6 +165,9 @@ describe("sound", () => {
       sound.engines(2);
       sound.engines(4);
       sound.engines(0);
+      sound.rumble(0.5);
+      sound.rumble(1);
+      sound.rumble(0);
       sound.horn();
       sound.splash(1);
       sound.splash(0.2);

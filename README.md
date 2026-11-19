@@ -198,7 +198,10 @@ to 200 m), how much higher or lower the far bank is, a rock in the middle for a 
 traffic (cars, trucks, rush hour, a town convoy, the heavy hauler or a train), the budget, the scenery and the wind.
 A breeze or a storm blows from the left in gusts and pushes on whatever stands up into it
 (towers and posts far more than a flat deck), so tall bridges need bracing; it is far
-stronger than real wind, which hardly troubles steel. A sandbox is always open and doesn't count towards progress. Its level id spells out the
+stronger than real wind, which hardly troubles steel. An **earthquake** (small or big)
+starts a few seconds into the test and shakes the ground side to side and up and down for
+several seconds, with a rumble: everything suddenly weighs more and less, so a bridge built
+right at its limit breaks, while one with some strength to spare rides it out. A sandbox is always open and doesn't count towards progress. Its level id spells out the
 whole design, so its bridge is saved like any other, and **Share** sends the level along
 with the bridge.
 
@@ -287,6 +290,7 @@ src/
     drawbridge.mjs      the drawbridge: winches, the boat and the space it needs
     ending.mjs          the ending, once every level is won
     postcard.mjs        a picture of the bridge to keep, as a framed postcard
+    quake.mjs           earthquakes for sandboxes: the shaking, its push on the bridge and the view
     real-bridges.mjs    famous bridges built on each level's idea, and their drawings
     speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)

@@ -18,6 +18,7 @@ import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } fro
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
 import { addScore, lastPlayer, players, scoresFor } from './scoreboard.mjs';
 import { drawPostcard, postcardFileName } from './postcard.mjs';
+import { QUAKE_ACCEL, quakeEnvelope } from './quake.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -1067,6 +1068,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     const running = game.evalCtx.simulation;
     sound.engines(running ? game.vehicles.filter(v => v.state === 'driving').length : 0);
+    const quake = game.level.quake;
+    sound.rumble(running ? quakeEnvelope(game.evalCtx.time) * QUAKE_ACCEL[quake] / QUAKE_ACCEL.big : 0);
     if (running) {
       let load = 0;
       for (const link of game.scene.links) if (!link.broken) load = Math.max(load, Math.min(1, link.utilization));
@@ -1686,6 +1689,7 @@ document.addEventListener('DOMContentLoaded', function () {
     budget: byId('sandbox-budget', HTMLInputElement),
     theme: byId('sandbox-theme', HTMLSelectElement),
     wind: byId('sandbox-wind', HTMLSelectElement),
+    quake: byId('sandbox-quake', HTMLSelectElement),
   };
   sandbox.traffic.replaceChildren(...Object.keys(SANDBOX_TRAFFIC).map((key) => {
     const option = document.createElement('option');
@@ -1714,6 +1718,7 @@ document.addEventListener('DOMContentLoaded', function () {
       budget: Number(sandbox.budget.value),
       theme: /** @type {import('./themes.mjs').ThemeId} */ (sandbox.theme.value),
       wind: /** @type {import('./wind.mjs').WindId} */ (sandbox.wind.value),
+      quake: /** @type {import('./quake.mjs').QuakeId} */ (sandbox.quake.value),
     });
   }
 
@@ -1750,6 +1755,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sandbox.budget.value = String(spec.budget);
     sandbox.theme.value = spec.theme;
     sandbox.wind.value = spec.wind;
+    sandbox.quake.value = spec.quake;
     updateSandboxForm();
     sandbox.root.hidden = false;
     sandbox.gap.focus();

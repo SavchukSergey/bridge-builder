@@ -21,8 +21,8 @@ describe("sandbox ids", () => {
   test("spell out the whole design, and read back", () => {
     for (const spec of [
       SANDBOX_DEFAULT,
-      { gap: 20, far: -12, rock: false, traffic: "cars", budget: 1000, theme: "night", wind: "breeze" },
-      { gap: 200, far: 12, rock: true, traffic: "train6", budget: 1000000, theme: "snow", wind: "storm" },
+      { gap: 20, far: -12, rock: false, traffic: "cars", budget: 1000, theme: "night", wind: "breeze", quake: "big" },
+      { gap: 200, far: 12, rock: true, traffic: "train6", budget: 1000000, theme: "snow", wind: "storm", quake: "small" },
     ]) {
       const id = sandboxId(spec);
       assert.match(id, /^[a-z0-9-]+$/, "fits in a share link");

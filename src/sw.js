@@ -60,6 +60,7 @@ const SHELL = [
   "js/materials/wood.mjs",
   "js/math.js",
   "js/postcard.mjs",
+  "js/quake.mjs",
   "js/real-bridges.mjs",
   "js/render-ctx.mjs",
   "js/sandbox.mjs",

@@ -9,6 +9,7 @@
  */
 
 import { windAt } from "./wind.mjs";
+import { quakeAt, quakeUpAt } from "./quake.mjs";
 import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, HINT_AFTER, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
 import { COMPLETED_KEY, BEST_KEY, CHALLENGES_KEY, TRIES_KEY, storageGet, storageSet } from "./storage.mjs";
 import { challengesFor } from "./challenges.mjs";
@@ -175,6 +176,7 @@ export class GameCore {
     this.vehicles = [];
     this.boat = undefined;
     this.evalCtx.time = 0;
+    this.evalCtx.wind = this.evalCtx.quake = this.evalCtx.quakeUp = 0;
     this.result = undefined;
     // back to where the view was before the camera followed the traffic
     if (this.__followMoved && this.__viewBeforeTest) this.ctx.shift = createVec3F(this.__viewBeforeTest.x, this.__viewBeforeTest.y, 0);
@@ -590,6 +592,8 @@ export class GameCore {
       for (const link of this.scene.links) if (link.material.winch) link.pull = pull;
     }
     this.evalCtx.wind = windAt(this.level.wind, this.evalCtx.time);
+    this.evalCtx.quake = quakeAt(this.level.quake, this.evalCtx.time);
+    this.evalCtx.quakeUp = quakeUpAt(this.level.quake, this.evalCtx.time);
     const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
     const dt = this.scene.tick(this.evalCtx, loads);
     for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);

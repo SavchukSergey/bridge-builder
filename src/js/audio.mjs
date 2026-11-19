@@ -57,6 +57,8 @@ export class Sound {
 
   /** @type {{ osc: OscillatorNode[], gain: GainNode, filter: BiquadFilterNode } | undefined} */
   __engine = undefined;
+  /** @type {{ src: AudioBufferSourceNode, hum: OscillatorNode, gain: GainNode } | undefined} */
+  __rumble = undefined;
   /** @type {{ wind: GainNode, water: GainNode } | undefined} */
   __ambience = undefined;
   __lastCreak = 0;
@@ -204,6 +206,44 @@ export class Sound {
       const engine = this.__engine;
       this.__engine = undefined;
       for (const o of engine.osc) o.stop(t + 1.5);
+    }
+  }
+
+  /**
+   * An earthquake's deep rumble, following how hard the ground shakes.
+   * @param {number} strength - 0 (still) to 1 (a big earthquake at its strongest)
+   */
+  rumble(strength) {
+    const { ctx } = this;
+    if (!ctx || !this.noise) return;
+    const t = ctx.currentTime;
+    if (!this.__rumble && strength > 0.01) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 110;
+      filter.Q.value = 1.2;
+      const hum = ctx.createOscillator();
+      hum.type = "sine";
+      hum.frequency.value = 38;
+      const gain = ctx.createGain();
+      gain.gain.value = 0;
+      src.connect(filter).connect(gain);
+      hum.connect(gain);
+      gain.connect(/** @type {GainNode} */ (this.master));
+      src.start();
+      hum.start();
+      this.__rumble = { src, hum, gain };
+    }
+    if (!this.__rumble) return;
+    this.__rumble.gain.gain.setTargetAtTime(0.35 * Math.min(1, strength), t, 0.25);
+    if (strength <= 0.01) {
+      const { src, hum } = this.__rumble;
+      this.__rumble = undefined;
+      src.stop(t + 1.5);
+      hum.stop(t + 1.5);
     }
   }
 

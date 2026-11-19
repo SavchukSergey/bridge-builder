@@ -10,6 +10,7 @@
  */
 
 import { renderWind } from "./wind.mjs";
+import { quakeShift } from "./quake.mjs";
 import { GameInput } from "./game-input.mjs";
 import { LEVEL_KEY, storageGet } from "./storage.mjs";
 import { findLevel, levels } from "./level.mjs";
@@ -42,9 +43,11 @@ export class Game extends GameInput {
   render() {
     const shift = this.ctx.shift;
     const shake = this.screenShake ? this.effects.shake : 0;
-    if (shake > 0.01) {
+    // an earthquake moves the ground, and everything on it, from side to side
+    const quake = this.evalCtx.simulation ? quakeShift(this.level.quake, this.evalCtx.time) : 0;
+    if (shake > 0.01 || quake) {
       // shake the camera for this frame only, without moving the view
-      this.ctx.shift = createVec3F(shift.x + (Math.random() - 0.5) * shake, shift.y + (Math.random() - 0.5) * shake, 0);
+      this.ctx.shift = createVec3F(shift.x - quake + (Math.random() - 0.5) * shake, shift.y + (Math.random() - 0.5) * shake, 0);
     }
     try {
       this.__render();
