@@ -2,6 +2,8 @@
  * Advice shown after a load test.
  */
 
+import { t } from './i18n.mjs';
+
 /**
  * Advice for a failed test: what the first member to break tells you, or what was missing.
  * @param {import('./game.js').TestResult} result
@@ -11,43 +13,28 @@
 export function failureTip(result, track = 'road') {
   const f = result.failure;
   if (!f) {
-    if (result.roadAcross === false) {
-      return track === 'rail'
-        ? 'There is a gap in the track. Trains run only on Rail, all the way from bank to bank.'
-        : 'There is a gap in the road. Vehicles need road (the deck) all the way from bank to bank.';
-    }
-    if (result.reason === 'crashed') return 'The road ends below the far bank, so it ran into the cliff. Bring the road up to the top of the bank.';
-    if (result.reason === 'hard landing') return 'The road drops too steeply. Keep it level with the banks where it meets them.';
-    return 'Nothing broke, but the road sagged too far. Hold it up from above or below.';
+    if (result.roadAcross === false) return t(track === 'rail' ? 'tip.gapTrack' : 'tip.gapRoad');
+    if (result.reason === 'crashed') return t('tip.crashed');
+    if (result.reason === 'hard landing') return t('tip.hardLanding');
+    return t('tip.sagged');
   }
   const what = f.label.toLowerCase();
   if (f.kind === 'deck') {
-    const deck = f.material === 'rail' ? 'The rail deck' : 'The road';
-    return f.mode === 'tension'
-      ? `${deck} was stretched until it snapped: it sagged under the load. Hold it up from above (towers and cables, or a truss) or prop it from below.`
-      : `${deck} was crushed end to end. Brace it with triangles so the deck isn\u2019t pushed along its length.`;
+    const deck = t(f.material === 'rail' ? 'tip.deck.rail' : 'tip.deck.road');
+    return t(f.mode === 'tension' ? 'tip.deckStretched' : 'tip.deckCrushed', { deck });
   }
-  if (f.kind === 'cable') {
-    return f.material === 'cable-thin'
-      ? 'A thin cable snapped. Use full cable there, or more cables to share the load.'
-      : 'A cable snapped. Add more cables to share the load, or a deeper sag so each pulls less.';
-  }
-  if (f.mode === 'compression') {
-    return f.material === 'steel-light'
-      ? 'A light steel member was crushed. Use full steel there, or shorten it with a brace.'
-      : `A ${what} member was crushed. Shorten it or brace it, so the push is shared by more members.`;
-  }
-  return f.material === 'steel-light'
-    ? 'A light steel member was pulled apart. Use full steel there, or a cable alongside it.'
-    : `A ${what} member was pulled apart. Share the load with more members, or make the truss deeper.`;
+  if (f.kind === 'cable') return t(f.material === 'cable-thin' ? 'tip.thinCable' : 'tip.cable');
+  if (f.mode === 'compression') return f.material === 'steel-light' ? t('tip.lightCrushed') : t('tip.crushed', { what });
+  return f.material === 'steel-light' ? t('tip.lightPulled') : t('tip.pulled', { what });
 }
 
 /**
  * A nudge towards a design that works on each level, for a player who is stuck. Each one
  * describes the level's reference bridge (src/js/solutions.mjs), which the outline shows.
+ * The English; translations are keyed hint.<level id> in locales/.
  * @type {Record<string, string>}
  */
-const LEVEL_HINTS = {
+export const LEVEL_HINTS = {
   brook: 'A single stretch of road carries a car and a bus over 20 m. Click the anchor at the edge of the gap, then the one on the other bank.',
   creek: 'A deck alone sags and snaps over 40 m. Stand a light steel post on each bank and hang the road from a cable that sags between their tops, with thin cables down to each road joint. A cable from each post back to the bank holds it upright.',
   ledges: 'Use the rock ledges: a light steel strut from each ledge up to the road joint nearest the middle props the deck for very little.',
@@ -71,5 +58,6 @@ const LEVEL_HINTS = {
  * @returns {string | undefined}
  */
 export function levelHint(levelId) {
-  return LEVEL_HINTS[levelId];
+  const english = LEVEL_HINTS[levelId];
+  return english === undefined ? undefined : t(`hint.${levelId}`, {}, english);
 }

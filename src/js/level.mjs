@@ -3,6 +3,7 @@ import { Vehicle } from "./vehicle.mjs";
 import { VEHICLE_TYPES } from "./vehicle-types.mjs";
 import { THEMES } from "./themes.mjs";
 import { findSandboxLevel } from "./sandbox.mjs";
+import { t } from "./i18n.mjs";
 import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterFront } from "./scenery.mjs";
 
 /**
@@ -16,7 +17,8 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @typedef {Object} LevelOpts
  * @property {string} id - stable key for saves and progress
  * @property {string} name
- * @property {string} description
+ * @property {string | (() => string)} description - English (translations are in locales/), or
+ *   a function that writes it in the current language
  * @property {TerrainBlock[]} terrain
  * @property {{ x: number, y: number }[]} anchors - fixed joints the player builds from
  * @property {number} startX - where the first vehicle starts: the centre of a 12 m truck
@@ -53,8 +55,8 @@ export class Level {
    */
   constructor(opts) {
     this.id = opts.id;
-    this.name = opts.name;
-    this.description = opts.description;
+    this.__name = opts.name;
+    this.__description = opts.description;
     this.terrain = opts.terrain;
     this.anchors = opts.anchors;
     this.startX = opts.startX;
@@ -68,6 +70,17 @@ export class Level {
     this.water = opts.water;
     this.theme = THEMES[opts.theme ?? "summer"];
     this.sandbox = opts.sandbox;
+  }
+
+  /** The level's name, in the player's language. */
+  get name() {
+    return this.sandbox ? t("sandbox.name") : t(`level.${this.id}.name`, {}, this.__name);
+  }
+
+  /** What the level asks for, in the player's language. */
+  get description() {
+    const d = this.__description;
+    return typeof d === "function" ? d() : t(`level.${this.id}.description`, {}, d);
   }
 
   /** What the convoy needs to drive on: road, or rail for a train. */
@@ -129,11 +142,11 @@ export class Level {
 
   /** What to call the convoy's vehicles: their kind if all alike ("truck"), else "vehicle". */
   get vehicleNoun() {
-    if (this.track === "rail") return { one: "train", many: "train" };
+    if (this.track === "rail") return { one: t("vehicle.train"), many: t("vehicle.train") };
     const kinds = new Set(this.convoy);
-    if (kinds.size !== 1) return { one: "vehicle", many: "vehicles" };
-    const type = VEHICLE_TYPES[this.convoy[0]];
-    return { one: type.label, many: type.plural };
+    if (kinds.size !== 1) return { one: t("vehicle.any"), many: t("vehicle.any.many") };
+    const id = this.convoy[0];
+    return { one: t(`vehicle.${id}`), many: t(`vehicle.${id}.many`) };
   }
 
   /**
@@ -160,19 +173,17 @@ export class Level {
   get convoySummary() {
     if (this.track === "rail") {
       const tonnes = this.convoy.reduce((sum, id) => sum + VEHICLE_TYPES[id].mass, 0) / 1000;
-      const wagons = this.convoy.length - 1;
-      return `${tonnes} t train: locomotive + ${wagons} wagon${wagons === 1 ? "" : "s"}`;
+      return t("convoy.train", { n: this.convoy.length - 1, tonnes });
     }
-    /** @type {Map<string, number>} */
+    /** @type {Map<import("./vehicle-types.mjs").VehicleTypeId, number>} */
     const counts = new Map();
     for (const id of this.convoy) counts.set(id, (counts.get(id) ?? 0) + 1);
-    const name = (/** @type {import("./vehicle-types.mjs").VehicleType} */ t, /** @type {number} */ n) => n === 1 ? t.label : t.plural;
+    const vehicles = (/** @type {string} */ id, /** @type {number} */ n) => t(`vehicle.${id}.count`, { n });
     if (counts.size === 1) {
       const [[id, n]] = counts;
-      const type = VEHICLE_TYPES[/** @type {import("./vehicle-types.mjs").VehicleTypeId} */ (id)];
-      return `${n} × ${type.mass / 1000} t ${name(type, n)}`;
+      return t("convoy.same", { n, tonnes: VEHICLE_TYPES[id].mass / 1000, vehicles: vehicles(id, n) });
     }
-    return [...counts].map(([id, n]) => `${n} ${name(VEHICLE_TYPES[/** @type {import("./vehicle-types.mjs").VehicleTypeId} */ (id)], n)}`).join(" · ");
+    return [...counts].map(([id, n]) => t("convoy.item", { n, vehicles: vehicles(id, n) })).join(" · ");
   }
 
   /**

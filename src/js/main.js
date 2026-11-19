@@ -7,6 +7,10 @@ import { renderLevelPreview } from './level-preview.mjs';
 import { SANDBOX_DEFAULT, SANDBOX_LIMITS, SANDBOX_TRAFFIC, normalizeSandbox, parseSandboxId, sandboxId } from './sandbox.mjs';
 import { challengesFor } from './challenges.mjs';
 import { failureTip, levelHint } from './hints.mjs';
+import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
+
+// before anything is shown: the page and everything it builds are in this language
+setLanguage(detectLanguage());
 
 const SOUND_KEY = 'bridge-builder:sound';
 const TUTORIAL_KEY = 'bridge-builder:tutorial';
@@ -47,45 +51,37 @@ function getCanvas() {
 }
 
 /**
- * @param {number} value
- */
-function formatMoney(value) {
-  return '$' + Math.round(value).toLocaleString('en-US');
-}
-
-/**
  * Status line: build/simulation mode and the load test outcome.
  * @param {Game} game
  * @returns {{ text: string, kind: '' | 'success' | 'failure' }}
  */
 function modeText(game) {
-  if (game.replay?.seeking) return { text: 'Rewinding to just before it broke...', kind: '' };
-  const paused = (game.evalCtx.simulation ? '' : ' (paused)') + (game.replay ? ' \u00b7 replay' : '');
-  const { one, many } = game.level.vehicleNoun;
-  const train = game.level.track === 'rail';
-  const a = train ? 'The train' : `A ${one}`;
-  const all = train ? 'The train' : `All ${many}`;
+  if (game.replay?.seeking) return { text: t('mode.rewinding'), kind: '' };
+  const paused = (game.evalCtx.simulation ? '' : t('mode.paused')) + (game.replay ? t('mode.replay') : '');
+  const noun = game.level.vehicleNoun;
+  /** A message about the traffic, which says "the train" its own way. @param {string} key */
+  const say = (key) => t(game.level.track === 'rail' ? `${key}.train` : key, noun);
   switch (game.testState) {
     case 'building': {
       const sel = game.selectionInfo;
-      if (!sel) return { text: 'Build mode', kind: '' };
+      if (!sel) return { text: t('mode.build'), kind: '' };
       const parts = [];
-      if (sel.links) parts.push(`${sel.links} member${sel.links === 1 ? '' : 's'}`);
-      if (sel.joints) parts.push(`${sel.joints} joint${sel.joints === 1 ? '' : 's'}`);
-      return { text: `${parts.join(', ')} selected: drag to move, Del deletes, Ctrl+C copies`, kind: '' };
+      if (sel.links) parts.push(t('mode.members', { n: sel.links }));
+      if (sel.joints) parts.push(t('mode.joints', { n: sel.joints }));
+      return { text: t('mode.selected', { what: parts.join(', ') }), kind: '' };
     }
     case 'waiting':
-      return { text: 'Loading the bridge...' + paused, kind: '' };
+      return { text: t('mode.loading') + paused, kind: '' };
     case 'driving':
-      return { text: `${capitalize(many)} crossing...` + paused, kind: '' };
+      return { text: say('mode.driving') + paused, kind: '' };
     case 'falling':
-      return { text: `${a} is falling!` + paused, kind: 'failure' };
+      return { text: say('mode.falling') + paused, kind: 'failure' };
     case 'crossed':
       return game.overBudget
-        ? { text: `${all} crossed, but over budget. Reset and make it cheaper.`, kind: 'failure' }
-        : { text: `Success! ${all} crossed.`, kind: 'success' };
+        ? { text: say('mode.overBudget'), kind: 'failure' }
+        : { text: say('mode.crossed'), kind: 'success' };
     case 'fell':
-      return { text: `${a} fell. Reset and try again.`, kind: 'failure' };
+      return { text: say('mode.fell'), kind: 'failure' };
   }
 }
 
@@ -96,13 +92,6 @@ function modeText(game) {
  */
 function loadColor(state) {
   return state === 'tension' ? '#4f8fe0' : state === 'compression' ? '#f08a24' : '#8c949c';
-}
-
-/**
- * @param {string} name
- */
-function capitalize(name) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 /**
@@ -117,10 +106,8 @@ function updateTooltip(el, info, canvas) {
     return;
   }
   el.root.hidden = false;
-  el.title.textContent = `${info.label} \u00b7 ${info.length.toFixed(1)} m \u00b7 ${formatMoney(info.cost)}`;
-  el.force.textContent = info.state === 'slack' ? 'Slack (cables only pull)'
-    : info.state === 'unloaded' ? 'Unloaded'
-      : `${capitalize(info.state)}: ${Math.round(info.forceKN).toLocaleString('en-US')} kN`;
+  el.title.textContent = t('tooltip.title', { label: info.label, length: formatNumber(info.length, 1), cost: formatMoney(info.cost) });
+  el.force.textContent = t(`tooltip.${info.state}`, { kn: Math.round(info.forceKN) });
 
   const now = Math.min(1, info.utilization);
   el.meter.style.width = `${now * 100}%`;
@@ -128,8 +115,8 @@ function updateTooltip(el, info, canvas) {
   const peak = info.peakUtilization;
   el.peak.hidden = peak === undefined;
   if (peak !== undefined) el.peak.style.left = `calc(${Math.min(1, peak) * 100}% - 1px)`;
-  el.load.textContent = `${Math.round(info.utilization * 100)}% of strength`
-    + (peak !== undefined ? ` \u00b7 peak ${Math.round(peak * 100)}%` : '');
+  el.load.textContent = t('tooltip.load', { pct: Math.round(info.utilization * 100) })
+    + (peak !== undefined ? t('tooltip.peak', { pct: Math.round(peak * 100) }) : '');
 
   // next to the pointer, flipped to stay on screen
   const rect = canvas.getBoundingClientRect();
@@ -147,6 +134,8 @@ function starText(stars) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  document.documentElement.lang = language();
+  translatePage(document);
   const canvas = getCanvas();
   const chkSimulation = byId('toggle-simulation', HTMLInputElement);
   const btnReset = byId('reset-simulation', HTMLButtonElement);
@@ -378,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
   btnNew.addEventListener('click', () => {
     game.restartLevel();
     chkSimulation.checked = false;
-    showStatus('Level restarted (Undo to go back)');
+    showStatus(t('status.restarted'));
   });
 
   // Road on road levels, Rail on railway levels: the other deck is no use there
@@ -405,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function () {
     lastChild(goals.two).textContent = `\u2264 ${formatMoney(stars.two)}`;
     lastChild(goals.three).textContent = `\u2264 ${formatMoney(stars.three)}`;
     const best = game.bestResult();
-    goals.best.textContent = best ? `Best ${formatMoney(best.cost)}  ${starText(best.stars)}` : '';
+    goals.best.textContent = best ? t('goal.best', { cost: formatMoney(best.cost), stars: starText(best.stars) }) : '';
     const earned = game.challengesEarned();
     goalChallenges.replaceChildren(...challengesFor(game.level.id).map(c =>
       challengeItem(c.name, c.label, { earned: earned.includes(c.id) })));
@@ -432,11 +421,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (isNew) {
       const badge = document.createElement('span');
       badge.className = 'new-best';
-      badge.textContent = 'Done';
+      badge.textContent = t('challenge.done');
       title.append(badge);
     }
     li.append(what);
-    li.title = earned ? `Done: ${label}` : `Challenge: ${label}, and win within budget`;
+    li.title = t(earned ? 'challenge.doneTitle' : 'challenge.todoTitle', { label });
     return li;
   }
 
@@ -446,24 +435,24 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.stars.forEach((star, i) => star.classList.toggle('earned', i < result.stars));
     const over = result.cost - result.budget;
     const train = game.level.track === 'rail';
+    /** A message about the traffic, which says "the train" its own way. @param {string} key @param {Record<string, string | number>} [params] */
+    const say = (key, params = {}) => t(train ? `${key}.train` : key, { ...game.level.vehicleNoun, ...params });
     if (result.kind === 'success') {
-      dlg.title.textContent = ['', 'Bridge holds!', 'Great bridge!', 'Perfect bridge!'][result.stars];
+      dlg.title.textContent = t(['', 'result.holds', 'result.great', 'result.perfect'][result.stars]);
       const n = game.level.vehicleCount;
-      dlg.text.textContent = train ? 'The train made it across.'
-        : n === 1 ? 'It made it across.' : n === 2 ? 'Both made it across.' : `All ${n} made it across.`;
+      dlg.text.textContent = train ? t('result.across.train') : n === 2 ? t('result.across.both') : t('result.across', { n });
     } else if (result.kind === 'over-budget') {
-      dlg.title.textContent = 'Over budget';
-      dlg.text.textContent = `${train ? 'The train' : `All ${game.level.vehicleNoun.many}`} crossed, but the bridge costs ${formatMoney(over)} more than the budget.`;
+      dlg.title.textContent = t('result.overBudget');
+      dlg.text.textContent = say('result.overBudgetText', { over: formatMoney(over) });
     } else {
-      dlg.title.textContent = 'Bridge failed';
-      const a = train ? 'The train' : `A ${game.level.vehicleNoun.one}`;
-      const how = { fell: `${a} fell into the gap.`, crashed: `${a} crashed into the cliff.`, 'hard landing': `${a} landed too hard.` };
-      const broke = result.broken ? ` ${result.broken} member${result.broken === 1 ? '' : 's'} broke.` : '';
-      dlg.text.textContent = (how[result.reason ?? 'fell'] ?? how.fell) + broke;
+      dlg.title.textContent = t('result.failed');
+      const how = { fell: 'result.fell', crashed: 'result.crashed', 'hard landing': 'result.hardLanding' };
+      const broke = result.broken ? t('result.broke', { n: result.broken }) : '';
+      dlg.text.textContent = say(how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
     dlg.tip.hidden = result.kind !== 'failed';
     dlg.tip.textContent = result.kind === 'failed'
-      ? failureTip(result, game.level.track) + (result.failure ? ' It is marked in red on your bridge.' : '')
+      ? failureTip(result, game.level.track) + (result.failure ? t('result.marked') : '')
       : '';
     // after a win, how the bridge did on the level's challenges
     dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
@@ -474,25 +463,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (result.newBest && result.previousBest) {
       const badge = document.createElement('span');
       badge.className = 'new-best';
-      badge.textContent = 'New best';
+      badge.textContent = t('result.newBest');
       dlg.best.append(badge);
     }
 
     // what the next star needs
     const { goals: g } = result;
     dlg.hint.textContent = result.kind !== 'success' ? ''
-      : result.stars === 1 ? `\u2605\u2605 at ${formatMoney(g.two)} or less: trim ${formatMoney(result.cost - g.two)}.`
-        : result.stars === 2 ? `\u2605\u2605\u2605 at ${formatMoney(g.three)} or less: trim ${formatMoney(result.cost - g.three)}.`
-          : 'As cheap as it gets. Or is it?';
+      : result.stars === 1 ? t('result.nextTwo', { cost: formatMoney(g.two), trim: formatMoney(result.cost - g.two) })
+        : result.stars === 2 ? t('result.nextThree', { cost: formatMoney(g.three), trim: formatMoney(result.cost - g.three) })
+          : t('result.cheapest');
 
-    lastChild(dlg.retry).textContent = result.kind === 'success' ? (result.stars < 3 ? 'Make it cheaper' : 'Rebuild')
-      : result.kind === 'over-budget' ? 'Make it cheaper' : 'Try again';
+    lastChild(dlg.retry).textContent = t(result.kind === 'success' ? (result.stars < 3 ? 'result.cheaper' : 'result.rebuild')
+      : result.kind === 'over-budget' ? 'result.cheaper' : 'result.retry');
     dlg.retry.classList.toggle('primary', result.kind !== 'success' || !result.nextLevel);
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
     dlg.share.hidden = result.kind !== 'success';
     dlg.replay.hidden = !game.canReplay;
     if (result.kind !== 'success' && game.hintAvailable && hintStage === 0) {
-      dlg.hint.textContent = 'Stuck? There is a hint in the panel.';
+      dlg.hint.textContent = t('result.stuck');
     }
     dlg.root.hidden = false;
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
@@ -564,11 +553,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const cost = document.createElement('span');
       cost.className = 'outline-cost';
       const outline = game.outline;
-      cost.textContent = game.showOutline && outline ? `The outline costs ${formatMoney(outline.cost)}.` : '';
+      cost.textContent = game.showOutline && outline ? t('hint.cost', { cost: formatMoney(outline.cost) }) : '';
       hint.text.replaceChildren(words, cost);
     }
-    lastChild(hint.button).textContent = hintStage === 0 ? 'Stuck? Get a hint'
-      : game.showOutline ? 'Hide the outline' : 'Show the outline';
+    lastChild(hint.button).textContent = t(hintStage === 0 ? 'hint.offer'
+      : game.showOutline ? 'hint.hide' : 'hint.show');
   }
   hint.button.addEventListener('click', () => {
     if (hintStage === 0) hintStage = 1;
@@ -665,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const detail = document.createElement('div');
     detail.className = 'level-detail';
     if (unlocked) {
-      detail.textContent = best ? `Best ${formatMoney(best.cost)}` : `Budget ${formatMoney(level.budget)}`;
+      detail.textContent = best ? t('card.best', { cost: formatMoney(best.cost) }) : t('card.budget', { cost: formatMoney(level.budget) });
       const all = challengesFor(level.id);
       if (all.length) {
         const done = game.challengesEarned(level.id).length;
@@ -673,17 +662,17 @@ document.addEventListener('DOMContentLoaded', function () {
         chip.className = 'level-challenges';
         chip.classList.toggle('all', done === all.length);
         chip.textContent = `\u25C6 ${done}/${all.length}`;
-        chip.title = `Challenges done: ${done} of ${all.length}`;
+        chip.title = t('card.challenges', { done, all: all.length });
         detail.append(chip);
       }
     } else {
-      detail.append(svgIcon('icon-lock'), `Win ${previous.name} to unlock`);
+      detail.append(svgIcon('icon-lock'), t('card.locked', { name: previous.name }));
     }
 
     if (isSandbox) {
-      detail.textContent = 'Design your own gap';
+      detail.textContent = t('card.sandbox');
       card.append(thumb, title, detail);
-      card.title = 'Choose the gap, the traffic and the budget yourself';
+      card.title = t('card.sandboxTitle');
       card.addEventListener('click', () => {
         hideLevels();
         showSandbox();
@@ -691,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return card;
     }
     card.append(thumb, title, stars, detail);
-    card.title = unlocked ? level.description : `Locked: win ${previous.name} within budget first`;
+    card.title = unlocked ? level.description : t('card.lockedTitle', { name: previous.name });
     card.addEventListener('click', () => {
       hideLevels();
       hideResult();
@@ -758,23 +747,23 @@ document.addEventListener('DOMContentLoaded', function () {
     if (coarse && navigator.share) {
       // phones: the system share sheet
       try {
-        await navigator.share({ title: 'Bridge Builder', text: `My bridge for ${game.level.name}`, url });
+        await navigator.share({ title: 'Bridge Builder', text: t('share.text', { name: game.level.name }), url });
       } catch (err) {
-        if (!(err instanceof DOMException && err.name === 'AbortError')) showStatus('Could not share the link.', true);
+        if (!(err instanceof DOMException && err.name === 'AbortError')) showStatus(t('share.failed'), true);
       }
       return;
     }
     // Copy within the click itself: the async clipboard API can wait on a permission
     // prompt, and the click no longer counts by the time that is answered.
     if (copyNow(url)) {
-      showStatus('Link copied: anyone who opens it gets this bridge.');
+      showStatus(t('share.copied'));
       return;
     }
     try {
       await navigator.clipboard.writeText(url);
-      showStatus('Link copied: anyone who opens it gets this bridge.');
+      showStatus(t('share.copied'));
     } catch {
-      showStatus('Could not copy the link.', true);
+      showStatus(t('share.copyFailed'), true);
     }
   }
 
@@ -808,29 +797,29 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       data = decodeBridge(text);
     } catch {
-      showStatus('This bridge link is damaged: it could not be opened.', true);
+      showStatus(t('link.damaged'), true);
       return;
     }
     const level = findLevel(data.level);
     if (!level) {
-      showStatus('This bridge link is for a level that doesn\u2019t exist.', true);
+      showStatus(t('link.noLevel'), true);
       return;
     }
     if (!game.isUnlocked(level.id)) {
       const before = levels[levels.indexOf(level) - 1];
-      showStatus(`This bridge is for ${level.number}. ${level.name}: win ${before.name} first to open it.`, true);
+      showStatus(t('link.locked', { number: level.number, name: level.name, before: before.name }), true);
       return;
     }
     try {
       game.importStructure(data);
     } catch {
-      showStatus('This bridge link is damaged: it could not be opened.', true);
+      showStatus(t('link.damaged'), true);
       return;
     }
     chkSimulation.checked = false;
     if (!dlg.root.hidden) hideResult();
     if (!picker.root.hidden) hideLevels();
-    showStatus(`Opened a shared bridge for ${level.name}. Undo to get yours back.`);
+    showStatus(t('link.opened', { name: level.name }));
   }
   window.addEventListener('hashchange', openSharedBridge);
 
@@ -842,9 +831,9 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       game.importStructure(JSON.parse(await file.text()));
       chkSimulation.checked = false;
-      showStatus(`Loaded ${file.name}`);
+      showStatus(t('import.loaded', { file: file.name }));
     } catch (err) {
-      showStatus(`Could not load ${file.name}: ${err instanceof Error ? err.message : err}`, true);
+      showStatus(t('import.failed', { file: file.name, error: err instanceof Error ? err.message : String(err) }), true);
     }
   });
 
@@ -853,10 +842,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const info = game.placementInfo;
     placeTip.root.hidden = !info;
     if (!info) return;
-    placeTip.what.textContent = `${info.label} \u00b7 ${info.length.toFixed(1)} m${info.mirrored ? ' \u00d7 2' : ''} \u00b7 ${formatMoney(info.cost)}`;
+    placeTip.what.textContent = t('place.what', {
+      label: info.label, length: formatNumber(info.length, 1), mirror: info.mirrored ? ' \u00d7 2' : '', cost: formatMoney(info.cost),
+    });
     placeTip.left.textContent = info.remaining >= 0
-      ? `${formatMoney(info.remaining)} of the budget left`
-      : `${formatMoney(-info.remaining)} over budget`;
+      ? t('place.left', { cost: formatMoney(info.remaining) })
+      : t('place.over', { cost: formatMoney(-info.remaining) });
     placeTip.root.classList.toggle('over', info.remaining < 0);
     const rect = canvas.getBoundingClientRect();
     if (game.pointerType === 'touch') {
@@ -910,26 +901,21 @@ document.addEventListener('DOMContentLoaded', function () {
       tutorialReplay = false;
       return undefined;
     }
-    if (!game.isBuildMode) return game.result ? undefined : { n: 4, text: 'Watch the test: every vehicle has to reach the flag. Win within budget to unlock the next level.' };
+    if (!game.isBuildMode) return game.result ? undefined : { n: 4, text: t('tutorial.watch') };
     if (game.roadAcross && !game.isPlacing) {
-      return { n: 4, text: 'That\u2019s a road across. Press Test to send the traffic over it.', focus: testButton };
+      return { n: 4, text: t('tutorial.test'), focus: testButton };
     }
     const material = document.querySelector('input[name="material"]:checked');
     if (!(material instanceof HTMLInputElement) || material.value !== 'road') {
-      return { n: 1, text: 'Pick Road in the materials panel: it\u2019s the only thing vehicles can drive on.', focus: roadCard };
+      return { n: 1, text: t('tutorial.road'), focus: roadCard };
     }
     const xs = game.level.anchors.map(a => a.x);
     const left = Math.max(...xs.filter(x => x < 0)), right = Math.min(...xs.filter(x => x > 0));
     const y = game.level.anchors[0].y;
     const touch = game.pointerType === 'touch' || window.matchMedia?.('(pointer: coarse)').matches;
-    const click = touch ? 'Tap' : 'Click';
-    if (!game.isPlacing) return { n: 2, text: `${click} the anchor at the edge of the brook to start the road.`, target: { x: left, y } };
-    return {
-      n: 3,
-      text: touch ? 'Now tap the anchor on the far bank. Tap the first anchor again to cancel.'
-        : 'Now click the anchor on the far bank. Esc or right-click cancels.',
-      target: { x: right, y },
-    };
+    const how = touch ? 'tap' : 'click';
+    if (!game.isPlacing) return { n: 2, text: t(`tutorial.start.${how}`), target: { x: left, y } };
+    return { n: 3, text: t(`tutorial.far.${how}`), target: { x: right, y } };
   }
 
   function updateTutorial() {
@@ -957,7 +943,7 @@ document.addEventListener('DOMContentLoaded', function () {
     lastFrame = now;
     game.tick(elapsed);
     game.render();
-    txtTime.innerText = game.evalCtx.time.toFixed(2) + 's';
+    txtTime.innerText = t('time', { s: formatNumber(game.evalCtx.time, 2) });
     btnReset.disabled = game.isBuildMode;
     chkMirror.checked = game.mirror; // the M key toggles it too
     syncSpeed();
@@ -1000,10 +986,10 @@ document.addEventListener('DOMContentLoaded', function () {
     budget: byId('sandbox-budget', HTMLInputElement),
     theme: byId('sandbox-theme', HTMLSelectElement),
   };
-  sandbox.traffic.replaceChildren(...Object.entries(SANDBOX_TRAFFIC).map(([key, { label }]) => {
+  sandbox.traffic.replaceChildren(...Object.keys(SANDBOX_TRAFFIC).map((key) => {
     const option = document.createElement('option');
     option.value = key;
-    option.textContent = label;
+    option.textContent = t(`traffic.${key}`);
     return option;
   }));
 
@@ -1032,11 +1018,11 @@ document.addEventListener('DOMContentLoaded', function () {
   /** Shows the values and redraws the preview after any change. */
   function updateSandboxForm() {
     const spec = readSandboxForm();
-    sandbox.gapValue.textContent = `${spec.gap} m`;
-    sandbox.farValue.textContent = spec.far === 0 ? 'level' : `${Math.abs(spec.far)} m ${spec.far > 0 ? 'higher' : 'lower'}`;
+    sandbox.gapValue.textContent = t('sandbox.metres', { m: spec.gap });
+    sandbox.farValue.textContent = spec.far === 0 ? t('sandbox.level') : t(spec.far > 0 ? 'sandbox.higher' : 'sandbox.lower', { m: Math.abs(spec.far) });
     const roomForRock = spec.gap >= SANDBOX_LIMITS.rockMinGap;
     sandbox.rock.disabled = !roomForRock;
-    sandbox.rockNote.textContent = roomForRock ? 'in the middle, to stand a pier on' : `needs a gap of ${SANDBOX_LIMITS.rockMinGap} m or more`;
+    sandbox.rockNote.textContent = roomForRock ? t('sandbox.rockNote') : t('sandbox.rockNeeds', { m: SANDBOX_LIMITS.rockMinGap });
     const level = findLevel(sandboxId(spec));
     const g = sandbox.preview.getContext('2d');
     if (level && g) {
@@ -1096,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', function () {
     volumeValue: byId('setting-volume-value', HTMLOutputElement),
     shake: byId('setting-shake', HTMLInputElement),
     tutorial: byId('setting-tutorial', HTMLButtonElement),
+    language: byId('setting-language', HTMLSelectElement),
     installRow: byId('setting-install-row', HTMLDivElement),
     install: byId('setting-install', HTMLButtonElement),
     reset: byId('setting-reset', HTMLButtonElement),
@@ -1150,6 +1137,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }, true);
 
+  // ---- the language: the page is reloaded in the new one (the bridge is autosaved)
+  settings.language.replaceChildren(...Object.entries(LANGUAGES).map(([code, name]) => {
+    const option = document.createElement('option');
+    option.value = code;
+    option.lang = code;
+    option.textContent = name;
+    return option;
+  }));
+  settings.language.value = language();
+  settings.language.addEventListener('change', () => {
+    const lang = settings.language.value;
+    if (!isLanguage(lang) || lang === language()) return;
+    saveLanguage(lang);
+    location.reload();
+  });
+
   // ---- installable, and playable offline
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Offline play is not available:', err));
@@ -1190,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', function () {
     chkSimulation.checked = false;
     resetTutorial();
     hideSettings();
-    showStatus('Progress reset: back to the first level.');
+    showStatus(t('status.reset'));
   });
 
   openSharedBridge();

@@ -144,6 +144,7 @@ symbol .solid {
   border-radius: var(--radius);
   cursor: pointer;
   user-select: none;
+  white-space: nowrap; /* a fixed height: one line, however long the language makes it */
   transition: background-color 0.12s, color 0.12s, border-color 0.12s;
 }
 
@@ -677,6 +678,7 @@ kbd {
 
 .result-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
 }

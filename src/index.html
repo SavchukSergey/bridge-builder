@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bridge Builder Game</title>
+  <title data-i18n="ui.pageTitle">Bridge Builder Game</title>
   <meta name="description" content="A bridge-building physics puzzle: span the gap within budget, then send the traffic over.">
   <meta name="theme-color" content="#121a24">
   <link rel="manifest" href="manifest.webmanifest">
@@ -55,7 +55,7 @@
       <span>Bridge Builder</span>
     </div>
 
-    <button type="button" id="level-button" class="btn level-button" title="Choose a level"
+    <button type="button" id="level-button" class="btn level-button" title="Choose a level" data-i18n-title="ui.chooseLevel"
       aria-haspopup="dialog" aria-expanded="false" aria-controls="levels">
       <svg class="icon"><use href="#icon-levels" /></svg>
       <span id="level-button-name"></span>
@@ -64,74 +64,74 @@
 
     <div class="group">
       <input type="checkbox" id="toggle-simulation" class="visually-hidden" />
-      <label for="toggle-simulation" id="test-label" class="btn primary" title="Start or pause the load test">
+      <label for="toggle-simulation" id="test-label" class="btn primary" title="Start or pause the load test" data-i18n-title="ui.testTitle">
         <svg class="icon when-off"><use href="#icon-play" /></svg>
         <svg class="icon when-on"><use href="#icon-pause" /></svg>
-        <span class="when-off">Test</span><span class="when-on">Pause</span>
+        <span class="when-off" data-i18n="ui.test">Test</span><span class="when-on" data-i18n="ui.pause">Pause</span>
       </label>
-      <button type="button" id="reset-simulation" class="btn" title="Back to build mode" disabled>
-        <svg class="icon"><use href="#icon-reset" /></svg><span>Reset</span>
+      <button type="button" id="reset-simulation" class="btn" title="Back to build mode" data-i18n-title="ui.resetTitle" disabled>
+        <svg class="icon"><use href="#icon-reset" /></svg><span data-i18n="ui.reset">Reset</span>
       </button>
-      <button type="button" id="speed" class="btn speed" title="Test speed: click for faster, Shift+click for slower ([ and ])">
+      <button type="button" id="speed" class="btn speed" title="Test speed: click for faster, Shift+click for slower ([ and ])" data-i18n-title="ui.speedTitle">
         <span id="speed-value">1&times;</span>
       </button>
       <input type="checkbox" id="toggle-follow" class="visually-hidden" />
-      <label for="toggle-follow" class="btn toggle" title="Camera follows the traffic during the test (F)">
-        <svg class="icon"><use href="#icon-follow" /></svg><span>Follow</span>
+      <label for="toggle-follow" class="btn toggle" title="Camera follows the traffic during the test (F)" data-i18n-title="ui.followTitle">
+        <svg class="icon"><use href="#icon-follow" /></svg><span data-i18n="ui.follow">Follow</span>
       </label>
     </div>
 
     <div class="group status">
-      <div id="simulation-time" class="chip" title="Simulated time">
+      <div id="simulation-time" class="chip" title="Simulated time" data-i18n-title="ui.timeTitle">
         <svg class="icon"><use href="#icon-clock" /></svg><span id="simulation-time-value">0.00s</span>
       </div>
       <div id="mode-label"></div>
     </div>
 
     <div class="group">
-      <button type="button" id="undo" class="btn icon-only" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+      <button type="button" id="undo" class="btn icon-only" title="Undo (Ctrl+Z)" data-i18n-title="ui.undoTitle" aria-label="Undo" data-i18n-aria="ui.undo" disabled>
         <svg class="icon"><use href="#icon-undo" /></svg>
       </button>
-      <button type="button" id="redo" class="btn icon-only" title="Redo (Ctrl+Y)" aria-label="Redo" disabled>
+      <button type="button" id="redo" class="btn icon-only" title="Redo (Ctrl+Y)" data-i18n-title="ui.redoTitle" aria-label="Redo" data-i18n-aria="ui.redo" disabled>
         <svg class="icon"><use href="#icon-redo" /></svg>
       </button>
       <input type="checkbox" id="toggle-snap" class="visually-hidden" checked />
-      <label for="toggle-snap" class="btn toggle" title="Snap new joints to a 1 m grid (hold Alt to place freely)">
-        <svg class="icon"><use href="#icon-grid" /></svg><span>Snap</span>
+      <label for="toggle-snap" class="btn toggle" title="Snap new joints to a 1 m grid (hold Alt to place freely)" data-i18n-title="ui.snapTitle">
+        <svg class="icon"><use href="#icon-grid" /></svg><span data-i18n="ui.snap">Snap</span>
       </label>
       <input type="checkbox" id="toggle-mirror" class="visually-hidden" />
-      <label for="toggle-mirror" class="btn toggle" title="Mirror: build, delete and move symmetrically about the middle (M)">
-        <svg class="icon"><use href="#icon-mirror" /></svg><span>Mirror</span>
+      <label for="toggle-mirror" class="btn toggle" title="Mirror: build, delete and move symmetrically about the middle (M)" data-i18n-title="ui.mirrorTitle">
+        <svg class="icon"><use href="#icon-mirror" /></svg><span data-i18n="ui.mirror">Mirror</span>
       </label>
       <input type="checkbox" id="toggle-stress" class="visually-hidden" />
       <label for="toggle-stress" class="btn toggle"
-        title="Colour members by load: pale when relaxed, blue in tension, orange and dashed in compression">
-        <svg class="icon"><use href="#icon-stress" /></svg><span>Stress view</span>
+        title="Colour members by load: pale when relaxed, blue in tension, orange and dashed in compression" data-i18n-title="ui.stressTitle">
+        <svg class="icon"><use href="#icon-stress" /></svg><span data-i18n="ui.stress">Stress view</span>
       </label>
       <input type="checkbox" id="toggle-sound" class="visually-hidden" checked />
-      <label for="toggle-sound" class="btn toggle icon-only" title="Sound on/off">
+      <label for="toggle-sound" class="btn toggle icon-only" title="Sound on/off" data-i18n-title="ui.soundTitle">
         <svg class="icon when-on"><use href="#icon-sound" /></svg>
         <svg class="icon when-off"><use href="#icon-mute" /></svg>
       </label>
     </div>
 
     <div class="group">
-      <button type="button" id="new-structure" class="btn" title="Start this level over (Undo to go back)">
-        <svg class="icon"><use href="#icon-restart" /></svg><span>Restart</span>
+      <button type="button" id="new-structure" class="btn" title="Start this level over (Undo to go back)" data-i18n-title="ui.restartTitle">
+        <svg class="icon"><use href="#icon-restart" /></svg><span data-i18n="ui.restart">Restart</span>
       </button>
-      <button type="button" id="export-structure" class="btn icon-only" title="Export: download the structure as JSON"
-        aria-label="Export">
+      <button type="button" id="export-structure" class="btn icon-only" title="Export: download the structure as JSON" data-i18n-title="ui.exportTitle"
+        aria-label="Export" data-i18n-aria="ui.export">
         <svg class="icon"><use href="#icon-download" /></svg>
       </button>
-      <button type="button" id="import-structure" class="btn icon-only" title="Import: load a structure from a JSON file"
-        aria-label="Import">
+      <button type="button" id="import-structure" class="btn icon-only" title="Import: load a structure from a JSON file" data-i18n-title="ui.importTitle"
+        aria-label="Import" data-i18n-aria="ui.import">
         <svg class="icon"><use href="#icon-upload" /></svg>
       </button>
       <input type="file" id="import-file" accept=".json,application/json" hidden />
-      <button type="button" id="share-structure" class="btn" title="Copy a link that opens this bridge">
-        <svg class="icon"><use href="#icon-link" /></svg><span>Share</span>
+      <button type="button" id="share-structure" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle">
+        <svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span>
       </button>
-      <button type="button" id="settings-button" class="btn icon-only" title="Settings" aria-label="Settings"
+      <button type="button" id="settings-button" class="btn icon-only" title="Settings" data-i18n-title="ui.settings" aria-label="Settings" data-i18n-aria="ui.settings"
         aria-haspopup="dialog" aria-controls="settings">
         <svg class="icon"><use href="#icon-settings" /></svg>
       </button>
@@ -148,111 +148,111 @@
 
     <section id="hint" class="hint-card" hidden aria-live="polite">
       <p id="hint-text" hidden></p>
-      <button type="button" id="hint-button" class="btn"><svg class="icon"><use href="#icon-bridge" /></svg><span>Stuck? Get a hint</span></button>
+      <button type="button" id="hint-button" class="btn"><svg class="icon"><use href="#icon-bridge" /></svg><span data-i18n="hint.offer">Stuck? Get a hint</span></button>
     </section>
 
     <section id="cost" class="budget">
       <div class="budget-row">
-        <span class="label">Cost</span>
+        <span class="label" data-i18n="ui.cost">Cost</span>
         <span id="cost-value" class="value"></span>
       </div>
       <div class="budget-bar"><div id="budget-fill"></div></div>
       <div class="budget-row small">
-        <span>Budget</span>
+        <span data-i18n="ui.budget">Budget</span>
         <span id="budget-value"></span>
       </div>
       <div class="goals">
-        <div class="goal" id="goal-two" title="Two stars"><span class="mini-stars" data-stars="2"></span><span></span></div>
-        <div class="goal" id="goal-three" title="Three stars"><span class="mini-stars" data-stars="3"></span><span></span></div>
-        <div class="goal best" id="best" title="Your cheapest winning bridge on this level"></div>
-        <ul class="challenges" id="goal-challenges" aria-label="Challenges"></ul>
+        <div class="goal" id="goal-two" title="Two stars" data-i18n-title="ui.twoStars"><span class="mini-stars" data-stars="2"></span><span></span></div>
+        <div class="goal" id="goal-three" title="Three stars" data-i18n-title="ui.threeStars"><span class="mini-stars" data-stars="3"></span><span></span></div>
+        <div class="goal best" id="best" title="Your cheapest winning bridge on this level" data-i18n-title="ui.bestTitle"></div>
+        <ul class="challenges" id="goal-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
       </div>
     </section>
 
     <section>
-      <h2>Materials</h2>
+      <h2 data-i18n="ui.materials">Materials</h2>
       <div class="materials">
-        <label class="material-option" id="material-road" title="Deck the vehicle drives on">
+        <label class="material-option" id="material-road" title="Deck the vehicle drives on" data-i18n-title="ui.mat.road">
           <input type="radio" name="material" value="road" class="visually-hidden" />
           <span class="card">
             <span class="swatch road"></span>
-            <span class="name">Road</span><span class="price">$300/m</span>
-            <span class="note">Deck · road vehicles</span>
+            <span class="name" data-i18n="material.road">Road</span><span class="price" data-i18n="ui.price300">$300/m</span>
+            <span class="note" data-i18n="ui.note.road">Deck · road vehicles</span>
           </span>
         </label>
-        <label class="material-option" id="material-rail" title="Railway deck: only trains run on it" hidden>
+        <label class="material-option" id="material-rail" title="Railway deck: only trains run on it" data-i18n-title="ui.mat.rail" hidden>
           <input type="radio" name="material" value="rail" class="visually-hidden" />
           <span class="card">
             <span class="swatch rail"></span>
-            <span class="name">Rail</span><span class="price">$400/m</span>
-            <span class="note">Deck &middot; trains only</span>
+            <span class="name" data-i18n="material.rail">Rail</span><span class="price" data-i18n="ui.price400">$400/m</span>
+            <span class="note" data-i18n="ui.note.rail">Deck &middot; trains only</span>
           </span>
         </label>
-        <label class="material-option" title="20 x 20 cm section">
+        <label class="material-option" title="20 x 20 cm section" data-i18n-title="ui.mat.steel">
           <input type="radio" name="material" value="steel" class="visually-hidden" checked />
           <span class="card">
             <span class="swatch steel"></span>
-            <span class="name">Steel</span><span class="price">$200/m</span>
-            <span class="note">Push &amp; pull</span>
+            <span class="name" data-i18n="material.steel">Steel</span><span class="price" data-i18n="ui.price200">$200/m</span>
+            <span class="note" data-i18n="ui.note.steel">Push &amp; pull</span>
           </span>
         </label>
-        <label class="material-option" title="10 x 10 cm section: a quarter of the strength">
+        <label class="material-option" title="10 x 10 cm section: a quarter of the strength" data-i18n-title="ui.mat.steelLight">
           <input type="radio" name="material" value="steel-light" class="visually-hidden" />
           <span class="card">
             <span class="swatch steel-light"></span>
-            <span class="name">Light steel</span><span class="price">$70/m</span>
-            <span class="note">¼ strength</span>
+            <span class="name" data-i18n="material.steel-light">Light steel</span><span class="price" data-i18n="ui.price70">$70/m</span>
+            <span class="note" data-i18n="ui.note.steelLight">¼ strength</span>
           </span>
         </label>
-        <label class="material-option" title="Only holds in tension">
+        <label class="material-option" title="Only holds in tension" data-i18n-title="ui.mat.cable">
           <input type="radio" name="material" value="cable" class="visually-hidden" />
           <span class="card">
             <span class="swatch cable"></span>
-            <span class="name">Cable</span><span class="price">$60/m</span>
-            <span class="note">Pull only</span>
+            <span class="name" data-i18n="material.cable">Cable</span><span class="price" data-i18n="ui.price60">$60/m</span>
+            <span class="note" data-i18n="ui.note.cable">Pull only</span>
           </span>
         </label>
-        <label class="material-option" title="Only holds in tension; a fifth of the strength">
+        <label class="material-option" title="Only holds in tension; a fifth of the strength" data-i18n-title="ui.mat.cableThin">
           <input type="radio" name="material" value="cable-thin" class="visually-hidden" />
           <span class="card">
             <span class="swatch cable-thin"></span>
-            <span class="name">Thin cable</span><span class="price">$20/m</span>
-            <span class="note">Pull only · ⅕</span>
+            <span class="name" data-i18n="material.cable-thin">Thin cable</span><span class="price" data-i18n="ui.price20">$20/m</span>
+            <span class="note" data-i18n="ui.note.cableThin">Pull only · ⅕</span>
           </span>
         </label>
       </div>
     </section>
 
     <details id="help" open>
-      <summary>Controls</summary>
-      <p>Get every vehicle to the flag, within budget. Press <b>Test</b> to load the bridge.</p>
+      <summary data-i18n="ui.controls">Controls</summary>
+      <p data-i18n-html="ui.helpIntro">Get every vehicle to the flag, within budget. Press <b>Test</b> to load the bridge.</p>
       <dl class="touch-help">
-        <dt>Tap</dt><dd>joint, then tap (or slide and lift) to place a link</dd>
-        <dt>Tap the start</dt><dd>cancel</dd>
-        <dt>Hold</dt><dd>delete</dd>
-        <dt>Drag a joint</dt><dd>move it</dd>
-        <dt>Drag</dt><dd>pan</dd>
-        <dt>Pinch</dt><dd>zoom</dd>
+        <dt data-i18n="ui.touch0">Tap</dt><dd data-i18n="ui.touch0.do">joint, then tap (or slide and lift) to place a link</dd>
+        <dt data-i18n="ui.touch1">Tap the start</dt><dd data-i18n="ui.touch1.do">cancel</dd>
+        <dt data-i18n="ui.touch2">Hold</dt><dd data-i18n="ui.touch2.do">delete</dd>
+        <dt data-i18n="ui.touch3">Drag a joint</dt><dd data-i18n="ui.touch3.do">move it</dd>
+        <dt data-i18n="ui.touch4">Drag</dt><dd data-i18n="ui.touch4.do">pan</dd>
+        <dt data-i18n="ui.touch5">Pinch</dt><dd data-i18n="ui.touch5.do">zoom</dd>
       </dl>
       <dl class="mouse-help">
-        <dt>Click</dt><dd>joint, then click to place a link</dd>
-        <dt><kbd>Right-click</kbd></dt><dd>delete / cancel</dd>
-        <dt><kbd>Esc</kbd></dt><dd>cancel</dd>
-        <dt><kbd>Alt</kbd></dt><dd>place without snapping</dd>
-        <dt>Drag a joint</dt><dd>move it</dd>
-        <dt>Drag</dt><dd>pan</dd>
-        <dt><kbd>Shift</kbd>+drag</dt><dd>select in a box (<kbd>Shift</kbd>+click: one joint)</dd>
-        <dt><kbd>Del</kbd></dt><dd>delete the selection</dd>
-        <dt><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></dt><dd>copy / paste at the pointer</dd>
-        <dt><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd>select everything</dd>
-        <dt><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&rarr;</kbd><kbd>&darr;</kbd></dt><dd>keyboard cursor (<kbd>Shift</kbd>: 5 m); <kbd>Enter</kbd> clicks there</dd>
-        <dt><kbd>J</kbd> / <kbd>G</kbd></dt><dd>jump to the next joint / pick up and put down a joint</dd>
-        <dt><kbd>1</kbd>&ndash;<kbd>6</kbd>, <kbd>T</kbd></dt><dd>choose a material, start or pause the test</dd>
-        <dt><kbd>Ctrl</kbd>+wheel</dt><dd>zoom</dd>
-        <dt><kbd>M</kbd></dt><dd>mirror mode</dd>
-        <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>test slower / faster</dd>
-        <dt><kbd>F</kbd></dt><dd>camera follows the traffic</dd>
-        <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></dt><dd>undo / redo</dd>
+        <dt data-i18n="ui.mouse0">Click</dt><dd data-i18n="ui.mouse0.do">joint, then click to place a link</dd>
+        <dt data-i18n-html="ui.mouse1"><kbd>Right-click</kbd></dt><dd data-i18n="ui.mouse1.do">delete / cancel</dd>
+        <dt><kbd>Esc</kbd></dt><dd data-i18n="ui.mouse2.do">cancel</dd>
+        <dt><kbd>Alt</kbd></dt><dd data-i18n="ui.mouse3.do">place without snapping</dd>
+        <dt data-i18n="ui.mouse4">Drag a joint</dt><dd data-i18n="ui.mouse4.do">move it</dd>
+        <dt data-i18n="ui.mouse5">Drag</dt><dd data-i18n="ui.mouse5.do">pan</dd>
+        <dt data-i18n-html="ui.mouse6"><kbd>Shift</kbd>+drag</dt><dd data-i18n-html="ui.mouse6.do">select in a box (<kbd>Shift</kbd>+click: one joint)</dd>
+        <dt><kbd>Del</kbd></dt><dd data-i18n="ui.mouse7.do">delete the selection</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></dt><dd data-i18n="ui.mouse8.do">copy / paste at the pointer</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd data-i18n="ui.mouse9.do">select everything</dd>
+        <dt><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&rarr;</kbd><kbd>&darr;</kbd></dt><dd data-i18n-html="ui.mouse10.do">keyboard cursor (<kbd>Shift</kbd>: 5 m); <kbd>Enter</kbd> clicks there</dd>
+        <dt><kbd>J</kbd> / <kbd>G</kbd></dt><dd data-i18n="ui.mouse11.do">jump to the next joint / pick up and put down a joint</dd>
+        <dt><kbd>1</kbd>&ndash;<kbd>6</kbd>, <kbd>T</kbd></dt><dd data-i18n="ui.mouse12.do">choose a material, start or pause the test</dd>
+        <dt data-i18n-html="ui.mouse13"><kbd>Ctrl</kbd>+wheel</dt><dd data-i18n="ui.mouse13.do">zoom</dd>
+        <dt><kbd>M</kbd></dt><dd data-i18n="ui.mouse14.do">mirror mode</dd>
+        <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd data-i18n="ui.mouse15.do">test slower / faster</dd>
+        <dt><kbd>F</kbd></dt><dd data-i18n="ui.mouse16.do">camera follows the traffic</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></dt><dd data-i18n="ui.mouse17.do">undo / redo</dd>
       </dl>
     </details>
   </aside>
@@ -260,49 +260,54 @@
   <div id="status-message" role="status"></div>
 
   <div id="stress-key" hidden>
-    <span><i class="key relaxed"></i>Relaxed</span>
-    <span><i class="key tension"></i>Tension (pull)</span>
-    <span><i class="key compression"></i>Compression (push)</span>
+    <span data-i18n-html="ui.key.relaxed"><i class="key relaxed"></i>Relaxed</span>
+    <span data-i18n-html="ui.key.tension"><i class="key tension"></i>Tension (pull)</span>
+    <span data-i18n-html="ui.key.compression"><i class="key compression"></i>Compression (push)</span>
   </div>
 
   <div id="settings" hidden>
     <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <button type="button" id="settings-close" class="btn icon-only close" title="Close (Esc)" aria-label="Close">
+      <button type="button" id="settings-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
         <svg class="icon"><use href="#icon-close" /></svg>
       </button>
-      <h2 id="settings-title">Settings</h2>
+      <h2 id="settings-title" data-i18n="ui.settings">Settings</h2>
 
       <div class="setting">
-        <label for="setting-volume">Volume</label>
+        <label for="setting-volume" data-i18n="ui.volume">Volume</label>
         <input type="range" id="setting-volume" min="0" max="100" step="5" value="100" />
         <output id="setting-volume-value" for="setting-volume">100%</output>
       </div>
 
       <div class="setting">
-        <label for="setting-shake">Screen shake</label>
+        <label for="setting-shake" data-i18n="ui.shake">Screen shake</label>
         <input type="checkbox" id="setting-shake" class="switch" />
-        <span class="setting-note">when members break or vehicles land</span>
+        <span class="setting-note" data-i18n="ui.shakeNote">when members break or vehicles land</span>
       </div>
 
       <div class="setting">
-        <span class="setting-label">Tutorial</span>
-        <button type="button" id="setting-tutorial" class="btn">Play it again on Brook</button>
+        <span class="setting-label" data-i18n="ui.tutorial">Tutorial</span>
+        <button type="button" id="setting-tutorial" class="btn" data-i18n="ui.tutorialAgain">Play it again on Brook</button>
+      </div>
+
+      <div class="setting">
+        <label for="setting-language" data-i18n="ui.language">Language</label>
+        <select id="setting-language" class="field"></select>
       </div>
 
       <div class="setting" id="setting-install-row" hidden>
-        <span class="setting-label">App</span>
-        <button type="button" id="setting-install" class="btn">Install Bridge Builder</button>
-        <span class="setting-note">its own window, and it plays offline</span>
+        <span class="setting-label" data-i18n="ui.app">App</span>
+        <button type="button" id="setting-install" class="btn" data-i18n="ui.install">Install Bridge Builder</button>
+        <span class="setting-note" data-i18n="ui.installNote">its own window, and it plays offline</span>
       </div>
 
       <div class="setting danger">
-        <span class="setting-label">Progress</span>
-        <button type="button" id="setting-reset" class="btn">Reset progress&hellip;</button>
+        <span class="setting-label" data-i18n="ui.progress">Progress</span>
+        <button type="button" id="setting-reset" class="btn" data-i18n="ui.resetProgress">Reset progress&hellip;</button>
         <div id="setting-reset-confirm" class="confirm" hidden>
-          <p>This forgets every level you have won, your best costs and the bridges saved on each level. It can't be undone.</p>
+          <p data-i18n="ui.resetConfirm">This forgets every level you have won, your best costs and the bridges saved on each level. It can't be undone.</p>
           <div class="confirm-actions">
-            <button type="button" id="setting-reset-cancel" class="btn">Keep my progress</button>
-            <button type="button" id="setting-reset-yes" class="btn danger">Reset everything</button>
+            <button type="button" id="setting-reset-cancel" class="btn" data-i18n="ui.keepProgress">Keep my progress</button>
+            <button type="button" id="setting-reset-yes" class="btn danger" data-i18n="ui.resetAll">Reset everything</button>
           </div>
         </div>
       </div>
@@ -311,56 +316,56 @@
 
   <div id="sandbox" hidden>
     <form id="sandbox-form" class="settings-card sandbox-card" role="dialog" aria-modal="true" aria-labelledby="sandbox-title">
-      <button type="button" id="sandbox-close" class="btn icon-only close" title="Close (Esc)" aria-label="Close">
+      <button type="button" id="sandbox-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
         <svg class="icon"><use href="#icon-close" /></svg>
       </button>
-      <h2 id="sandbox-title">Sandbox</h2>
-      <p class="sandbox-intro">Design your own gap, then bridge it. Nothing here counts towards your progress, and Share sends the level along with the bridge.</p>
+      <h2 id="sandbox-title" data-i18n="sandbox.name">Sandbox</h2>
+      <p class="sandbox-intro" data-i18n="ui.sandboxIntro">Design your own gap, then bridge it. Nothing here counts towards your progress, and Share sends the level along with the bridge.</p>
       <canvas id="sandbox-preview" width="376" height="140" aria-hidden="true"></canvas>
 
       <div class="setting">
-        <label for="sandbox-gap">Gap</label>
+        <label for="sandbox-gap" data-i18n="ui.gap">Gap</label>
         <input type="range" id="sandbox-gap" min="20" max="200" step="10" value="60" />
         <output id="sandbox-gap-value" for="sandbox-gap">60 m</output>
       </div>
       <div class="setting">
-        <label for="sandbox-far">Far bank</label>
+        <label for="sandbox-far" data-i18n="ui.farBank">Far bank</label>
         <input type="range" id="sandbox-far" min="-12" max="12" step="2" value="0" />
         <output id="sandbox-far-value" for="sandbox-far">level</output>
       </div>
       <div class="setting">
-        <label for="sandbox-rock">Rock</label>
+        <label for="sandbox-rock" data-i18n="ui.rock">Rock</label>
         <input type="checkbox" id="sandbox-rock" class="switch" />
         <span class="setting-note" id="sandbox-rock-note">in the middle, to stand a pier on</span>
       </div>
       <div class="setting">
-        <label for="sandbox-traffic">Traffic</label>
+        <label for="sandbox-traffic" data-i18n="ui.traffic">Traffic</label>
         <select id="sandbox-traffic" class="field"></select>
       </div>
       <div class="setting">
-        <label for="sandbox-budget">Budget</label>
+        <label for="sandbox-budget" data-i18n="ui.budget">Budget</label>
         <span class="money-field">$<input type="number" id="sandbox-budget" class="field" min="1000" max="1000000" step="500" value="40000" inputmode="numeric" /></span>
       </div>
       <div class="setting">
-        <label for="sandbox-theme">Scenery</label>
+        <label for="sandbox-theme" data-i18n="ui.scenery">Scenery</label>
         <select id="sandbox-theme" class="field">
-          <option value="summer">Summer</option>
-          <option value="desert">Desert</option>
-          <option value="snow">Snow</option>
-          <option value="night">Night</option>
+          <option value="summer" data-i18n="ui.theme.summer">Summer</option>
+          <option value="desert" data-i18n="ui.theme.desert">Desert</option>
+          <option value="snow" data-i18n="ui.theme.snow">Snow</option>
+          <option value="night" data-i18n="ui.theme.night">Night</option>
         </select>
       </div>
       <div class="confirm-actions sandbox-actions">
-        <button type="button" id="sandbox-cancel" class="btn">Cancel</button>
-        <button type="submit" id="sandbox-build" class="btn primary">Build it</button>
+        <button type="button" id="sandbox-cancel" class="btn" data-i18n="ui.cancel">Cancel</button>
+        <button type="submit" id="sandbox-build" class="btn primary" data-i18n="ui.buildIt">Build it</button>
       </div>
     </form>
   </div>
 
   <div id="result" hidden>
     <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
-      <button type="button" id="result-close" class="btn icon-only close" title="Close to look at the bridge (Esc)"
-        aria-label="Close">
+      <button type="button" id="result-close" class="btn icon-only close" title="Close to look at the bridge (Esc)" data-i18n-title="ui.closeLook"
+        aria-label="Close" data-i18n-aria="ui.close">
         <svg class="icon"><use href="#icon-close" /></svg>
       </button>
       <div class="result-stars" id="result-stars">
@@ -371,18 +376,18 @@
       <h2 id="result-title"></h2>
       <p id="result-text"></p>
       <dl class="result-facts">
-        <dt>Cost</dt><dd id="result-cost"></dd>
-        <dt>Budget</dt><dd id="result-budget"></dd>
-        <dt>Best</dt><dd id="result-best"></dd>
+        <dt data-i18n="ui.cost">Cost</dt><dd id="result-cost"></dd>
+        <dt data-i18n="ui.budget">Budget</dt><dd id="result-budget"></dd>
+        <dt data-i18n="ui.best">Best</dt><dd id="result-best"></dd>
       </dl>
-      <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges"></ul>
+      <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
       <p id="result-tip" hidden></p>
       <p id="result-hint"></p>
       <div class="result-actions">
-        <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge"><svg class="icon"><use href="#icon-link" /></svg><span>Share</span></button>
-        <button type="button" id="result-replay" class="btn" title="Watch the moment it broke again, in slow motion"><svg class="icon"><use href="#icon-play" /></svg><span>Watch it break</span></button>
+        <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
+        <button type="button" id="result-replay" class="btn" title="Watch the moment it broke again, in slow motion" data-i18n-title="ui.replayTitle"><svg class="icon"><use href="#icon-play" /></svg><span data-i18n="ui.replay">Watch it break</span></button>
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
-        <button type="button" id="result-next" class="btn primary"><span>Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
+        <button type="button" id="result-next" class="btn primary"><span data-i18n="ui.nextLevel">Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
       </div>
     </div>
   </div>
@@ -390,15 +395,15 @@
   <div id="levels" hidden>
     <div class="levels-card" role="dialog" aria-modal="true" aria-labelledby="levels-title">
       <div class="levels-header">
-        <h2 id="levels-title">Levels</h2>
-        <span class="levels-total" title="Stars earned">
+        <h2 id="levels-title" data-i18n="ui.levels">Levels</h2>
+        <span class="levels-total" title="Stars earned" data-i18n-title="ui.starsEarned">
           <svg class="icon"><use href="#icon-star" /></svg><span id="levels-total"></span>
         </span>
-        <button type="button" id="levels-close" class="btn icon-only close" title="Close (Esc)" aria-label="Close">
+        <button type="button" id="levels-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
           <svg class="icon"><use href="#icon-close" /></svg>
         </button>
       </div>
-      <p class="levels-hint">Win a level within budget to unlock the next. Cheaper bridges earn more stars.</p>
+      <p class="levels-hint" data-i18n="ui.levelsHint">Win a level within budget to unlock the next. Cheaper bridges earn more stars.</p>
       <div id="levels-grid"></div>
     </div>
   </div>
@@ -411,7 +416,7 @@
   <div id="tutorial" role="status" hidden>
     <span id="tutorial-step" class="tutorial-step"></span>
     <p id="tutorial-text"></p>
-    <button type="button" id="tutorial-skip" class="btn link">Skip tutorial</button>
+    <button type="button" id="tutorial-skip" class="btn link" data-i18n="ui.skipTutorial">Skip tutorial</button>
   </div>
 
   <div id="link-tooltip" role="tooltip" hidden>

@@ -1,4 +1,6 @@
 
+import { t } from "../i18n.mjs";
+
 export class Material {
   /**
    * 
@@ -11,7 +13,8 @@ export class Material {
     this.density = opts.density;
     this.crossSectionalArea = opts.crossSectionalArea;
     this.name = opts.name;
-    this.label = opts.label ?? opts.name;
+    /** English; {@link label} is in the player's language. */
+    this.__label = opts.label ?? opts.name;
     this.canCompress = opts.canCompress ?? true;
     this.costPerMeter = opts.costPerMeter;
     /** What drives on it, if it is a deck. */
@@ -20,5 +23,10 @@ export class Material {
     this.drivable = opts.carries !== undefined;
     /** @type {import("./material.types.mjs").MaterialLook} */
     this.look = opts.look ?? { kind: "beam", color: "#666", highlight: "#888", width: 0.3, minPx: 2 };
+  }
+
+  /** The name shown to the player. */
+  get label() {
+    return t(`material.${this.name}`, {}, this.__label);
   }
 }

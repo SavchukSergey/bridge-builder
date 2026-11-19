@@ -4,6 +4,8 @@
  * reference bridge (solutions.mjs), which the tests check, so none is impossible.
  */
 
+import { formatMoney, t } from "./i18n.mjs";
+
 /**
  * What a winning bridge is judged on: as built, before the test.
  * @typedef {Object} BridgeStats
@@ -22,23 +24,23 @@
 /** @type {Record<"cost" | "members" | "noCables" | "light", ChallengeKind>} */
 export const CHALLENGE_KINDS = {
   cost: {
-    name: "Shoestring",
-    label: (p) => `Cost $${p.toLocaleString("en-US")} or less`,
+    get name() { return t("challenge.cost.name"); },
+    label: (p) => t("challenge.cost.label", { cost: formatMoney(p) }),
     met: (s, p) => s.cost <= p,
   },
   members: {
-    name: "Minimalist",
-    label: (p) => `${p} members or fewer`,
+    get name() { return t("challenge.members.name"); },
+    label: (p) => t("challenge.members.label", { n: p }),
     met: (s, p) => s.members <= p,
   },
   noCables: {
-    name: "No cables",
-    label: () => "Steel and deck only",
+    get name() { return t("challenge.noCables.name"); },
+    label: () => t("challenge.noCables.label"),
     met: (s) => !s.materials.some(m => m === "cable" || m === "cable-thin"),
   },
   light: {
-    name: "Featherweight",
-    label: () => "No full-size steel",
+    get name() { return t("challenge.light.name"); },
+    label: () => t("challenge.light.label"),
     met: (s) => !s.materials.includes("steel"),
   },
 };

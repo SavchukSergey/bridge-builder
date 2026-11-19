@@ -6,6 +6,7 @@
 
 import { Level } from "./level.mjs";
 import { THEMES } from "./themes.mjs";
+import { t } from "./i18n.mjs";
 
 /** @typedef {import("./themes.mjs").ThemeId} ThemeId */
 /** @typedef {import("./vehicle-types.mjs").VehicleTypeId} VehicleTypeId */
@@ -39,18 +40,19 @@ const train = (wagons) => /** @type {VehicleTypeId[]} */ (["locomotive", ...Arra
 
 /**
  * The traffic a sandbox can be tested with.
- * @type {Record<string, { label: string, convoy: VehicleTypeId[], vehicleGap?: number }>}
+ * Their names are traffic.<key> in locales/.
+ * @type {Record<string, { convoy: VehicleTypeId[], vehicleGap?: number }>}
  */
 export const SANDBOX_TRAFFIC = {
-  cars: { label: "Two cars and a bus", convoy: ["car", "bus", "car"] },
-  trucks2: { label: "Two 40 t trucks", convoy: trucks(2) },
-  trucks4: { label: "Four 40 t trucks", convoy: trucks(4) },
-  trucks6: { label: "Six 40 t trucks", convoy: trucks(6) },
-  rush: { label: "Rush hour: nine vehicles", convoy: ["car", "truck", "bus", "car", "truck", "car", "bus", "truck", "car"], vehicleGap: 4 },
-  hauler: { label: "A 200 t heavy hauler", convoy: ["hauler"] },
-  train2: { label: "A train of 240 t", convoy: train(2), vehicleGap: 1 },
-  train4: { label: "A train of 380 t", convoy: train(4), vehicleGap: 1 },
-  train6: { label: "A train of 520 t", convoy: train(6), vehicleGap: 1 },
+  cars: { convoy: ["car", "bus", "car"] },
+  trucks2: { convoy: trucks(2) },
+  trucks4: { convoy: trucks(4) },
+  trucks6: { convoy: trucks(6) },
+  rush: { convoy: ["car", "truck", "bus", "car", "truck", "car", "bus", "truck", "car"], vehicleGap: 4 },
+  hauler: { convoy: ["hauler"] },
+  train2: { convoy: train(2), vehicleGap: 1 },
+  train4: { convoy: train(4), vehicleGap: 1 },
+  train6: { convoy: train(6), vehicleGap: 1 },
 };
 
 const PREFIX = "sandbox-";
@@ -149,13 +151,17 @@ function sandboxLevel(spec) {
     terrain.push({ x0: -4, x1: 4, y: rockY });
     anchors.push({ x: -4, y: rockY }, { x: 4, y: rockY });
   }
-  const { convoy, vehicleGap, label } = SANDBOX_TRAFFIC[traffic];
-  const bank = far === 0 ? "" : `, the far bank ${Math.abs(far)} m ${far > 0 ? "higher" : "lower"}`;
+  const { convoy, vehicleGap } = SANDBOX_TRAFFIC[traffic];
   const round = (/** @type {number} */ v) => Math.round(v / 100) * 100;
   return new Level({
     id: sandboxId(spec),
     name: "Sandbox",
-    description: `Your own level: a ${gap} m gap${bank}${rock ? ", a rock in the middle" : ""}. ${label}.`,
+    description: () => t("sandbox.description", {
+      gap,
+      bank: far === 0 ? "" : t(far > 0 ? "sandbox.bankHigher" : "sandbox.bankLower", { m: Math.abs(far) }),
+      rock: rock ? t("sandbox.rockInMiddle") : "",
+      traffic: t(`traffic.${traffic}`),
+    }),
     terrain,
     anchors,
     startX: -half - 6,

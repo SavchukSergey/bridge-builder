@@ -16,6 +16,9 @@ npm start
 
 Then open <http://localhost:8080>.
 
+The game speaks English, Russian and Ukrainian. It follows the browser's language on the first
+visit, and **Settings → Language** changes it (the page reloads; the bridge is autosaved).
+
 Served over HTTP(S), the game can be installed as an app (from the browser's menu or
 **Settings → Install**) and plays offline: a service worker (`src/sw.js`) keeps a copy of
 every file. Online it always asks the network first, so it never hides a newer version.
@@ -186,6 +189,9 @@ src/
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
     audio.mjs           synthesized sound (Web Audio)
+  js/i18n.mjs           translations: t(key, params), plural forms, numbers by language
+  js/locales/           en.mjs (text the game builds), ru.mjs, uk.mjs; the page's own text is
+                        tagged data-i18n in index.html, and test/i18n.test.mjs checks every key
   sw.js                 service worker: offline play (its SHELL lists every file in src/)
   manifest.webmanifest  install as an app
   icons/                app icons (scripts/make-icons.mjs draws the PNGs)
