@@ -66,8 +66,14 @@ function modeText(game) {
   const a = train ? 'The train' : `A ${one}`;
   const all = train ? 'The train' : `All ${many}`;
   switch (game.testState) {
-    case 'building':
-      return { text: 'Build mode', kind: '' };
+    case 'building': {
+      const sel = game.selectionInfo;
+      if (!sel) return { text: 'Build mode', kind: '' };
+      const parts = [];
+      if (sel.links) parts.push(`${sel.links} member${sel.links === 1 ? '' : 's'}`);
+      if (sel.joints) parts.push(`${sel.joints} joint${sel.joints === 1 ? '' : 's'}`);
+      return { text: `${parts.join(', ')} selected: drag to move, Del deletes, Ctrl+C copies`, kind: '' };
+    }
     case 'waiting':
       return { text: 'Loading the bridge...' + paused, kind: '' };
     case 'driving':

@@ -83,8 +83,12 @@ export class Game extends GameInput {
       g.lineWidth = hovered.drawnWidth(this.ctx.zoom) * (hovered.material.look.kind === "deck" ? 2 : 1) + 8 / this.ctx.zoom;
       g.stroke();
     }
+    if (this.isBuildMode) this.__renderSelection("under");
     this.scene.renderStructure(this.ctx, { stress: this.showStress });
-    if (this.isBuildMode) this.__renderMarks();
+    if (this.isBuildMode) {
+      this.__renderSelection("over");
+      this.__renderMarks();
+    }
     const grab = this.hoveredJoint;
     if (grab) {
       const g = this.ctx.ctx;
@@ -153,6 +157,55 @@ export class Game extends GameInput {
       g.beginPath();
       g.arc(j.x, j.y, 3.5 / zoom, 0, 2 * Math.PI);
       g.fill();
+    }
+    g.restore();
+  }
+
+  /**
+   * The selection: a halo under the selected links, rings over the selected joints, and
+   * the box being drawn.
+   * @param {"under" | "over"} pass
+   */
+  __renderSelection(pass) {
+    const g = this.ctx.ctx;
+    const zoom = this.ctx.zoom;
+    const colour = "rgba(120, 200, 255, 0.9)";
+    if (pass === "under") {
+      const links = this.selectedLinks;
+      if (!links.length) return;
+      g.save();
+      g.lineCap = "round";
+      g.strokeStyle = "rgba(120, 200, 255, 0.55)";
+      for (const link of links) {
+        g.beginPath();
+        g.moveTo(link.a.position.x, link.a.position.y);
+        g.lineTo(link.b.position.x, link.b.position.y);
+        g.lineWidth = link.drawnWidth(zoom) * (link.material.look.kind === "deck" ? 2 : 1) + 8 / zoom;
+        g.stroke();
+      }
+      g.restore();
+      return;
+    }
+    const joints = this.selectedJoints;
+    const box = this.__box;
+    if (!joints.length && !box) return;
+    g.save();
+    g.strokeStyle = colour;
+    g.lineWidth = 2 / zoom;
+    for (const joint of joints) {
+      g.beginPath();
+      g.arc(joint.position.x, joint.position.y, 7 / zoom, 0, 2 * Math.PI);
+      g.stroke();
+    }
+    if (box) {
+      const a = this.ctx.clientToGlobal(box.startClient), b = this.ctx.clientToGlobal(box.client);
+      g.setLineDash([5 / zoom, 4 / zoom]);
+      g.fillStyle = "rgba(120, 200, 255, 0.1)";
+      g.beginPath();
+      g.rect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+      g.fill();
+      g.stroke();
+      g.setLineDash([]);
     }
     g.restore();
   }

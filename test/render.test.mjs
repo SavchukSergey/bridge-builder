@@ -218,6 +218,19 @@ describe("rendering", () => {
     }
   });
 
+  test("a selection and the box being drawn", () => {
+    const game = createGame("canyon");
+    const rec = withRecorder(game);
+    game.selectAll();
+    const shift = { shiftKey: true, button: 0, pointerType: "mouse" };
+    game.__handleMouseDown(at(game, 0, 40, shift));
+    game.__handleMouseMove(at(game, 10, 30, shift));
+    const arcs = rec.counts.arc;
+    game.render();
+    assert.ok(rec.counts.arc - arcs > game.scene.joints.length, "a ring on every selected joint");
+    assert.equal(rec.stackDepth, 0);
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);

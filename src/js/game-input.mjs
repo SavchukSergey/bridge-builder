@@ -73,6 +73,13 @@ export class GameInput extends GameEditing {
     const clientToGlobal = this.ctx.getClientToGlobalMatrix();
     const startGlobal = clientToGlobal.transformPoint(client);
 
+    // Shift-dragging from empty space draws a selection box.
+    if ((ev.button ?? 0) === 0 && ev.shiftKey && this.isBuildMode && !this.__clickState && ev.pointerType !== "touch"
+      && !this.scene.findJoint(startGlobal, this.__pickRadius())) {
+      this.__box = { startClient: client, client };
+      return;
+    }
+
     // Left-dragging a free joint in build mode moves it; any other drag pans.
     let moves;
     if ((ev.button ?? 0) === 0 && this.isBuildMode && !this.__clickState) {
@@ -93,6 +100,12 @@ export class GameInput extends GameEditing {
       this.__longPressTimer = setTimeout(() => this.__longPress(), LONG_PRESS_MS);
     }
   }
+
+  /**
+   * A selection box being drawn (Shift+drag), in client pixels.
+   * @type {{ startClient: import("./math.js").Vec3F, client: import("./math.js").Vec3F } | undefined}
+   */
+  __box = undefined;
 
   /** Fingers on the canvas: pointer id → client position. @type {Map<number, import("./math.js").Vec3F>} */
   __touches = new Map();
@@ -188,6 +201,12 @@ export class GameInput extends GameEditing {
 
     if (!this.__clickState) {
       const jointA = this.scene.findJoint(globalPoint, this.__pickRadius());
+      if (ev.shiftKey) {
+        // Shift+click picks a joint for the selection instead of starting a link
+        if (jointA) this.toggleSelected(jointA);
+        return;
+      }
+      if (!jointA) this.clearSelection(); // a click on empty space lets go of the selection
       if (jointA) {
         const preview = new CompositeScene();
         this.__clickState = {
@@ -219,6 +238,10 @@ export class GameInput extends GameEditing {
       }
     }
     this.__hoverClient = client;
+    if (this.__box) {
+      this.__box.client = client;
+      return;
+    }
     const placing = this.__placingTouch;
     if (placing && !placing.moved) {
       const dx = client.x - placing.startClient.x, dy = client.y - placing.startClient.y;
@@ -282,12 +305,29 @@ export class GameInput extends GameEditing {
     if (target?.closest?.("input[type=text], input[type=number], textarea, [contenteditable]")) return;
 
     if (ev.key === "Escape") {
-      if (!this.__cancelDrag()) this.__cancelLink();
+      if (this.__box) this.__box = undefined;
+      else if (this.__cancelDrag()) { /* the drag is undone */ }
+      else if (this.__clickState) this.__cancelLink();
+      else this.clearSelection();
       return;
     }
     const mod = ev.ctrlKey || ev.metaKey;
     const key = ev.key.toLowerCase();
-    if (mod && key === "z" && !ev.shiftKey) {
+    if (this.isBuildMode && !mod && (ev.key === "Delete" || ev.key === "Backspace") && this.selectionInfo) {
+      ev.preventDefault();
+      this.deleteSelection();
+    } else if (this.isBuildMode && mod && key === "a") {
+      ev.preventDefault();
+      this.selectAll();
+    } else if (this.isBuildMode && mod && key === "c" && this.selectedLinks.length) {
+      ev.preventDefault();
+      this.copySelection();
+    } else if (mod && key === "v" && this.canPaste) {
+      ev.preventDefault();
+      this.__cancelLink();
+      const at = this.__hoverClient ? this.ctx.clientToGlobal(this.__hoverClient) : this.ctx.shift;
+      this.pasteAt(at);
+    } else if (mod && key === "z" && !ev.shiftKey) {
       ev.preventDefault();
       this.undo();
     } else if (mod && (key === "y" || (key === "z" && ev.shiftKey))) {
@@ -327,6 +367,16 @@ export class GameInput extends GameEditing {
         if (placing.moved) this.__finishLink(this.ctx.clientToGlobal(this.__getPointerClient(ev)), !ev.altKey);
         return;
       }
+    }
+    const box = this.__box;
+    if (box) {
+      this.__box = undefined;
+      const dx = box.client.x - box.startClient.x, dy = box.client.y - box.startClient.y;
+      this.__suppressClick = true;
+      if (dx * dx + dy * dy >= DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+        this.selectInRect(this.ctx.clientToGlobal(box.startClient), this.ctx.clientToGlobal(box.client));
+      }
+      return;
     }
     const drag = this.__dragState;
     this.__suppressClick = drag?.moved ?? false;

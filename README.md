@@ -37,6 +37,8 @@ none is impossible.
 | Delete | Right-click a joint or link; right-click also cancels a link being placed |
 | Place off the grid | Hold <kbd>Alt</kbd> |
 | Mirror mode | <kbd>M</kbd> or the **Mirror** button: builds, deletes and moves symmetrically |
+| Select several | <kbd>Shift</kbd>+drag a box over them, or <kbd>Shift</kbd>+click joints; <kbd>Ctrl</kbd>+<kbd>A</kbd> selects everything |
+| Move, delete, copy a selection | Drag one of its joints / <kbd>Del</kbd> / <kbd>Ctrl</kbd>+<kbd>C</kbd>, then <kbd>Ctrl</kbd>+<kbd>V</kbd> pastes at the pointer |
 | Pan / zoom | Drag empty space / <kbd>Ctrl</kbd> + wheel |
 | Undo / redo | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> |
 | Cancel | <kbd>Esc</kbd> |

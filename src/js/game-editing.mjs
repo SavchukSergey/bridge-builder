@@ -47,6 +47,15 @@ export class GameEditing extends GameLevels {
    */
   __jointMoves(joint) {
     const moves = [{ joint, start: { ...joint.position }, map: (/** @type {import("./math.js").Vec3F} */ t) => t }];
+    // a selected joint takes the rest of the selection along (mirror mode aside)
+    const group = this.selectedJoints.filter(j => !j.fixed);
+    if (group.length > 1 && group.includes(joint)) {
+      const from = { ...joint.position };
+      return group.map(j => {
+        const start = { ...j.position };
+        return { joint: j, start, map: (/** @type {import("./math.js").Vec3F} */ t) => createVec3F(start.x + t.x - from.x, start.y + t.y - from.y, 0) };
+      });
+    }
     if (!this.mirror) return moves;
     const image = this.__mirrorJoint(joint);
     if (image === joint) {
@@ -300,6 +309,149 @@ export class GameEditing extends GameLevels {
       return removed;
     });
     return this.scene.links.length + this.scene.joints.length < before;
+  }
+
+  /**
+   * Joints picked with a box or Shift+click. Anchors can be picked too, so the links between
+   * them count as selected; only free joints move or are deleted.
+   * @type {Set<Joint>}
+   */
+  __selection = new Set();
+
+  /**
+   * Copied members, relative to the middle of what was copied.
+   * @type {{ joints: { x: number, y: number }[], links: { a: number, b: number, material: string }[] } | undefined}
+   */
+  __clipboard = undefined;
+
+  /** The selected joints still in the structure (undo and loads replace the joints). */
+  get selectedJoints() {
+    const joints = new Set(this.scene.joints);
+    for (const j of this.__selection) if (!joints.has(j)) this.__selection.delete(j);
+    return [...this.__selection];
+  }
+
+  /** Links with both ends selected. */
+  get selectedLinks() {
+    const picked = new Set(this.selectedJoints);
+    return this.scene.links.filter(l => picked.has(l.a) && picked.has(l.b));
+  }
+
+  /** What is selected, for the status line: undefined when nothing is. */
+  get selectionInfo() {
+    if (!this.isBuildMode) return undefined;
+    const joints = this.selectedJoints.filter(j => !j.fixed).length;
+    const links = this.selectedLinks.length;
+    return joints || links ? { joints, links } : undefined;
+  }
+
+  clearSelection() {
+    this.__selection.clear();
+  }
+
+  /**
+   * Adds every joint inside the rectangle between two world points to the selection.
+   * @param {import("./math.js").Vec3F} a
+   * @param {import("./math.js").Vec3F} b
+   */
+  selectInRect(a, b) {
+    const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+    for (const j of this.scene.joints) {
+      const { x, y } = j.position;
+      if (x >= x0 && x <= x1 && y >= y0 && y <= y1) this.__selection.add(j);
+    }
+  }
+
+  /** @param {Joint} joint */
+  toggleSelected(joint) {
+    if (this.__selection.has(joint)) this.__selection.delete(joint);
+    else this.__selection.add(joint);
+  }
+
+  selectAll() {
+    for (const j of this.scene.joints) this.__selection.add(j);
+  }
+
+  /**
+   * Deletes the selected free joints (with their links) and the links between selected
+   * anchors, as one undoable step.
+   * @returns {boolean} whether anything was deleted
+   */
+  deleteSelection() {
+    if (!this.isBuildMode) return false;
+    const links = this.selectedLinks;
+    const joints = this.selectedJoints.filter(j => !j.fixed);
+    if (!links.length && !joints.length) return false;
+    this.__edit(() => {
+      for (const link of links) if (this.scene.links.includes(link)) this.scene.removeLink(link);
+      for (const joint of joints) if (this.scene.joints.includes(joint)) this.scene.removeJoint(joint);
+    });
+    this.clearSelection();
+    return true;
+  }
+
+  /** Copies the selected links (and their joints). @returns {boolean} whether anything was copied */
+  copySelection() {
+    const links = this.selectedLinks;
+    if (!links.length) return false;
+    const joints = [...new Set(links.flatMap(l => [l.a, l.b]))];
+    const xs = joints.map(j => j.position.x), ys = joints.map(j => j.position.y);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    this.__clipboard = {
+      joints: joints.map(j => ({ x: j.position.x - cx, y: j.position.y - cy })),
+      links: links.map(l => ({ a: joints.indexOf(l.a), b: joints.indexOf(l.b), material: l.material.name })),
+    };
+    return true;
+  }
+
+  /** Whether {@link pasteAt} has something to paste. */
+  get canPaste() {
+    return this.isBuildMode && this.__clipboard !== undefined;
+  }
+
+  /**
+   * Pastes the copied members centred near `globalPoint`, moved by whole grid steps so a
+   * copy of a gridded bridge stays on the grid. A pasted joint that lands on an existing
+   * one (an anchor, say) joins it. The paste becomes the selection, ready to drag.
+   * @param {import("./math.js").Vec3F} globalPoint
+   * @returns {boolean} whether anything was added
+   */
+  pasteAt(globalPoint) {
+    const clip = this.__clipboard;
+    if (!clip || !this.isBuildMode) return false;
+    const step = this.snapToGrid ? SNAP_STEP : 1e-9;
+    const dx = Math.round(globalPoint.x / step) * step, dy = Math.round(globalPoint.y / step) * step;
+    /** @type {Joint[]} */
+    const placed = [];
+    let added = false;
+    this.__edit(() => {
+      for (const { x, y } of clip.joints) {
+        const position = createVec3F(x + dx, y + dy, 0);
+        let joint = this.scene.findJoint(position, MIRROR_EPS);
+        if (!joint) {
+          joint = new Joint(position);
+          this.scene.joints.push(joint);
+        }
+        placed.push(joint);
+      }
+      for (const { a, b, material } of clip.links) {
+        const ja = placed[a], jb = placed[b];
+        if (ja === jb || this.scene.hasLink(ja, jb)) continue;
+        const link = new Link(ja, jb, Object.hasOwn(materials, material) ? materials[material] : steel);
+        link.preEval();
+        this.scene.links.push(link);
+        added = true;
+      }
+      // joints added for links that all existed already would be left dangling
+      const used = new Set(this.scene.links.flatMap(l => [l.a, l.b]));
+      this.scene.content.joints = this.scene.joints.filter(j => j.fixed || used.has(j));
+      this.scene.distributeMass();
+      return added;
+    });
+    if (added) {
+      this.__selection = new Set(placed.filter(j => this.scene.joints.includes(j)));
+    }
+    return added;
   }
 
   /**
