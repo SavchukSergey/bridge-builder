@@ -259,6 +259,30 @@ export class Game extends GameInput {
       g.stroke();
       g.restore();
     }
+    const guide = this.isBuildMode ? this.guideStep : undefined;
+    if (guide) {
+      // the piece to build next, or to take away, glowing
+      const remove = guide.kind === "remove";
+      g.save();
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(guide.a.x, guide.a.y);
+      g.lineTo(guide.b.x, guide.b.y);
+      g.strokeStyle = remove ? `rgba(255, 90, 70, ${0.5 + 0.4 * pulse})` : `rgba(242, 178, 51, ${0.55 + 0.35 * pulse})`;
+      g.lineWidth = (7 + 4 * pulse) / zoom;
+      if (remove) g.setLineDash([6 / zoom, 5 / zoom]);
+      g.stroke();
+      g.setLineDash([]);
+      if (!remove) {
+        g.fillStyle = "rgba(242, 178, 51, 0.95)";
+        for (const p of [guide.a, guide.b]) {
+          g.beginPath();
+          g.arc(p.x, p.y, 5 / zoom, 0, 2 * Math.PI);
+          g.fill();
+        }
+      }
+      g.restore();
+    }
     const target = this.tutorialTarget;
     if (target) {
       g.save();

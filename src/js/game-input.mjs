@@ -200,7 +200,8 @@ export class GameInput extends GameEditing {
     const globalPoint = this.ctx.clientToGlobal(client);
 
     if (!this.__clickState) {
-      const jointA = this.scene.findJoint(globalPoint, this.__pickRadius());
+      const guided = this.guidePoint(globalPoint);
+      const jointA = (guided && this.scene.findJoint(guided, 1e-3)) || this.scene.findJoint(globalPoint, this.__pickRadius());
       if (ev.shiftKey) {
         // Shift+click picks a joint for the selection instead of starting a link
         if (jointA) this.toggleSelected(jointA);

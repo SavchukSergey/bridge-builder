@@ -1083,11 +1083,27 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 
+.tutorial-body {
+  flex: 1;
+  min-width: 0;
+}
+
 #tutorial-text {
   margin: 0;
-  flex: 1;
   font-size: 13px;
   line-height: 1.45;
+}
+
+/* the guide's "why": what the piece being built does */
+#tutorial-why {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+#tutorial-why[hidden] {
+  display: none;
 }
 
 .btn.link {

@@ -10,6 +10,8 @@ import { failureTip, levelHint } from './hints.mjs';
 import { setUpReading } from './speech.mjs';
 import { BADGES, earnedBadges, newBadges } from './badges.mjs';
 import { confetti } from './confetti.mjs';
+import { guideProgress, planGuide, samePoint } from './guide.mjs';
+import { materials } from './materials/index.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -25,6 +27,8 @@ const VOLUME_KEY = 'bridge-builder:volume';
 const SHAKE_KEY = 'bridge-builder:shake';
 /** The badges the player has been told about. */
 const BADGES_KEY = 'bridge-builder:badges';
+/** Levels where the player stopped "Build it with me": it doesn't start there by itself again. */
+const GUIDE_OFF_KEY = 'bridge-builder:guide-off';
 /** 'off' once the player asks for every tool; simple controls are the default. */
 const SIMPLE_KEY = 'bridge-builder:simple';
 
@@ -215,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
     root: byId('tutorial', HTMLDivElement),
     step: byId('tutorial-step', HTMLSpanElement),
     text: byId('tutorial-text', HTMLParagraphElement),
+    why: byId('tutorial-why', HTMLParagraphElement),
     skip: byId('tutorial-skip', HTMLButtonElement),
   };
 
@@ -561,8 +566,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // help straight from the result: the hint in words, then the bridge that works
     const helpful = result.kind !== 'success' && game.hintAvailable && Boolean(levelHint(game.level.id));
     if (helpful && hintStage === 0) dlg.hint.textContent = t('result.stuck');
-    dlg.help.hidden = !helpful || (hintStage > 0 && game.showOutline);
-    lastChild(dlg.help).textContent = t(hintStage === 0 ? 'result.help' : 'hint.show');
+    dlg.help.hidden = !helpful || isGuiding();
+    lastChild(dlg.help).textContent = t(hintStage === 0 ? 'result.help' : !game.showOutline ? 'hint.show' : 'guide.offer');
     // a win: confetti, and any badge it earned
     /** @type {string[]} */
     let fresh = [];
@@ -624,11 +629,22 @@ document.addEventListener('DOMContentLoaded', function () {
   /** @type {number | undefined} */
   let lastWater;
 
+  // ---- "Build it with me" (below): its state, which the hint needs too
+  /** The levels that teach one idea: the guide starts there by itself, until they're won. */
+  const GUIDED_LEVELS = ['triangles', 'ledges', 'hang', 'creek'];
+  /** The level being guided ('' for none), and the level that was last looked at. */
+  let guiding = '';
+  let guideSeen = '';
+  /** @type {{ level: string, steps: import('./guide.mjs').GuideStep[] }} */
+  let guidePlan = { level: '', steps: [] };
+  const isGuiding = () => guiding !== '' && guiding === game.level.id;
+
   // ---- a hint for a level that keeps failing: first in words, then as an outline
   const hint = {
     root: byId('hint', HTMLElement),
     text: byId('hint-text', HTMLParagraphElement),
     button: byId('hint-button', HTMLButtonElement),
+    guide: byId('hint-guide', HTMLButtonElement),
   };
   /** 0: offered, 1: the words shown, 2: the outline offered or shown. */
   let hintStage = 0;
@@ -650,6 +666,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     lastChild(hint.button).textContent = t(hintStage === 0 ? 'hint.offer'
       : game.showOutline ? 'hint.hide' : 'hint.show');
+    hint.button.hidden = isGuiding();
+    hint.guide.hidden = hintStage === 0 || isGuiding() || !game.outline;
   }
   /** The next step of the hint: the words, then the outline on and off. */
   function advanceHint() {
@@ -664,8 +682,13 @@ document.addEventListener('DOMContentLoaded', function () {
     advanceHint();
     hint.button.blur();
   });
+  hint.guide.addEventListener('click', () => {
+    startGuide();
+    hint.guide.blur();
+  });
 
   game.onResult = (result) => {
+    if (result.kind === 'success' && isGuiding()) endGuide();
     updateHint();
     showResult(result);
     sound.jingle(result.kind === 'success');
@@ -675,6 +698,10 @@ document.addEventListener('DOMContentLoaded', function () {
     hideResult();
     game.reset();
     chkSimulation.checked = false;
+    if (hintStage > 0 && game.showOutline) {
+      startGuide();
+      return;
+    }
     advanceHint();
     hint.root.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     hint.root.classList.remove('flash');
@@ -974,6 +1001,10 @@ document.addEventListener('DOMContentLoaded', function () {
   let tutorialDone = false;
   try { tutorialDone = localStorage.getItem(TUTORIAL_KEY) === 'done'; } catch { /* storage blocked */ }
   tutorial.skip.addEventListener('click', () => {
+    if (isGuiding()) {
+      stopGuide();
+      return;
+    }
     tutorialDone = true;
     tutorialReplay = false;
     try { localStorage.setItem(TUTORIAL_KEY, 'done'); } catch { /* ignore */ }
@@ -1026,8 +1057,88 @@ document.addEventListener('DOMContentLoaded', function () {
     return { n: 3, text: t(`tutorial.far.${how}`), target: { x: right, y } };
   }
 
+  // ---- "Build it with me": the level's working bridge, one glowing piece at a time
+  /** @returns {string[]} */
+  function guideOff() {
+    try {
+      const list = JSON.parse(localStorage.getItem(GUIDE_OFF_KEY) ?? '[]');
+      return Array.isArray(list) ? list : [];
+    } catch { return []; }
+  }
+  /** @param {string[]} list */
+  function saveGuideOff(list) {
+    try { localStorage.setItem(GUIDE_OFF_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+  }
+  function startGuide() {
+    guiding = game.level.id;
+    saveGuideOff(guideOff().filter(id => id !== guiding));
+    hintStage = Math.max(hintStage, 1);
+    game.showOutline = true;
+    updateHint();
+  }
+  /** The bridge is built and won: the guide is done here. */
+  function endGuide() {
+    guiding = '';
+    game.guideStep = undefined;
+    game.showOutline = false;
+  }
+  /** The player said stop: done, and not started by itself here again. */
+  function stopGuide() {
+    const id = guiding;
+    endGuide();
+    if (!guideOff().includes(id)) saveGuideOff([...guideOff(), id]);
+    updateHint();
+  }
+  /** A level's material id from the material itself. @param {import('./materials/material.mjs').Material} material */
+  const materialId = (material) => Object.keys(materials).find(id => materials[id] === material) ?? '';
+  /**
+   * The guide's step for the game as it is now.
+   * @returns {{ n: number, of: number, text: string, why?: string, focus?: Element, target?: { x: number, y: number } } | undefined}
+   */
+  function guideStep() {
+    if (game.level.id !== guideSeen) {
+      // a new level: the guide starts by itself on a teaching level not yet won
+      guideSeen = game.level.id;
+      const id = game.level.id;
+      guiding = GUIDED_LEVELS.includes(id) && !game.isCompleted(id) && !guideOff().includes(id) ? id : '';
+      updateHint();
+    }
+    if (!isGuiding() || !game.isBuildMode || !game.outline) {
+      game.guideStep = undefined;
+      return undefined;
+    }
+    game.showOutline = true;
+    if (guidePlan.level !== game.level.id) {
+      const isDeck = (/** @type {string} */ m) => materials[m]?.look.kind === 'deck';
+      guidePlan = { level: game.level.id, steps: planGuide(game.outline.structure, game.level.initialStructure(), isDeck) };
+    }
+    const pieces = game.scene.links.map(l => ({ a: l.a.position, b: l.b.position, material: materialId(l.material) }));
+    const { step, done, total, wrong } = guideProgress(guidePlan.steps, pieces, game.scene.joints.map(j => j.position));
+    game.guideStep = step;
+    const n = Math.min(done + 1, total);
+    if (!step) return { n: total, of: total, text: t('guide.test'), focus: testButton };
+    const touch = game.pointerType === 'touch' || window.matchMedia?.('(pointer: coarse)').matches;
+    const how = touch ? 'tap' : 'click';
+    const middle = { x: (step.a.x + step.b.x) / 2, y: (step.a.y + step.b.y) / 2 };
+    if (step.kind === 'remove') return { n, of: total, text: t(`guide.remove.${how}`), why: t('guide.why.remove'), target: middle };
+    const name = materials[step.material]?.label ?? step.material;
+    if (wrong) return { n, of: total, text: t(`guide.wrong.${how}`, { material: name }), target: middle };
+    const why = t(`guide.why.${step.material}`);
+    const picked = document.querySelector('input[name="material"]:checked');
+    if (!(picked instanceof HTMLInputElement) || picked.value !== step.material) {
+      const card = document.querySelector(`input[name="material"][value="${step.material}"]`)?.closest('label') ?? undefined;
+      return { n, of: total, text: t('guide.pick', { material: name }), why, focus: card };
+    }
+    if (!game.isPlacing) return { n, of: total, text: t(`guide.first.${how}`), why, target: step.a };
+    const from = game.placingFrom;
+    const end = from && samePoint(from, step.b) ? step.a : step.b;
+    return { n, of: total, text: t(`guide.second.${how}`), why, target: end };
+  }
+
   function updateTutorial() {
-    const step = tutorialStep();
+    const brook = tutorialStep();
+    const guided = brook ? undefined : guideStep();
+    const step = brook ?? guided;
     tutorial.root.hidden = !step;
     game.tutorialTarget = step?.target;
     if (focused !== step?.focus) {
@@ -1036,8 +1147,13 @@ document.addEventListener('DOMContentLoaded', function () {
       focused = step?.focus;
     }
     if (!step) return;
-    tutorial.step.textContent = `${step.n} / 4`;
+    tutorial.step.textContent = `${step.n} / ${guided ? guided.of : 4}`;
     if (tutorial.text.textContent !== step.text) tutorial.text.textContent = step.text;
+    const why = guided?.why ?? '';
+    if (tutorial.why.textContent !== why) tutorial.why.textContent = why;
+    tutorial.why.hidden = !why;
+    const skip = guided ? t('guide.stop') : t('ui.skipTutorial', {}, 'Skip tutorial');
+    if (tutorial.skip.textContent !== skip) tutorial.skip.textContent = skip;
   }
 
   /** @type {number | undefined} */

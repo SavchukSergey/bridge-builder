@@ -5,7 +5,7 @@
  */
 
 import { GameLevels } from "./game-levels.mjs";
-import { PICK_RADIUS_PX, TOUCH_PICK_RADIUS_PX, SNAP_STEP, MAX_LINK_LENGTH, MIN_LINK_LENGTH, MIRROR_EPS } from "./game-config.mjs";
+import { PICK_RADIUS_PX, TOUCH_PICK_RADIUS_PX, SNAP_STEP, MAX_LINK_LENGTH, MIN_LINK_LENGTH, MIRROR_EPS, GUIDE_SNAP_M } from "./game-config.mjs";
 import { Joint } from "./engine/joint.mjs";
 import { Link } from "./engine/link.mjs";
 import { materials } from "./materials/index.mjs";
@@ -180,9 +180,15 @@ export class GameEditing extends GameLevels {
     /** @type {Link[]} */
     const links = [];
 
+    // While guiding, near a glowing dot means on it: it may be off the grid.
+    const guided = this.guidePoint(globalB);
+    if (guided) {
+      globalB = guided;
+      joinRadius = 1e-3;
+    }
     // Existing joints near the cursor win over grid snapping.
     let jointB = this.scene.findJoint(globalB, joinRadius);
-    if (!jointB && allowSnap && this.snapToGrid) {
+    if (!jointB && allowSnap && this.snapToGrid && !guided) {
       const snapped = createVec3F(
         Math.round(globalB.x / SNAP_STEP) * SNAP_STEP,
         Math.round(globalB.y / SNAP_STEP) * SNAP_STEP,
@@ -519,6 +525,22 @@ export class GameEditing extends GameLevels {
     if (!this.__hoverClient || !this.isBuildMode || this.__clickState) return undefined;
     const joint = this.scene.findJoint(this.ctx.clientToGlobal(this.__hoverClient), this.__pickRadius());
     return joint && !joint.fixed ? joint : undefined;
+  }
+
+  /**
+   * The guide's dot near a point, if there is one: where a click there should land.
+   * @param {import("./math.js").Vec3F} point
+   * @returns {import("./math.js").Vec3F | undefined}
+   */
+  guidePoint(point) {
+    const step = this.guideStep;
+    if (step?.kind !== "build") return undefined;
+    const radius = Math.max(GUIDE_SNAP_M, this.__pickRadius());
+    const near = [step.a, step.b]
+      .map(p => ({ p, d: Math.hypot(p.x - point.x, p.y - point.y) }))
+      .filter(c => c.d <= radius)
+      .sort((c1, c2) => c1.d - c2.d)[0];
+    return near ? createVec3F(near.p.x, near.p.y, 0) : undefined;
   }
 
   __getCurrentMaterial() {

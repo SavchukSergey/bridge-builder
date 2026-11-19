@@ -154,6 +154,7 @@
       <button type="button" class="btn icon-only speak hint-speak" data-speak="#hint-text" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
       <p id="hint-text" hidden></p>
       <button type="button" id="hint-button" class="btn"><svg class="icon"><use href="#icon-bridge" /></svg><span data-i18n="hint.offer">Stuck? Get a hint</span></button>
+      <button type="button" id="hint-guide" class="btn" hidden><svg class="icon"><use href="#icon-play" /></svg><span data-i18n="guide.offer">Build it with me</span></button>
     </section>
 
     <section id="cost" class="budget">
@@ -431,8 +432,11 @@
 
   <div id="tutorial" role="status" hidden>
     <span id="tutorial-step" class="tutorial-step"></span>
-    <p id="tutorial-text"></p>
-    <button type="button" class="btn icon-only speak tutorial-speak" data-speak="#tutorial-text" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
+    <div class="tutorial-body">
+      <p id="tutorial-text"></p>
+      <p id="tutorial-why" hidden></p>
+    </div>
+    <button type="button" class="btn icon-only speak tutorial-speak" data-speak="#tutorial-text, #tutorial-why" title="Read it to me" data-i18n-title="ui.readAloud" aria-label="Read it to me" data-i18n-aria="ui.readAloud"><svg class="icon"><use href="#icon-speak" /></svg></button>
     <button type="button" id="tutorial-skip" class="btn link" data-i18n="ui.skipTutorial">Skip tutorial</button>
   </div>
 

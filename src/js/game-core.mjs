@@ -191,12 +191,24 @@ export class GameCore {
     return this.__clickState !== undefined;
   }
 
+  /** Where the piece being placed starts, while one is. */
+  get placingFrom() {
+    return this.__clickState?.jointA.position;
+  }
+
   /**
    * A point in the world to draw attention to (the tutorial's next click), drawn as a
    * pulsing ring.
    * @type {{ x: number, y: number } | undefined}
    */
   tutorialTarget = undefined;
+
+  /**
+   * "Build it with me": the piece to build (or take away) next, drawn glowing. A click near
+   * one of its dots lands exactly on it.
+   * @type {import("./guide.mjs").GuideStep | undefined}
+   */
+  guideStep = undefined;
 
   /** Structure cost, counted against {@link Level#budget}. */
   get cost() {

@@ -74,6 +74,15 @@ about a design that works, then, if you want it, its outline drawn over the buil
 (with what it costs) to build over. The outlines are the reference bridges the tests use to
 prove every level can be won.
 
+**Build it with me** goes one step further: it builds that bridge with you, one piece at a
+time. The next piece glows, the box at the top says which material to pick and which dot to
+click, with a line about what that kind of piece does, and each piece is ticked off as it's
+placed (a piece of the wrong material is pointed out, and pieces the bridge doesn't need are
+shown in red to take away). When it's all built, it says to press **Test**. It starts by
+itself on the levels that teach one idea (Triangles, Ledges, Hanging road, Creek) until they're
+won; anywhere else it's offered with the hint's outline. **Stop guiding** turns it off, and
+it then doesn't start by itself on that level again.
+
 A win sets off confetti (more for more stars; none if the system asks for reduced motion),
 and earns **badges** for milestones over the whole game: the first bridge, 10 and 30 stars,
 5 extra goals, a railway level, every level, every goal and every star. They show in the
@@ -212,6 +221,7 @@ src/
     confetti.mjs        the confetti for a win
     speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
+    guide.mjs           "Build it with me": the order to build a reference bridge in, and how far along you are
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
