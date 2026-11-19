@@ -18,7 +18,9 @@ describe("first failure", () => {
     game.importStructure(alternatives.creek["bare deck"](creekLevel));
     const result = runTest(game);
     assert.equal(result.kind, "failed");
-    assert.deepEqual(result.failure, { material: "road", label: "Road", kind: "deck", mode: "tension" });
+    const { time, x, y, ...how } = result.failure;
+    assert.deepEqual(how, { material: "road", label: "Road", kind: "deck", mode: "tension" });
+    assert.ok(time > 0 && Number.isFinite(x) && Number.isFinite(y), "when and where it broke");
     assert.equal(result.roadAcross, true);
     const first = game.scene.firstFailure.link;
 

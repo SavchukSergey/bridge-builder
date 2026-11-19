@@ -298,8 +298,10 @@ export class GameInput extends GameEditing {
     } else if (!mod && !ev.altKey && key === "f") {
       this.follow = !this.follow;
     } else if (!mod && !ev.altKey && (key === "]" || key === "[")) {
-      const i = SPEEDS.indexOf(this.speed);
-      this.speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, (i < 0 ? 1 : i) + (key === "]" ? 1 : -1)))];
+      // the next speed up or down, from any speed (the replay's is not one of SPEEDS)
+      this.speed = key === "]"
+        ? SPEEDS.find(s => s > this.speed) ?? this.speed
+        : SPEEDS.findLast(s => s < this.speed) ?? this.speed;
     }
   }
 

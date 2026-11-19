@@ -8,7 +8,7 @@
  * it or the layers below it define.
  */
 
-import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE } from "./game-config.mjs";
+import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
 import { COMPLETED_KEY, BEST_KEY, storageGet, storageSet } from "./storage.mjs";
 import { Effects } from "./effects.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
@@ -133,6 +133,15 @@ export class GameCore {
   /** Stops the simulation and restores the structure as it was built. */
   reset() {
     this.evalCtx.simulation = false;
+    if (this.replay) {
+      const { before } = this.replay;
+      this.replay = undefined;
+      if (this.speed === REPLAY_SPEED) this.speed = before.speed;
+      this.follow = before.follow;
+      this.ctx.zoom = before.zoom;
+      this.ctx.shift = before.shift;
+      this.__followMoved = false;
+    }
     this.__timeCarry = 0;
     if (this.__snapshot) {
       this.scene.restore(this.__snapshot);
@@ -314,7 +323,7 @@ export class GameCore {
       };
       return {
         ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken,
-        failure, roadAcross: this.__roadAcrossAtStart,
+        failure: failure && { ...failure, time: first.time, x: first.x, y: first.y }, roadAcross: this.__roadAcrossAtStart,
       };
     }
     if (this.overBudget) {
@@ -369,19 +378,16 @@ export class GameCore {
    * @param {number} [elapsed] - seconds since the previous frame
    */
   tick(elapsed = SIM_TIME_PER_FRAME) {
-    if (this.evalCtx.simulation) {
+    if (this.evalCtx.simulation && this.replay?.seeking) {
+      this.__seek();
+    } else if (this.evalCtx.simulation) {
       // Substeps don't divide the frame exactly; carry the over/undershoot to the next frame
       // so simulated time doesn't drift from real time.
       const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) * this.speed + this.__timeCarry;
       let simulated = 0;
       const vehicles = this.vehicles;
       const before = vehicles.map(v => ({ y: v.y, state: v.state }));
-      for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) {
-        const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
-        const dt = this.scene.tick(this.evalCtx, loads);
-        for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
-        simulated += dt;
-      }
+      for (let i = 0; i < MAX_SUBSTEPS && simulated < target; i++) simulated += this.__substep();
       this.__emitEffects(before);
       this.effects.step(simulated);
       if (this.follow && !this.__dragState?.moved && !this.__pinch) this.__followTraffic(simulated);
@@ -392,6 +398,78 @@ export class GameCore {
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
+  }
+
+  /** One physics step of the bridge and the vehicles; returns its length (s). */
+  __substep() {
+    const vehicles = this.vehicles;
+    const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
+    const dt = this.scene.tick(this.evalCtx, loads);
+    for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
+    return dt;
+  }
+
+  /**
+   * A slow-motion replay of the last failure, from {@link replayFailure} until reset. The
+   * physics is deterministic, so re-running the test from the start breaks the same member
+   * at the same moment.
+   * @type {{ seekTo: number, seeking: boolean, before: { speed: number, follow: boolean, zoom: number, shift: import("./math.js").Vec3F } } | undefined}
+   */
+  replay = undefined;
+
+  /** Whether the last test failed with a break that {@link replayFailure} can show. */
+  get canReplay() {
+    return this.result?.kind === "failed" && this.result.failure !== undefined;
+  }
+
+  /**
+   * Runs the failed test again: fast-forwards (over a few frames, without effects) to
+   * {@link REPLAY_LEAD} seconds before the first break, then plays at
+   * {@link REPLAY_SPEED} with the view on the member that broke. Reset ends it and puts
+   * the speed, the follow camera and the view back.
+   * @returns {boolean} whether a replay started
+   */
+  replayFailure() {
+    const failure = this.result?.kind === "failed" ? this.result.failure : undefined;
+    if (!failure) return false;
+    const prior = this.replay?.before;
+    this.reset(); // also puts back a view the follow camera moved
+    const before = prior ?? { speed: this.speed, follow: this.follow, zoom: this.ctx.zoom, shift: this.ctx.shift };
+    this.setSimulationRunning(true);
+    this.follow = false;
+    this.speed = REPLAY_SPEED;
+    this.replay = { seekTo: Math.max(0, failure.time - REPLAY_LEAD), seeking: true, before };
+    this.__lookAt(failure.x, failure.y);
+    return true;
+  }
+
+  /** Fast-forwards the replay towards its start, for up to {@link SEEK_BUDGET_MS} per frame. */
+  __seek() {
+    const replay = /** @type {NonNullable<typeof this.replay>} */ (this.replay);
+    const deadline = performance.now() + SEEK_BUDGET_MS;
+    while (this.evalCtx.time < replay.seekTo && performance.now() < deadline) {
+      for (let i = 0; i < 50 && this.evalCtx.time < replay.seekTo; i++) this.__substep();
+    }
+    this.scene.breaks = [];
+    if (this.evalCtx.time >= replay.seekTo) {
+      replay.seeking = false;
+      this.__timeCarry = 0;
+      this.effects.clear();
+    }
+  }
+
+  /**
+   * Centres the view on a world point, zoomed in to show at least {@link REPLAY_VIEW_M}
+   * around it (never zooming out).
+   * @param {number} x
+   * @param {number} y
+   */
+  __lookAt(x, y) {
+    const { top, right, bottom = 0 } = this.viewInsets;
+    const visibleWidth = Math.max(100, (this.canvas.width / this.ctx.pixelRatio || 800) - right);
+    const zoom = Math.min(MAX_ZOOM, Math.max(this.ctx.zoom, visibleWidth / REPLAY_VIEW_M));
+    this.ctx.zoom = zoom;
+    this.ctx.shift = createVec3F(x + right / 2 / zoom, y + (top - bottom) / 2 / zoom, 0);
   }
 
   /**

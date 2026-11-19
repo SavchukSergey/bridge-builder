@@ -34,7 +34,7 @@
  * @property {BestResult | undefined} previousBest
  * @property {boolean} newBest - this win beat the previous best (or is the first)
  * @property {"fell" | "crashed" | "hard landing"} [reason] - how the first vehicle was lost
- * @property {{ material: string, label: string, kind: "deck" | "beam" | "cable", mode: "tension" | "compression" }} [failure]
+ * @property {{ material: string, label: string, kind: "deck" | "beam" | "cable", mode: "tension" | "compression", time: number, x: number, y: number }} [failure]
  *   - failed: the first member to break, and how
  * @property {boolean} [roadAcross] - failed: whether road spanned the whole gap at the start
  * @property {number} broken - members that broke

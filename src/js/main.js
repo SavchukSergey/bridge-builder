@@ -55,7 +55,8 @@ function formatMoney(value) {
  * @returns {{ text: string, kind: '' | 'success' | 'failure' }}
  */
 function modeText(game) {
-  const paused = game.evalCtx.simulation ? '' : ' (paused)';
+  if (game.replay?.seeking) return { text: 'Rewinding to just before it broke...', kind: '' };
+  const paused = (game.evalCtx.simulation ? '' : ' (paused)') + (game.replay ? ' \u00b7 replay' : '');
   const { one, many } = game.level.vehicleNoun;
   const train = game.level.track === 'rail';
   const a = train ? 'The train' : `A ${one}`;
@@ -191,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
     close: byId('result-close', HTMLButtonElement),
     tip: byId('result-tip', HTMLParagraphElement),
     share: byId('result-share', HTMLButtonElement),
+    replay: byId('result-replay', HTMLButtonElement),
   };
   const placeTip = {
     root: byId('place-tip', HTMLDivElement),
@@ -309,8 +311,10 @@ document.addEventListener('DOMContentLoaded', function () {
     game.follow = follow === null ? window.innerWidth <= 640 : follow === 'on';
   } catch { /* storage blocked */ }
   btnSpeed.addEventListener('click', (ev) => {
-    const i = SPEEDS.indexOf(game.speed);
-    game.speed = ev.shiftKey ? SPEEDS[(i - 1 + SPEEDS.length) % SPEEDS.length] : SPEEDS[(i + 1) % SPEEDS.length];
+    // cycles up (Shift: down) from any speed, including the replay's
+    game.speed = ev.shiftKey
+      ? SPEEDS.findLast(s => s < game.speed) ?? /** @type {number} */ (SPEEDS.at(-1))
+      : SPEEDS.find(s => s > game.speed) ?? SPEEDS[0];
     btnSpeed.blur();
   });
   chkFollow.addEventListener('change', () => {
@@ -322,14 +326,15 @@ document.addEventListener('DOMContentLoaded', function () {
   function syncSpeed() {
     if (game.speed !== shownSpeed) {
       shownSpeed = game.speed;
-      txtSpeed.textContent = `${game.speed}\u00d7`;
+      txtSpeed.textContent = `${game.speed === 0.25 ? '\u00bc' : game.speed}\u00d7`;
       btnSpeed.classList.toggle('active', game.speed !== 1);
-      try { localStorage.setItem(SPEED_KEY, String(game.speed)); } catch { /* ignore */ }
+      // the replay's slow motion is not the player's choice: don't remember it
+      if (!game.replay) try { localStorage.setItem(SPEED_KEY, String(game.speed)); } catch { /* ignore */ }
     }
     if (game.follow !== shownFollow) {
       const first = shownFollow === undefined;
       shownFollow = chkFollow.checked = game.follow;
-      if (!first) try { localStorage.setItem(FOLLOW_KEY, game.follow ? 'on' : 'off'); } catch { /* ignore */ }
+      if (!first && !game.replay) try { localStorage.setItem(FOLLOW_KEY, game.follow ? 'on' : 'off'); } catch { /* ignore */ }
     }
   }
 
@@ -413,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.retry.classList.toggle('primary', result.kind !== 'success' || !result.nextLevel);
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
     dlg.share.hidden = result.kind !== 'success';
+    dlg.replay.hidden = !game.canReplay;
     dlg.root.hidden = false;
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
@@ -471,6 +477,10 @@ document.addEventListener('DOMContentLoaded', function () {
     hideResult();
     game.reset();
     chkSimulation.checked = false;
+  });
+  dlg.replay.addEventListener('click', () => {
+    hideResult();
+    if (game.replayFailure()) chkSimulation.checked = true;
   });
   dlg.next.addEventListener('click', () => {
     hideResult();

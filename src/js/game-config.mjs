@@ -14,6 +14,14 @@ export const MAX_FRAME_TIME = 0.1;
 export const MAX_SUBSTEPS = 1000;
 /** Simulation speeds the player can pick: simulated seconds per real second. */
 export const SPEEDS = [0.5, 1, 2, 4];
+/** Speed of the slow-motion replay of a failure. */
+export const REPLAY_SPEED = 0.25;
+/** The replay starts this many simulated seconds before the first member breaks. */
+export const REPLAY_LEAD = 2;
+/** Width of the world (m) the replay shows around the member that broke, at least. */
+export const REPLAY_VIEW_M = 36;
+/** Wall-clock time per frame (ms) spent fast-forwarding to the start of a replay. */
+export const SEEK_BUDGET_MS = 12;
 /** How quickly the follow camera catches up with the traffic, per (simulated) second. */
 export const FOLLOW_RATE = 2.5;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */

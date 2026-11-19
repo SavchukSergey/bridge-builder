@@ -39,7 +39,9 @@ While placing a link, a readout next to the pointer shows its length, its cost a
 of the budget would be left. Brook has a short step-by-step tutorial.
 
 When a test fails, the results name the member that broke first and how (pulled apart or
-crushed) with a tip, and it stays marked in red on the bridge until you change it.
+crushed) with a tip, and it stays marked in red on the bridge until you change it. **Watch it
+break** replays the test in slow motion (¼×) from just before that member gave way, with
+the view on it.
 
 On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to place a link;
 hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along

@@ -45,8 +45,9 @@ export class Scene {
   breaks = [];
 
   /**
-   * The first member to break in this load test, and how: pulled apart or crushed.
-   * @type {{ link: Link, mode: "tension" | "compression", time: number } | undefined}
+   * The first member to break in this load test, how (pulled apart or crushed), when, and
+   * where its middle was at that moment.
+   * @type {{ link: Link, mode: "tension" | "compression", time: number, x: number, y: number } | undefined}
    */
   firstFailure = undefined;
 
@@ -436,7 +437,10 @@ export class Scene {
       if (utilization > 1) {
         link.broken = true;
         this.breaks.push(link);
-        this.firstFailure ??= { link, mode: link.stressForce > 0 ? "tension" : "compression", time: evalCtx.time };
+        this.firstFailure ??= {
+          link, mode: link.stressForce > 0 ? "tension" : "compression", time: evalCtx.time,
+          x: (link.a.position.x + link.b.position.x) / 2, y: (link.a.position.y + link.b.position.y) / 2,
+        };
       }
     }
     return dt;
