@@ -1,27 +1,52 @@
 # Bridge Builder
 
-A bridge-building physics puzzle in the browser. Span a gap with steel beams, cables and
-road or rail deck, stay within budget, then press **Test** and watch the traffic (cars,
-buses, 40-tonne trucks, a 200-tonne heavy hauler, and freight trains) find out whether your
-design holds.
+**Build a bridge, then watch the trucks find out if it holds.**
 
-No build step and no dependencies at runtime: plain JavaScript modules and a canvas.
+A physics puzzle in the browser, made for a 9-year-old engineer. Span a gap with steel,
+wood, cables and road or rail deck, keep within the money, then press **Test**: cars, buses,
+40-tonne trucks, a 200-tonne hauler and freight trains drive across, and every piece bends,
+stretches or snaps as it really would.
 
-## Play
+### [▶ Play it now](https://savchuksergey.github.io/bridge-builder/)
 
-```sh
-npm install
-npm start
-```
+Free, no sign-up, no ads. Works on a computer, a tablet or a phone, in English, Russian or
+Ukrainian, and once opened it plays offline too.
 
-Then open <http://localhost:8080>.
+![A truss bridge over a river with a pier on a rock, ready for six trucks](docs/screenshots/build.png)
 
-The game speaks English, Russian and Ukrainian. It follows the browser's language on the first
-visit, and **Settings → Language** changes it (the page reloads; the bridge is autosaved).
+## What's in it
 
-Served over HTTP(S), the game can be installed as an app (from the browser's menu or
-**Settings → Install**) and plays offline: a service worker (`src/sw.js`) keeps a copy of
-every file. Online it always asks the network first, so it never hides a newer version.
+- **19 levels**, from a little brook to a mountain railway, a drawbridge that has to lift for
+  a boat, and real-world ideas: trusses, arches, suspension bridges and piers.
+- **Stars for cheap bridges.** Any bridge that holds wins; a cheaper one earns more stars.
+  Each level has extra challenges too, like *no cables* or *few pieces*.
+- **Help when stuck:** a hint in words, the hint bridge drawn over yours, or *Build it with
+  me*, one glowing piece at a time.
+- **Why did it break?** A slow-motion replay follows the piece that failed and says whether it
+  was pulled or squashed too hard.
+- **Real bridges:** win a level and meet the famous bridge built on the same idea.
+- **Make it yours:** paint and name your bridge, and save a picture of it to keep.
+- **Play together:** today's challenge with a streak, a link that dares a friend to beat your
+  price, and a family scoreboard.
+- **Sandbox:** design your own gap, traffic and money, then add a storm or an earthquake.
+- **A page for grown-ups** (in Settings): what the game teaches, how to help, and privacy.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/test.png" alt="A freight train crossing a truss bridge with a pier in the middle" /><br /><b>Test</b>: the traffic drives over and the bridge takes the weight.</td>
+    <td width="50%"><img src="docs/screenshots/result.png" alt="The result window: three stars, the cost and the challenges done" /><br /><b>Stars</b>: cheaper bridges earn more.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/replay.png" alt="Slow-motion replay of a road breaking under two trucks, with a note explaining why" /><br /><b>Why did it break?</b> Watch the failure again, slowly.</td>
+    <td><img src="docs/screenshots/picture.png" alt="A postcard picture of a red bridge named The Red Runner, with three stars" /><br /><b>Picture</b>: a postcard of your bridge to keep.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/levels.png" alt="The level list with today's challenge, badges and level cards with stars" /><br /><b>Levels</b>, badges and today's challenge.</td>
+    <td align="center"><img src="docs/screenshots/phone.png" alt="The game on a phone: a suspension bridge with the panel along the bottom" width="220" /><br /><b>On a phone</b> too.</td>
+  </tr>
+</table>
+
+## How to play
 
 ### Goal
 
@@ -312,6 +337,21 @@ test/                   node:test suites
 
 ## Development
 
+No build step and no runtime dependencies: plain JavaScript modules and a canvas, served
+from `src/`.
+
+```sh
+npm install
+npm start           # then open http://localhost:8080
+```
+
+The game speaks English, Russian and Ukrainian. It follows the browser's language on the first
+visit, and **Settings → Language** changes it (the page reloads; the bridge is autosaved).
+
+Served over HTTP(S), the game can be installed as an app (from the browser's menu or
+**Settings → Install**) and plays offline: a service worker (`src/sw.js`) keeps a copy of
+every file. Online it always asks the network first, so it never hides a newer version.
+
 ```sh
 npm test            # unit and simulation tests (node:test)
 npm run typecheck   # TypeScript checks the JSDoc types; nothing is compiled
@@ -319,9 +359,11 @@ npm run lint        # ESLint (eslint.config.js)
 npm run check       # all three
 ```
 
-GitHub Actions runs all three on every push and pull request. A second workflow can publish
-`src/` to GitHub Pages; see the comments in `.github/workflows/pages.yml` for how to turn
-it on.
+GitHub Actions runs all three on every push and pull request, and on master publishes `src/`
+to [GitHub Pages](https://savchuksergey.github.io/bridge-builder/) once they pass
+(`.github/workflows/pages.yml`, switched on by the repository variable `DEPLOY_PAGES`).
+
+The screenshots in `docs/screenshots/` are of the game itself, at 1440×860 and on a phone.
 
 ## Licence
 
