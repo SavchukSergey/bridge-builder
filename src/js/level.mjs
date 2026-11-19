@@ -247,7 +247,7 @@ export const creekLevel = new Level({
   finishX: 28,
   convoy: trucks(2),
   budget: 23500, // a small suspension bridge with light towers and thin hangers: ~$16,400
-  stars: { two: 17200, three: 16600 },
+  stars: { two: 17200, three: 16800 },
   view: { x0: -45, x1: 45, y: 15 },
   water: 4,
 });
@@ -269,7 +269,7 @@ export const canyonLevel = new Level({
   finishX: 48,
   convoy: trucks(4),
   budget: 44000,
-  stars: { two: 36800, three: 35600 },
+  stars: { two: 36800, three: 36100 },
   view: { x0: -65, x1: 65, y: 15 },
   water: -14,
   example: () => new Scene().serialize(), // the default scene is the demo bridge
@@ -325,7 +325,7 @@ export const drawbridgeLevel = new Level({
   finishX: 18,
   convoy: ["car", "icecream", "bus"],
   budget: 16000, // a road on a winch from a light steel tower: ~$11,000
-  stars: { two: 13500, three: 11000 },
+  stars: { two: 13500, three: 11300 },
   view: { x0: -32, x1: 28, y: 16 },
   water: 3,
   drawbridge: { x0: -6, x1: 6, top: 16, lift: [2, 8], pass: [9, 14], lower: [15, 21], pull: 0.35 },
@@ -411,7 +411,7 @@ export const ledgesLevel = new Level({
   finishX: 33,
   convoy: trucks(2),
   budget: 25000, // a light strut from each ledge: ~$17,500
-  stars: { two: 18600, three: 17800 },
+  stars: { two: 18600, three: 17900 },
   view: { x0: -48, x1: 48, y: 8 },
   water: -6,
 });
@@ -479,7 +479,7 @@ export const longSpanLevel = new Level({
   finishX: 58,
   convoy: trucks(2),
   budget: 66000, // a suspension bridge, towers 16 m, sag 10 m: ~$46,400
-  stars: { two: 48500, three: 46500 },
+  stars: { two: 48500, three: 47400 },
   view: { x0: -75, x1: 75, y: 15 },
   water: -18,
 });
