@@ -117,6 +117,8 @@ symbol .solid {
      of its own, and the buttons after it stay put as the message changes */
   flex: 1 1 0;
   min-width: 0;
+  /* its own width decides what fits (below), whatever the window's is */
+  container: status / inline-size;
 }
 
 .group.status #simulation-time {
@@ -268,6 +270,36 @@ input:checked + .btn.toggle {
   .brand + .group {
     padding-left: 0;
     border-left: 0;
+  }
+}
+
+/* less room: the clock goes first (the words say more); too little even for a short word:
+   just the coloured dot (the words are its tooltip, and still there for a screen reader) */
+@container status (max-width: 230px) {
+  .group.status #simulation-time {
+    display: none;
+  }
+}
+
+@container status (max-width: 70px) {
+  #mode-label {
+    flex: none;
+    font-size: 0;
+  }
+
+  #mode-label::before {
+    margin-right: 0;
+  }
+}
+
+#mode-label::before {
+    margin-right: 0;
+  }
+}
+
+@container status (max-width: 100px) {
+  .group.status #simulation-time {
+    display: none;
   }
 }
 
