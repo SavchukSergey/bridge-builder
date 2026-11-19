@@ -27,7 +27,9 @@ every file. Online it always asks the network first, so it never hides a newer v
 
 Get every vehicle to the chequered flag without spending more than the budget. Crossing
 within budget earns one star; cheaper bridges earn two or three. Your cheapest win on each
-level is remembered.
+level is remembered. Budgets leave about 30% more than the cheapest known bridge (Canyon,
+whose example bridge must cost a little too much, 20%), so a first bridge that works gets
+across; the stars are what ask for a cheap one.
 
 Each level also has one or two **challenges**, done by a win within budget with a twist:
 **No cables**, **Light as a feather** (no full-size steel), **Few pieces** (a few members) or

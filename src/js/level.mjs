@@ -239,7 +239,7 @@ export const creekLevel = new Level({
   startX: -26,
   finishX: 28,
   convoy: trucks(2),
-  budget: 18000, // a small suspension bridge with light towers and thin hangers: ~$16,400
+  budget: 23500, // a small suspension bridge with light towers and thin hangers: ~$16,400
   stars: { two: 17200, three: 16600 },
   view: { x0: -45, x1: 45, y: 15 },
   water: 4,
@@ -261,7 +261,7 @@ export const canyonLevel = new Level({
   startX: -46,
   finishX: 48,
   convoy: trucks(4),
-  budget: 38000,
+  budget: 44000,
   stars: { two: 36800, three: 35600 },
   view: { x0: -65, x1: 65, y: 15 },
   water: -14,
@@ -278,7 +278,7 @@ export const stepLevel = new Level({
   startX: -36,
   finishX: 38,
   convoy: trucks(3),
-  budget: 37500, // a Pratt truss over the ramp with light verticals: ~$34,600
+  budget: 49500, // a Pratt truss over the ramp with light verticals: ~$34,600
   stars: { two: 36000, three: 34900 },
   view: { x0: -55, x1: 55, y: 18 },
   water: 3,
@@ -297,7 +297,7 @@ export const pierLevel = new Level({
   startX: -66,
   finishX: 68,
   convoy: trucks(4),
-  budget: 81000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
+  budget: 107000, // two trussed spans on an A-frame pier, light verticals: ~$75,200
   stars: { two: 78000, three: 75800 },
   view: { x0: -85, x1: 85, y: 8 },
   water: -2,
@@ -313,7 +313,7 @@ export const brookLevel = new Level({
   startX: -16,
   finishX: 18,
   convoy: ["car", "bus"],
-  budget: 6600, // plain road: $6,000
+  budget: 8600, // plain road: $6,000
   stars: { two: 6300, three: 6000 },
   view: { x0: -30, x1: 30, y: 12 },
   water: 5,
@@ -353,7 +353,7 @@ export const hangLevel = new Level({
   startX: -31,
   finishX: 33,
   convoy: trucks(2),
-  budget: 26000, // a fan of thin cables: ~$20,000; of full cables: ~$23,700
+  budget: 28000, // a fan of thin cables: ~$20,000; of full cables: ~$23,700
   stars: { two: 23000, three: 20500 },
   view: { x0: -45, x1: 45, y: 16 },
   water: 4,
@@ -383,7 +383,7 @@ export const ledgesLevel = new Level({
   startX: -31,
   finishX: 33,
   convoy: trucks(2),
-  budget: 19500, // a light strut from each ledge: ~$17,500
+  budget: 25000, // a light strut from each ledge: ~$17,500
   stars: { two: 18600, three: 17800 },
   view: { x0: -48, x1: 48, y: 8 },
   water: -6,
@@ -400,7 +400,7 @@ export const heavyLevel = new Level({
   startX: -26,
   finishX: 28,
   convoy: ["hauler"],
-  budget: 24500, // a 3 m truss with light diagonals and verticals: ~$22,300; cables stretch too much
+  budget: 32000, // a 3 m truss with light diagonals and verticals: ~$22,300; cables stretch too much
   stars: { two: 23400, three: 22600 },
   view: { x0: -45, x1: 45, y: 15 },
 });
@@ -416,7 +416,7 @@ export const downhillLevel = new Level({
   startX: -36,
   finishX: 38,
   convoy: trucks(5),
-  budget: 38000, // a 3 m truss with cable diagonals: ~$34,200
+  budget: 49000, // a 3 m truss with cable diagonals: ~$34,200
   stars: { two: 36000, three: 34700 },
   view: { x0: -55, x1: 55, y: 16 },
   water: 2,
@@ -434,7 +434,7 @@ export const rushLevel = new Level({
   finishX: 38,
   convoy: ["car", "truck", "bus", "car", "truck", "car", "bus", "truck", "car"],
   vehicleGap: 4,
-  budget: 26000, // a light suspension bridge like the creek's: ~$23,600; trusses cost $33,700+
+  budget: 34000, // a light suspension bridge like the creek's: ~$23,600; trusses cost $33,700+
   stars: { two: 24900, three: 24000 },
   view: { x0: -55, x1: 55, y: 15 },
   water: 3,
@@ -451,7 +451,7 @@ export const longSpanLevel = new Level({
   startX: -56,
   finishX: 58,
   convoy: trucks(2),
-  budget: 51500, // a suspension bridge, towers 16 m, sag 10 m: ~$46,400
+  budget: 66000, // a suspension bridge, towers 16 m, sag 10 m: ~$46,400
   stars: { two: 48500, three: 46500 },
   view: { x0: -75, x1: 75, y: 15 },
   water: -18,
@@ -470,7 +470,7 @@ export const viaductLevel = new Level({
   startX: -96,
   finishX: 98,
   convoy: trucks(5),
-  budget: 126000, // three trussed spans on A-frame piers: ~$114,500
+  budget: 164000, // three trussed spans on A-frame piers: ~$114,500
   stars: { two: 120000, three: 116000 },
   view: { x0: -115, x1: 115, y: 6 },
   water: 0,
@@ -490,7 +490,7 @@ export const gorgeLevel = new Level({
   startX: -46,
   finishX: 48,
   convoy: trucks(4),
-  budget: 45000, // a braced light-steel arch on thin hangers: ~$40,700; trusses cost $49,000+
+  budget: 58000, // a braced light-steel arch on thin hangers: ~$40,700; trusses cost $49,000+
   stars: { two: 43000, three: 41200 },
   view: { x0: -65, x1: 65, y: 4 },
   water: -20,
@@ -510,7 +510,7 @@ export const grandLevel = new Level({
   startX: -86,
   finishX: 88,
   convoy: trucks(6),
-  budget: 118000, // two 7 m trusses on an A-frame pier: ~$105,200
+  budget: 150000, // two 7 m trusses on an A-frame pier: ~$105,200
   stars: { two: 110000, three: 106600 },
   view: { x0: -105, x1: 105, y: 8 },
   water: -2,
@@ -528,7 +528,7 @@ export const branchLineLevel = new Level({
   finishX: 28,
   convoy: train(2),
   vehicleGap: 1,
-  budget: 23000, // a light suspension bridge, as at the creek: ~$20,400
+  budget: 29000, // a light suspension bridge, as at the creek: ~$20,400
   stars: { two: 22000, three: 21000 },
   view: { x0: -45, x1: 45, y: 12 },
   water: -2,
@@ -546,7 +546,7 @@ export const freightLevel = new Level({
   finishX: 48,
   convoy: train(4),
   vehicleGap: 1,
-  budget: 63000, // a 6 m truss with light diagonals: ~$56,500 (cables stretch too much)
+  budget: 81000, // a 6 m truss with light diagonals: ~$56,500 (cables stretch too much)
   stars: { two: 60000, three: 57500 },
   view: { x0: -65, x1: 65, y: 15 },
   water: -14,
@@ -567,7 +567,7 @@ export const mountainLevel = new Level({
   finishX: 68,
   convoy: train(6),
   vehicleGap: 1,
-  budget: 99000, // two 4 m trusses on an A-frame pier: ~$88,000
+  budget: 126000, // two 4 m trusses on an A-frame pier: ~$88,000
   stars: { two: 94000, three: 89500 },
   view: { x0: -85, x1: 85, y: 10 },
   water: -12,

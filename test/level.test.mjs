@@ -82,13 +82,13 @@ describe("level balance", () => {
     });
   }
 
-  // The obvious answer from an earlier level works, but the budget asks for the new idea.
+  // The obvious answer from an earlier level gets across, but only the new idea earns more stars.
   for (const [levelId, design] of [["ledges", "light suspension"], ["rush", "truss h4 lean"], ["gorge", "truss h8 lean"]]) {
-    test(`${levelId}: a ${design} carries the convoy but is over budget`, () => {
+    test(`${levelId}: a ${design} carries the convoy, for one star`, () => {
       const level = findLevel(levelId);
       const game = play(level, alternatives[levelId][design](level));
       assert.equal(game.testState, "crossed");
-      assert.equal(game.overBudget, true, `cost ${game.cost} vs budget ${level.budget}`);
+      assert.ok(game.cost > level.stars.two, `cost ${game.cost} vs two stars at ${level.stars.two}`);
     });
   }
 

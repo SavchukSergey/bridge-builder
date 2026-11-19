@@ -99,7 +99,7 @@ describe("placing a link", () => {
     assert.equal(info.label, "Road");
     assert.ok(Math.abs(info.length - 10) < 1e-9);
     assert.ok(Math.abs(info.cost - 3000) < 1e-6);
-    assert.ok(Math.abs(info.remaining - (6600 - 3000)) < 1e-6);
+    assert.ok(Math.abs(info.remaining - (game.level.budget - 3000)) < 1e-6);
     assert.equal(info.mirrored, false);
 
     game.__handleMouseMove(at(game, 10, 10)); // 20 m: split in two 10 m links

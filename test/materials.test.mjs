@@ -57,16 +57,16 @@ describe("member sizes", () => {
   });
 });
 
-describe("budgets stay tight", () => {
-  // the levels that teach one idea leave room for a first try that isn't the cheapest
-  const TEACHING = new Set(["triangles", "hang"]);
+describe("budgets leave room for a first bridge", () => {
+  // Getting across should be easy for a young player; being cheap is what the stars are for.
+  // Canyon is tighter: its example bridge works, and must cost a little too much.
   for (const level of levels) {
-    const low = TEACHING.has(level.id) ? 0.6 : 0.85;
-    test(`${level.name}: the cheapest known bridge uses ${low * 100}-95% of the budget`, () => {
+    const high = level.id === "canyon" ? 0.82 : 0.72;
+    test(`${level.name}: the cheapest known bridge uses 60-${high * 100}% of the budget`, () => {
       const scene = new Scene();
       scene.load(solutions[level.id](level));
       const share = scene.cost / level.budget;
-      assert.ok(share >= low && share <= 0.95, `reference $${Math.round(scene.cost)} is ${Math.round(share * 100)}% of $${level.budget}`);
+      assert.ok(share >= 0.6 && share <= high, `reference $${Math.round(scene.cost)} is ${Math.round(share * 100)}% of $${level.budget}`);
     });
   }
 });
