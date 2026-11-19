@@ -9,6 +9,8 @@ import { SANDBOX_DEFAULT, SANDBOX_LIMITS, SANDBOX_TRAFFIC, normalizeSandbox, par
 import { challengesFor } from './challenges.mjs';
 import { failureTip, levelHint } from './hints.mjs';
 import { setUpReading } from './speech.mjs';
+import { BADGES, earnedBadges, newBadges } from './badges.mjs';
+import { confetti } from './confetti.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -22,6 +24,8 @@ const SPEED_KEY = 'bridge-builder:speed';
 const FOLLOW_KEY = 'bridge-builder:follow';
 const VOLUME_KEY = 'bridge-builder:volume';
 const SHAKE_KEY = 'bridge-builder:shake';
+/** The badges the player has been told about. */
+const BADGES_KEY = 'bridge-builder:badges';
 /** 'off' once the player asks for every tool; simple controls are the default. */
 const SIMPLE_KEY = 'bridge-builder:simple';
 
@@ -161,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     root: byId('levels', HTMLDivElement),
     grid: byId('levels-grid', HTMLDivElement),
     total: byId('levels-total', HTMLSpanElement),
+    badges: byId('levels-badges', HTMLUListElement),
     close: byId('levels-close', HTMLButtonElement),
   };
   const tooltip = {
@@ -200,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
     share: byId('result-share', HTMLButtonElement),
     replay: byId('result-replay', HTMLButtonElement),
     challenges: byId('result-challenges', HTMLUListElement),
+    badges: byId('result-badges', HTMLUListElement),
   };
   const placeTip = {
     root: byId('place-tip', HTMLDivElement),
@@ -435,6 +441,51 @@ document.addEventListener('DOMContentLoaded', function () {
     return li;
   }
 
+  // ---- badges: milestones over the whole game
+  /** @returns {import('./badges.mjs').Progress} */
+  function progress() {
+    const real = levels.filter(level => !level.sandbox);
+    const won = real.filter(level => game.isCompleted(level.id));
+    const { earned, max } = game.totalStars;
+    return {
+      stars: earned,
+      maxStars: max,
+      wins: won.length,
+      levels: real.length,
+      goals: real.reduce((n, level) => n + game.challengesEarned(level.id).length, 0),
+      maxGoals: real.reduce((n, level) => n + challengesFor(level.id).length, 0),
+      train: won.some(level => level.track === 'rail'),
+    };
+  }
+  /** The badges already announced. @returns {string[]} */
+  function toldBadges() {
+    try {
+      const list = JSON.parse(localStorage.getItem(BADGES_KEY) ?? '[]');
+      return Array.isArray(list) ? list : [];
+    } catch { return []; }
+  }
+  /**
+   * @param {string} id
+   * @param {boolean} earned
+   * @param {boolean} [isNew]
+   */
+  function badgeItem(id, earned, isNew = false) {
+    const li = document.createElement('li');
+    li.className = 'badge';
+    li.classList.toggle('earned', earned);
+    li.classList.toggle('new', isNew);
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'icon');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '#icon-medal');
+    icon.append(use);
+    const name = document.createElement('span');
+    name.textContent = t(`badge.${id}.name`);
+    li.append(icon, name);
+    li.title = (earned ? '' : t('badge.locked') + ' ') + t(`badge.${id}.how`);
+    return li;
+  }
+
   /** @param {import('./game.js').TestResult} result */
   function showResult(result) {
     dlg.root.className = result.kind;
@@ -491,7 +542,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (helpful && hintStage === 0) dlg.hint.textContent = t('result.stuck');
     dlg.help.hidden = !helpful || (hintStage > 0 && game.showOutline);
     lastChild(dlg.help).textContent = t(hintStage === 0 ? 'result.help' : 'hint.show');
+    // a win: confetti, and any badge it earned
+    /** @type {string[]} */
+    let fresh = [];
+    if (result.kind === 'success' && !game.level.sandbox) {
+      const have = earnedBadges(progress());
+      fresh = newBadges(have, toldBadges());
+      try { localStorage.setItem(BADGES_KEY, JSON.stringify(have)); } catch { /* ignore */ }
+    }
+    dlg.badges.replaceChildren(...fresh.map(id => badgeItem(id, true, true)));
+    dlg.badges.hidden = fresh.length === 0;
     dlg.root.hidden = false;
+    if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
 
@@ -733,6 +795,8 @@ document.addEventListener('DOMContentLoaded', function () {
     picker.grid.replaceChildren(...levels.map(level => levelCard(level)), sandboxCard());
     const { earned, max } = game.totalStars;
     picker.total.textContent = `${earned} / ${max}`;
+    const have = earnedBadges(progress());
+    picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id))));
   }
 
   function showLevels() {

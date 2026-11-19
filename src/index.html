@@ -36,6 +36,7 @@
       <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></symbol>
       <symbol id="icon-bulb" viewBox="0 0 24 24"><path d="M9 18h6m-5 3h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3" /></symbol>
       <symbol id="icon-speak" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12.5-.5a5 5 0 0 1 0 7" /><path d="M19 6a8.5 8.5 0 0 1 0 12" class="wave" /></symbol>
+      <symbol id="icon-medal" viewBox="0 0 24 24"><path d="M8 3h8l-2 6h-4zM12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12m0-8.5 1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z" /></symbol>
       <symbol id="icon-star" viewBox="0 0 24 24"><path class="solid" d="m12 2.6 2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z" /></symbol>
       <symbol id="icon-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></symbol>
       <symbol id="icon-next" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" /></symbol>
@@ -392,6 +393,7 @@
         <dt data-i18n="ui.best">Best</dt><dd id="result-best"></dd>
       </dl>
       <ul class="challenges result-challenges" id="result-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
+      <ul class="badges result-badges" id="result-badges" aria-label="Badges" data-i18n-aria="ui.badges"></ul>
       <p id="result-tip" hidden></p>
       <p id="result-hint"></p>
       <div class="result-actions">
@@ -416,6 +418,8 @@
         </button>
       </div>
       <p class="levels-hint" data-i18n="ui.levelsHint">Get across without spending too much to open the next level. Cheaper bridges get more stars.</p>
+      <h3 class="badges-title" data-i18n="ui.badges">Badges</h3>
+      <ul class="badges" id="levels-badges"></ul>
       <div id="levels-grid"></div>
     </div>
   </div>

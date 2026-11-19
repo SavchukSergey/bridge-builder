@@ -7,7 +7,7 @@
 //
 // SHELL must list every file in src/ (a test checks it); bump VERSION when that changes.
 
-const VERSION = 3;
+const VERSION = 4;
 const CACHE = `bridge-builder-v${VERSION}`;
 
 const SHELL = [
@@ -21,7 +21,9 @@ const SHELL = [
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
   "js/audio.mjs",
+  "js/badges.mjs",
   "js/challenges.mjs",
+  "js/confetti.mjs",
   "js/effects.mjs",
   "js/engine/joint.mjs",
   "js/engine/link.mjs",

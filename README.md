@@ -66,10 +66,22 @@ crushed) with a tip, and it stays marked in red on the bridge until you change i
 break** replays the test in slow motion (¼×) from just before that member gave way, with
 the view on it.
 
-After three tests on a level end without a win, the panel offers a hint: first a few words
+As soon as a test on a level ends without a win, the panel offers a hint (and the result
+has a **Get a hint** button that goes straight to it): first a few words
 about a design that works, then, if you want it, its outline drawn over the build area
 (with what it costs) to build over. The outlines are the reference bridges the tests use to
 prove every level can be won.
+
+A win sets off confetti (more for more stars; none if the system asks for reduced motion),
+and earns **badges** for milestones over the whole game: the first bridge, 10 and 30 stars,
+5 extra goals, a railway level, every level, every goal and every star. They show in the
+level list, and a result announces the ones it earned.
+
+The speaker buttons on the level text, the hint, the result and the tutorial **read them
+aloud** with the browser's own voices, in the game's language. They hide themselves on a
+device with no voice for it.
+
+On a touch screen the buttons are at least 44 px, and the dots are drawn bigger.
 
 On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to place a link;
 hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along
@@ -194,6 +206,9 @@ src/
     themes.mjs          scenery palettes: summer, snow, desert, night
     hints.mjs           advice after a failed test, and a hint for each level
     challenges.mjs      each level's challenges
+    badges.mjs          milestones over the whole game
+    confetti.mjs        the confetti for a win
+    speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water

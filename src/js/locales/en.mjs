@@ -184,4 +184,23 @@ export default {
   "tip.crushed": "A {what} piece got squashed. Make it shorter, or add another piece to help it.",
   "tip.lightPulled": "A light steel piece was pulled apart. Use normal steel there, or add a cable next to it.",
   "tip.pulled": "A {what} piece was pulled apart. Add more pieces to share the weight, or make the triangles taller.",
+
+  // ---- badges
+  "badge.locked": "Not yet:",
+  "badge.first.name": "First bridge",
+  "badge.first.how": "Win a level.",
+  "badge.stars10.name": "10 stars",
+  "badge.stars10.how": "Get 10 stars.",
+  "badge.goals5.name": "Goal getter",
+  "badge.goals5.how": "Do 5 extra goals.",
+  "badge.train.name": "Train driver",
+  "badge.train.how": "Win a railway level.",
+  "badge.stars30.name": "30 stars",
+  "badge.stars30.how": "Get 30 stars.",
+  "badge.allLevels.name": "Bridge master",
+  "badge.allLevels.how": "Win every level.",
+  "badge.allGoals.name": "Every goal",
+  "badge.allGoals.how": "Do every extra goal.",
+  "badge.allStars.name": "Every star",
+  "badge.allStars.how": "Get every star.",
 };
