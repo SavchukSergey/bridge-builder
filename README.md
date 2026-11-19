@@ -44,6 +44,10 @@ On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to plac
 hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along
 the bottom.
 
+The load test runs at 0.5×, 1×, 2× or 4× (the speed button next to Test, or `[` and `]`);
+the physics is the same at every speed, so the result is too. **Follow** (`F`) keeps the
+camera on the traffic; it is on by default on phones.
+
 **Share** (in the toolbar, and in the results after a win) copies a link that opens your
 bridge: the design is packed into the address's `#bridge=` part, so nothing is uploaded.
 A link to a level the player hasn't unlocked yet doesn't open.

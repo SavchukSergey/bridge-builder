@@ -24,6 +24,10 @@ const SIM_TIME_PER_FRAME = 1 / 60;
  */
 const MAX_FRAME_TIME = 0.1;
 const MAX_SUBSTEPS = 1000;
+/** Simulation speeds the player can pick: simulated seconds per real second. */
+export const SPEEDS = [0.5, 1, 2, 4];
+/** How quickly the follow camera catches up with the traffic, per (simulated) second. */
+const FOLLOW_RATE = 2.5;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */
 const PICK_RADIUS_PX = 12;
 /** A fingertip covers more than a mouse pointer: pick within this radius on touch. */
@@ -150,6 +154,21 @@ export class Game {
   /** @type {import("./scene.js").SavedStructure[]} */
   __redoStack = [];
 
+  /**
+   * How fast the load test runs: simulated seconds per real second, one of {@link SPEEDS}.
+   * The physics steps are the same at every speed, so the result is too.
+   */
+  speed = 1;
+
+  /** Whether the view follows the traffic during a load test. Panning by hand turns it off. */
+  follow = false;
+
+  /** Whether the follow camera moved the view in this test (reset puts it back). */
+  __followMoved = false;
+
+  /** The view when the test started. @type {{ x: number, y: number } | undefined} */
+  __viewBeforeTest = undefined;
+
   /** Simulated-minus-real time left over from the previous frame (see {@link tick}). */
   __timeCarry = 0;
 
@@ -175,6 +194,7 @@ export class Game {
   setSimulationRunning(running) {
     if (running && !this.__snapshot) {
       this.__cancelLink();
+      this.__viewBeforeTest = { ...this.ctx.shift };
       this.__snapshot = this.scene.snapshot();
       this.__roadAcrossAtStart = this.roadAcross;
       this.vehicles = this.level.createConvoy();
@@ -194,6 +214,10 @@ export class Game {
     this.vehicles = [];
     this.evalCtx.time = 0;
     this.result = undefined;
+    // back to where the view was before the camera followed the traffic
+    if (this.__followMoved && this.__viewBeforeTest) this.ctx.shift = createVec3F(this.__viewBeforeTest.x, this.__viewBeforeTest.y, 0);
+    this.__followMoved = false;
+    this.__viewBeforeTest = undefined;
     this.scene.breaks = [];
     // the member that broke first stays marked on the rebuilt bridge until the next edit
     this.failedLink = this.scene.firstFailure?.link;
@@ -851,6 +875,7 @@ export class Game {
         this.__dragJoints(this.__dragState.moves, target);
         return;
       }
+      if (this.evalCtx.simulation) this.follow = false; // the player takes the view back
       const newGlobal = this.__dragState.clientToGlobal.transformPoint(client);
       const deltaGlobal = vec3fsub(newGlobal, this.__dragState.startGlobal);
       const newPos = vec3fsub(this.__dragState.original, deltaGlobal);
@@ -1067,6 +1092,11 @@ export class Game {
       this.redo();
     } else if (!mod && !ev.altKey && key === "m") {
       this.mirror = !this.mirror;
+    } else if (!mod && !ev.altKey && key === "f") {
+      this.follow = !this.follow;
+    } else if (!mod && !ev.altKey && (key === "]" || key === "[")) {
+      const i = SPEEDS.indexOf(this.speed);
+      this.speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, (i < 0 ? 1 : i) + (key === "]" ? 1 : -1)))];
     }
   }
 
@@ -1348,7 +1378,7 @@ export class Game {
     if (this.evalCtx.simulation) {
       // Substeps don't divide the frame exactly; carry the over/undershoot to the next frame
       // so simulated time doesn't drift from real time.
-      const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) + this.__timeCarry;
+      const target = Math.min(Math.max(elapsed, 0), MAX_FRAME_TIME) * this.speed + this.__timeCarry;
       let simulated = 0;
       const vehicles = this.vehicles;
       const before = vehicles.map(v => ({ y: v.y, state: v.state }));
@@ -1360,6 +1390,7 @@ export class Game {
       }
       this.__emitEffects(before);
       this.effects.step(simulated);
+      if (this.follow && !this.__dragState?.moved && !this.__pinch) this.__followTraffic(simulated);
       if (!this.result && this.testFinished) {
         this.result = this.__finishTest();
         this.onResult(this.result);
@@ -1367,6 +1398,30 @@ export class Game {
       // If the substep cap was hit, drop the backlog rather than chase it.
       this.__timeCarry = simulated >= target ? target - simulated : 0;
     }
+  }
+
+  /**
+   * Moves the view towards the traffic still on its way: centred on the convoy, or with a
+   * long convoy, on its front part. Vertically it follows the vehicles still on the road.
+   * @param {number} dt - simulated time this frame
+   */
+  __followTraffic(dt) {
+    const active = this.vehicles.filter(v => v.state === "waiting" || v.state === "driving" || v.state === "falling");
+    const watched = active.length ? active : this.vehicles.filter(v => v.state === "fell");
+    if (!watched.length || dt <= 0) return;
+    const { top, right, bottom = 0 } = this.viewInsets;
+    const zoom = this.ctx.zoom;
+    const visible = Math.max(10, (this.canvas.width / this.ctx.pixelRatio || 800) - right) / zoom;
+    const xs = watched.map(v => v.x);
+    const front = Math.max(...xs), back = Math.min(...xs);
+    const centre = Math.max((front + back) / 2, front - 0.35 * visible);
+    const goal = { x: centre + right / 2 / zoom, y: this.ctx.shift.y };
+    const onRoad = watched.filter(v => v.state === "driving");
+    if (onRoad.length) goal.y = onRoad.reduce((sum, v) => sum + v.y, 0) / onRoad.length + 4 + (top - bottom) / 2 / zoom;
+    const k = 1 - Math.exp(-FOLLOW_RATE * dt);
+    const shift = this.ctx.shift;
+    this.ctx.shift = createVec3F(shift.x + (goal.x - shift.x) * k, shift.y + (goal.y - shift.y) * k, 0);
+    this.__followMoved = true;
   }
 
   /**

@@ -25,6 +25,7 @@
       <symbol id="icon-stress" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></symbol>
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
+      <symbol id="icon-follow" viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3m8 0h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3m-8 0H5a2 2 0 0 1-2-2v-3m6-4h6m-3-3 3 3-3 3" /></symbol>
       <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 20h14" /></symbol>
       <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></symbol>
       <symbol id="icon-star" viewBox="0 0 24 24"><path class="solid" d="m12 2.6 2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17.2l-5.9 3.2 1.3-6.5L2.5 9.4l6.6-.8z" /></symbol>
@@ -65,6 +66,13 @@
       <button type="button" id="reset-simulation" class="btn" title="Back to build mode" disabled>
         <svg class="icon"><use href="#icon-reset" /></svg><span>Reset</span>
       </button>
+      <button type="button" id="speed" class="btn speed" title="Test speed: click for faster, Shift+click for slower ([ and ])">
+        <span id="speed-value">1&times;</span>
+      </button>
+      <input type="checkbox" id="toggle-follow" class="visually-hidden" />
+      <label for="toggle-follow" class="btn toggle" title="Camera follows the traffic during the test (F)">
+        <svg class="icon"><use href="#icon-follow" /></svg><span>Follow</span>
+      </label>
     </div>
 
     <div class="group status">
@@ -211,6 +219,8 @@
         <dt>Drag</dt><dd>pan</dd>
         <dt><kbd>Ctrl</kbd>+wheel</dt><dd>zoom</dd>
         <dt><kbd>M</kbd></dt><dd>mirror mode</dd>
+        <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>test slower / faster</dd>
+        <dt><kbd>F</kbd></dt><dd>camera follows the traffic</dd>
         <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></dt><dd>undo / redo</dd>
       </dl>
     </details>

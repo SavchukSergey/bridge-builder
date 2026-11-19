@@ -1,5 +1,5 @@
 // Main entry point for the Bridge Builder game
-import { Game } from './game.js';
+import { Game, SPEEDS } from './game.js';
 import { findLevel, levels } from './level.mjs';
 import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
 import { Sound } from './audio.mjs';
@@ -8,6 +8,8 @@ import { failureTip } from './hints.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
 const TUTORIAL_KEY = 'bridge-builder:tutorial';
+const SPEED_KEY = 'bridge-builder:speed';
+const FOLLOW_KEY = 'bridge-builder:follow';
 
 
 /**
@@ -286,6 +288,42 @@ document.addEventListener('DOMContentLoaded', function () {
     game.snapToGrid = chkSnap.checked;
     chkSnap.blur();
   });
+
+  // ---- test speed and the follow camera, remembered between visits
+  const btnSpeed = byId('speed', HTMLButtonElement);
+  const txtSpeed = byId('speed-value', HTMLSpanElement);
+  const chkFollow = byId('toggle-follow', HTMLInputElement);
+  try {
+    const speed = Number(localStorage.getItem(SPEED_KEY));
+    if (SPEEDS.includes(speed)) game.speed = speed;
+    // on small screens the traffic soon drives out of view: follow it unless told otherwise
+    const follow = localStorage.getItem(FOLLOW_KEY);
+    game.follow = follow === null ? window.innerWidth <= 640 : follow === 'on';
+  } catch { /* storage blocked */ }
+  btnSpeed.addEventListener('click', (ev) => {
+    const i = SPEEDS.indexOf(game.speed);
+    game.speed = ev.shiftKey ? SPEEDS[(i - 1 + SPEEDS.length) % SPEEDS.length] : SPEEDS[(i + 1) % SPEEDS.length];
+    btnSpeed.blur();
+  });
+  chkFollow.addEventListener('change', () => {
+    game.follow = chkFollow.checked;
+    chkFollow.blur();
+  });
+  let shownSpeed = NaN, shownFollow = /** @type {boolean | undefined} */ (undefined);
+  /** Shows the speed and follow state (keys and panning change them too) and remembers them. */
+  function syncSpeed() {
+    if (game.speed !== shownSpeed) {
+      shownSpeed = game.speed;
+      txtSpeed.textContent = `${game.speed}\u00d7`;
+      btnSpeed.classList.toggle('active', game.speed !== 1);
+      try { localStorage.setItem(SPEED_KEY, String(game.speed)); } catch { /* ignore */ }
+    }
+    if (game.follow !== shownFollow) {
+      const first = shownFollow === undefined;
+      shownFollow = chkFollow.checked = game.follow;
+      if (!first) try { localStorage.setItem(FOLLOW_KEY, game.follow ? 'on' : 'off'); } catch { /* ignore */ }
+    }
+  }
 
   btnNew.addEventListener('click', () => {
     game.restartLevel();
@@ -720,6 +758,7 @@ document.addEventListener('DOMContentLoaded', function () {
     txtTime.innerText = game.evalCtx.time.toFixed(2) + 's';
     btnReset.disabled = game.isBuildMode;
     chkMirror.checked = game.mirror; // the M key toggles it too
+    syncSpeed();
     btnUndo.disabled = !game.canUndo;
     btnRedo.disabled = !game.canRedo;
     const mode = modeText(game);

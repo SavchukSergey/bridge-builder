@@ -937,11 +937,27 @@ kbd {
   background-color: white;
 }
 
+/* ---------- medium screens: toggles and Restart as icons ---------- */
+
+@media (max-width: 1700px) {
+  .btn.toggle span,
+  #new-structure span {
+    display: none;
+  }
+
+  .btn.toggle:not(.icon-only),
+  #new-structure {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
 /* ---------- narrow screens ---------- */
 
 @media (max-width: 900px) {
   .brand span,
-  .btn:not(.primary):not(.level-button) span {
+  .btn:not(.primary):not(.level-button):not(.speed) span {
     display: none;
   }
 
@@ -949,7 +965,7 @@ kbd {
     min-width: 0;
   }
 
-  .btn:not(.primary):not(.level-button) {
+  .btn:not(.primary):not(.level-button):not(.speed) {
     width: 34px;
     padding: 0;
     justify-content: center;
@@ -1089,6 +1105,17 @@ kbd {
   .group.status {
     display: none;
   }
+}
+
+/* phones: JSON files are a desktop thing; Share covers passing a bridge on */
+@media (max-width: 640px) {
+  #export-structure,
+  #import-structure {
+    display: none;
+  }
+}
+
+@media (max-width: 640px), (max-height: 500px) {
 
   #control-panel {
     gap: 6px 8px;
@@ -1229,4 +1256,19 @@ kbd {
     bottom: auto;
     top: calc(var(--toolbar-height, 56px) + 8px);
   }
+}
+
+/* ---------- test speed ---------- */
+
+.btn.speed {
+  min-width: 44px;
+  justify-content: center;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.btn.speed.active {
+  color: var(--accent);
+  border-color: rgba(242, 178, 51, 0.5);
 }
