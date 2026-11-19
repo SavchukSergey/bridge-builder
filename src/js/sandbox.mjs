@@ -49,6 +49,7 @@ export const SANDBOX_TRAFFIC = {
   trucks4: { convoy: trucks(4) },
   trucks6: { convoy: trucks(6) },
   rush: { convoy: ["car", "truck", "bus", "car", "truck", "car", "bus", "truck", "car"], vehicleGap: 4 },
+  town: { convoy: ["icecream", "car", "schoolbus", "fire", "car"], vehicleGap: 5 },
   hauler: { convoy: ["hauler"] },
   train2: { convoy: train(2), vehicleGap: 1 },
   train4: { convoy: train(4), vehicleGap: 1 },

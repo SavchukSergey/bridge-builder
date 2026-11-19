@@ -159,7 +159,7 @@ compression *squashed*).
 | 7 | Step up | the far side is 8 m higher |
 | 8 | Heavy load | one 200 t heavy hauler: cables stretch too much |
 | 9 | Downhill | the far side is 10 m lower, five trucks |
-| 10 | Rush hour | nine vehicles nose to tail, at night |
+| 10 | Rush hour | nine vehicles nose to tail, at night, with a fire engine and ice-cream vans |
 | 11 | River pier | 120 m with a rock in the river for a pier |
 | 12 | Long span | 100 m with nothing to stand on |
 | 13 | Viaduct | 180 m with two rocks: three spans |
@@ -171,7 +171,7 @@ compression *squashed*).
 
 **Sandbox** (the last card in the level list) lets you design your own gap: its width (20
 to 200 m), how much higher or lower the far bank is, a rock in the middle for a pier, the
-traffic (cars, trucks, rush hour, the heavy hauler or a train), the budget and the scenery.
+traffic (cars, trucks, rush hour, a town convoy, the heavy hauler or a train), the budget and the scenery.
 A sandbox is always open and doesn't count towards progress. Its level id spells out the
 whole design, so its bridge is saved like any other, and **Share** sends the level along
 with the bridge.
@@ -182,6 +182,9 @@ with the bridge.
 | Bus | 18 t | 12 m | 2 |
 | Truck | 40 t | 12 m | 5 |
 | Heavy hauler | 200 t | 22 m | 9 |
+| Fire engine | 16 t | 9.6 m | 3 |
+| Ice-cream van | 3.5 t | 6 m | 2 |
+| School bus | 14 t | 11 m | 2 |
 | Locomotive | 100 t | 20 m | 4 (two bogies) |
 | Wagon | 70 t | 15 m | 4 (two bogies) |
 

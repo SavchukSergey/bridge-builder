@@ -7,7 +7,7 @@
  */
 
 /**
- * @typedef {"car" | "bus" | "truck" | "hauler" | "locomotive" | "wagon"} VehicleTypeId
+ * @typedef {"car" | "bus" | "truck" | "hauler" | "locomotive" | "wagon" | "fire" | "icecream" | "schoolbus"} VehicleTypeId
  */
 
 /**
@@ -272,7 +272,132 @@ const hauler = {
   },
 };
 
-/** @type {Record<VehicleTypeId, VehicleType>} */
+/** A fire engine: a red truck with a ladder on top and a blue light that flashes as it drives. */
+/** @type {VehicleType} */
+const fire = {
+  id: "fire",
+  label: "fire engine",
+  plural: "fire engines",
+  mass: 16000,
+  length: 9.6,
+  height: 3.6,
+  speed: 6,
+  wheelRadius: 0.5,
+  track: "road",
+  axles: [{ dx: 3.3, share: 0.32 }, { dx: -1.9, share: 0.34 }, { dx: -3.2, share: 0.34 }],
+  lamp: [4.85, 1.2],
+  draw(g, o) {
+    const red = o.lost ? LOST_PAINT : "#d0281f";
+    const glass = o.lost ? LOST_GLASS : GLASS;
+    poly(g, [[-4.8, 0.55], [4.8, 0.55], [4.8, 0.95], [-4.8, 0.95]], "#26282b"); // chassis
+    poly(g, [[-4.8, 0.95], [2.3, 0.95], [2.3, 2.95], [-4.8, 2.95]], red); // body with lockers
+    poly(g, [[2.3, 0.95], [4.8, 0.95], [4.8, 2.1], [4.5, 3.1], [2.3, 3.1]], red); // cab
+    poly(g, [[3.55, 2.05], [4.68, 2.05], [4.42, 2.9], [3.55, 2.9]], glass);
+    poly(g, [[2.5, 2.05], [3.4, 2.05], [3.4, 2.9], [2.5, 2.9]], glass);
+    poly(g, [[-4.8, 1.45], [4.8, 1.45], [4.8, 1.62], [-4.8, 1.62]], o.lost ? "#999" : "#f4f1e8"); // stripe
+    g.strokeStyle = "rgba(0, 0, 0, 0.2)";
+    g.lineWidth = 0.05;
+    g.beginPath();
+    for (let x = -3.9; x < 2.2; x += 1.5) { // locker doors
+      g.moveTo(x, 1.0);
+      g.lineTo(x, 2.9);
+    }
+    g.stroke();
+    // the ladder along the roof
+    const rail = o.lost ? "#777" : "#c9ced3";
+    poly(g, [[-4.7, 3.05], [3.0, 3.05], [3.0, 3.14], [-4.7, 3.14]], rail);
+    poly(g, [[-4.7, 3.38], [3.0, 3.38], [3.0, 3.47], [-4.7, 3.47]], rail);
+    g.strokeStyle = rail;
+    g.lineWidth = 0.07;
+    g.beginPath();
+    for (let x = -4.5; x < 3.0; x += 0.5) {
+      g.moveTo(x, 3.1);
+      g.lineTo(x, 3.42);
+    }
+    g.stroke();
+    // the light bar on the cab: flashes with the wheels' turning, so it's still when parked
+    const on = !o.lost && Math.sin(o.spin * 2.5) > 0;
+    poly(g, [[3.0, 3.1], [4.2, 3.1], [4.2, 3.32], [3.0, 3.32]], o.lost ? "#666" : on ? "#5fb8ff" : "#1d4f86");
+    if (on) {
+      g.fillStyle = "rgba(95, 184, 255, 0.35)";
+      g.beginPath();
+      g.arc(3.6, 3.22, 0.5, 0, 2 * Math.PI);
+      g.fill();
+    }
+    poly(g, [[4.72, 1.1], [4.85, 1.1], [4.85, 1.32], [4.72, 1.32]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
+    wheels(fire, g, o);
+  },
+};
+
+/** Ice-cream van paints, by paint index. */
+const ICE_CREAM_PAINTS = ["#ffd6e7", "#cdeeff", "#fff1b8"];
+
+/** An ice-cream van: light, with a serving window and a big cone on the roof. */
+/** @type {VehicleType} */
+const icecream = {
+  id: "icecream",
+  label: "ice-cream van",
+  plural: "ice-cream vans",
+  mass: 3500,
+  length: 6,
+  height: 3.65,
+  speed: 6,
+  wheelRadius: 0.36,
+  track: "road",
+  axles: [{ dx: 1.9, share: 0.45 }, { dx: -1.8, share: 0.55 }],
+  lamp: [3.0, 0.75],
+  draw(g, o) {
+    const body = o.lost ? LOST_PAINT : ICE_CREAM_PAINTS[o.paint % ICE_CREAM_PAINTS.length];
+    const glass = o.lost ? LOST_GLASS : GLASS;
+    poly(g, [[-3, 0.35], [3, 0.35], [3, 1.1], [2.6, 2.3], [-3, 2.4]], body);
+    poly(g, [[1.75, 1.35], [2.72, 1.35], [2.45, 2.15], [1.75, 2.18]], glass); // windscreen
+    poly(g, [[-2.3, 1.15], [0.9, 1.15], [0.9, 2.05], [-2.3, 2.05]], o.lost ? "#4a4a4a" : "#5a3b2e"); // serving window
+    poly(g, [[-2.45, 2.05], [1.05, 2.05], [0.85, 2.3], [-2.25, 2.3]], o.lost ? "#888" : "#ef5b8c"); // awning
+    poly(g, [[-3, 0.6], [3, 0.6], [3, 0.82], [-3, 0.82]], o.lost ? "#888" : "#ef5b8c"); // stripe
+    // a giant cone standing on the roof: point down, two scoops on top
+    poly(g, [[-0.75, 2.4], [-0.38, 2.95], [-1.12, 2.95]], o.lost ? "#777" : "#d9a35b");
+    g.fillStyle = o.lost ? "#999" : "#fff7f0";
+    g.beginPath();
+    g.arc(-0.75, 3.05, 0.4, 0, 2 * Math.PI);
+    g.fill();
+    g.fillStyle = o.lost ? "#999" : "#f48fb1";
+    g.beginPath();
+    g.arc(-0.75, 3.38, 0.27, 0, 2 * Math.PI);
+    g.fill();
+    poly(g, [[2.9, 0.62], [3.0, 0.62], [3.0, 0.82], [2.9, 0.82]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
+    wheels(icecream, g, o);
+  },
+};
+
+/** A yellow school bus with a long nose. */
+/** @type {VehicleType} */
+const schoolbus = {
+  id: "schoolbus",
+  label: "school bus",
+  plural: "school buses",
+  mass: 14000,
+  length: 11,
+  height: 3.1,
+  speed: 5,
+  wheelRadius: 0.5,
+  track: "road",
+  axles: [{ dx: 4.3, share: 0.35 }, { dx: -2.9, share: 0.65 }],
+  lamp: [5.55, 1.3],
+  draw(g, o) {
+    const yellow = o.lost ? LOST_PAINT : "#f4c20d";
+    const glass = o.lost ? LOST_GLASS : GLASS;
+    poly(g, [[-5.5, 0.5], [3.7, 0.5], [3.7, 3.1], [-5.4, 3.1], [-5.5, 2.9]], yellow); // body
+    poly(g, [[3.7, 0.5], [5.5, 0.5], [5.5, 1.8], [5.1, 2.0], [3.7, 2.1]], yellow); // the nose
+    poly(g, [[-5.5, 0.5], [5.5, 0.5], [5.5, 0.72], [-5.5, 0.72]], "#2b2d30"); // bumper line
+    poly(g, [[-5.5, 1.48], [3.7, 1.48], [3.7, 1.6], [-5.5, 1.6]], "#2b2d30"); // black rub rails
+    poly(g, [[-5.5, 1.1], [3.7, 1.1], [3.7, 1.2], [-5.5, 1.2]], "#2b2d30");
+    for (let x = -5.15; x < 1.5; x += 1.25) poly(g, [[x, 1.95], [x + 1.05, 1.95], [x + 1.05, 2.8], [x, 2.8]], glass);
+    poly(g, [[2.7, 1.75], [3.6, 1.75], [3.6, 2.85], [2.7, 2.85]], glass); // windscreen side
+    poly(g, [[5.42, 1.2], [5.55, 1.2], [5.55, 1.42], [5.42, 1.42]], o.lost ? "#777" : o.lights ? "#fff6d0" : "#ffe08a");
+    wheels(schoolbus, g, o);
+  },
+};
+
 /**
  * A rail bogie: two small wheels close together, under a frame.
  * @param {CanvasRenderingContext2D} g
@@ -364,4 +489,5 @@ const wagon = {
   },
 };
 
-export const VEHICLE_TYPES = { car, bus, truck, hauler, locomotive, wagon };
+/** @type {Record<VehicleTypeId, VehicleType>} */
+export const VEHICLE_TYPES = { car, bus, truck, hauler, locomotive, wagon, fire, icecream, schoolbus };
