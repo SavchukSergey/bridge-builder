@@ -1633,6 +1633,55 @@ kbd {
   display: none;
 }
 
+/* ---------- the daily challenge ---------- */
+
+.daily-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(242, 178, 51, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(242, 178, 51, 0.14), rgba(242, 178, 51, 0.04));
+}
+
+.daily-card[hidden] {
+  display: none;
+}
+
+.daily-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--accent);
+}
+
+.daily-text {
+  flex: 1;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#daily-kicker {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+#daily-what {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.daily-card.done #daily-play {
+  display: none;
+}
+
 /* ---------- for grown-ups ---------- */
 
 #grownups {

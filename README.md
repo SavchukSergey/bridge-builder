@@ -215,6 +215,11 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+**Today's challenge** (top of the level list) picks one of the open levels each day, with a
+twist its hint bridge meets: a tight cost, few pieces, no cables or no heavy steel. It shows
+in the panel on that level, a win that meets it is ticked in the result, and days done in a
+row make a streak.
+
 **For grown-ups** (in Settings) says what the game teaches and how to help, what it keeps
 (nothing leaves the browser), and the progress so far.
 
@@ -261,6 +266,7 @@ src/
     challenges.mjs      each level's challenges
     badges.mjs          milestones over the whole game
     confetti.mjs        the confetti for a win
+    daily.mjs           today's challenge: a level and a twist each day, and the streak
     drawbridge.mjs      the drawbridge: winches, the boat and the space it needs
     ending.mjs          the ending, once every level is won
     real-bridges.mjs    famous bridges built on each level's idea, and their drawings

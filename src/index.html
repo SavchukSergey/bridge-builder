@@ -532,6 +532,15 @@
         </button>
       </div>
       <p class="levels-hint" data-i18n="ui.levelsHint">Get across without spending too much to open the next level. Cheaper bridges get more stars.</p>
+      <section id="levels-daily" class="daily-card" aria-labelledby="daily-kicker">
+        <svg class="icon daily-icon"><use href="#icon-star" /></svg>
+        <div class="daily-text">
+          <span id="daily-kicker" data-i18n="daily.title">Today's challenge</span>
+          <strong id="daily-what"></strong>
+          <span id="daily-streak"></span>
+        </div>
+        <button type="button" id="daily-play" class="btn primary" data-i18n="daily.play">Play</button>
+      </section>
       <button type="button" id="levels-trophy" class="btn levels-trophy" hidden><svg class="icon"><use href="#icon-trophy" /></svg><span data-i18n="ending.again">You built every bridge: see your trophy</span></button>
       <h3 class="badges-title" data-i18n="ui.badges">Badges</h3>
       <ul class="badges" id="levels-badges"></ul>

@@ -14,6 +14,7 @@ import { Guide } from './guide-ui.mjs';
 import { endingSummary, isFinished } from './ending.mjs';
 import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
+import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -178,6 +179,10 @@ document.addEventListener('DOMContentLoaded', function () {
     badges: byId('levels-badges', HTMLUListElement),
     close: byId('levels-close', HTMLButtonElement),
     trophy: byId('levels-trophy', HTMLButtonElement),
+    daily: byId('levels-daily', HTMLElement),
+    dailyWhat: byId('daily-what', HTMLElement),
+    dailyStreak: byId('daily-streak', HTMLSpanElement),
+    dailyPlay: byId('daily-play', HTMLButtonElement),
     real: byId('levels-real', HTMLDivElement),
   };
   const ending = {
@@ -484,9 +489,49 @@ document.addEventListener('DOMContentLoaded', function () {
     const best = game.bestResult();
     goals.best.textContent = best ? t('goal.best', { cost: formatMoney(best.cost), stars: starText(best.stars) }) : '';
     const earned = game.challengesEarned();
+    const daily = today();
     goalChallenges.replaceChildren(...challengesFor(game.level.id).map(c =>
-      challengeItem(c.name, c.label, { earned: earned.includes(c.id) })));
+      challengeItem(c.name, c.label, { earned: earned.includes(c.id) })),
+    ...(daily?.level === game.level.id ? [challengeItem(t('daily.title'), dailyLabel(daily), { earned: daysDone().includes(daily.date) })] : []));
   }
+
+  // ---- the daily challenge: one open level, with a twist, each day
+  /** Today's challenge, among the levels open now. */
+  function today() {
+    return dailyFor(dayOf(), levels.filter(l => game.isUnlocked(l.id)));
+  }
+  function renderDaily() {
+    const daily = today();
+    picker.daily.hidden = !daily;
+    if (!daily) return;
+    const level = /** @type {import("./level.mjs").Level} */ (findLevel(daily.level));
+    picker.dailyWhat.textContent = t('daily.what', { n: level.number, level: level.name, what: dailyLabel(daily) });
+    const done = daysDone().includes(daily.date);
+    picker.daily.classList.toggle('done', done);
+    const days = streak(daily.date);
+    picker.dailyStreak.textContent = done ? t('daily.done', { n: days }) : days ? t('daily.streak', { n: days }) : t('daily.new');
+  }
+  picker.dailyPlay.addEventListener('click', () => {
+    const daily = today();
+    if (!daily) return;
+    hideLevels();
+    game.selectLevel(daily.level);
+  });
+  /**
+   * After a win: whether it met today's challenge, recording it the first time.
+   * @param {import("./game-types.mjs").TestResult} result
+   * @returns {{ label: string, met: boolean, isNew: boolean } | undefined}
+   */
+  function dailyAfter(result) {
+    const daily = today();
+    if (!daily || result.kind !== 'success' || daily.level !== game.level.id) return undefined;
+    const met = dailyMet(daily, game.bridgeStats);
+    const isNew = met && !daysDone().includes(daily.date);
+    if (isNew) markDone(daily.date);
+    return { label: dailyLabel(daily), met, isNew };
+  }
+  /** @type {ReturnType<typeof dailyAfter>} */
+  let dailyResult;
 
   /**
    * One line of a challenge list: a diamond (filled once earned), the name and what it asks.
@@ -626,7 +671,9 @@ document.addEventListener('DOMContentLoaded', function () {
       : idle ? t('result.idle', { what: idle.label.toLowerCase(), to: idle.to.toLowerCase(), saving: formatMoney(idle.saving), n: Math.max(1, Math.round(idle.load * 100)) }) : '';
     // after a win, how the bridge did on the level's challenges
     dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
-      challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })));
+      challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })),
+    ...(dailyResult ? [challengeItem(t('daily.title'), dailyResult.isNew ? `${dailyResult.label} · ${t('daily.done', { n: streak(dayOf()) })}` : dailyResult.label,
+      { earned: dailyResult.met, met: dailyResult.met, isNew: dailyResult.isNew })] : []));
     dlg.cost.textContent = formatMoney(result.cost);
     dlg.budget.textContent = formatMoney(result.budget);
     dlg.best.replaceChildren(result.best ? `${formatMoney(result.best.cost)} ${starText(result.best.stars)}` : '\u2014');
@@ -909,6 +956,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   game.onResult = (result) => {
     if (result.kind === 'success' && isGuiding()) guide.end();
+    dailyResult = dailyAfter(result);
     updateHint();
     showResult(result);
     sound.jingle(result.kind === 'success');
@@ -1084,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const have = earnedBadges(progress());
     picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id), { how: true })));
     picker.trophy.hidden = !isFinished(progress());
+    renderDaily();
     renderRealBridges();
   }
 

@@ -310,4 +310,11 @@ export default {
 
   // ---- for grown-ups
   "grown.progress": "Levels won: {wins} of {levels}. Stars: {stars} of {maxStars}. Extra goals: {goals} of {maxGoals}.",
+
+  // ---- the daily challenge
+  "daily.title": "Today's challenge",
+  "daily.what": "{n}. {level}: {what}",
+  "daily.new": "A new one every day.",
+  "daily.streak": { one: "{n} day in a row so far: keep it going!", other: "{n} days in a row so far: keep it going!" },
+  "daily.done": { one: "Done! {n} day in a row. Come back tomorrow.", other: "Done! {n} days in a row. Come back tomorrow." },
 };
