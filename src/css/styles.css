@@ -526,6 +526,12 @@ input:checked + .btn.toggle {
   background-color: #c9d1d8;
 }
 
+.swatch.winch {
+  height: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #e0a21b 0 6px, #8a5f0c 6px 8px);
+}
+
 .swatch.cable-thin {
   height: 1.5px;
   background-color: #8d98a3;

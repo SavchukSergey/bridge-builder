@@ -17,17 +17,17 @@ function win(game, levelId) {
 describe("progression", () => {
   test("levels are numbered in play order", () => {
     assert.deepEqual(levels.map(l => l.number), levels.map((_, i) => i + 1));
-    assert.equal(levels.length, 18);
+    assert.equal(levels.length, 19);
   });
 
   test("only the first level is open at the start; winning one opens the next", () => {
     const game = createGame("brook");
     assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook"]);
-    assert.deepEqual(game.totalStars, { earned: 0, max: 54 });
+    assert.deepEqual(game.totalStars, { earned: 0, max: 57 });
 
     win(game, "brook");
     assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook", "triangles"]);
-    assert.deepEqual(game.totalStars, { earned: 3, max: 54 });
+    assert.deepEqual(game.totalStars, { earned: 3, max: 57 });
     assert.equal(game.isUnlocked("nope"), false);
   });
 

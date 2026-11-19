@@ -19,6 +19,7 @@ const MATERIAL_CODES = {
   cable: "C",
   "cable-thin": "T",
   rail: "W",
+  winch: "H",
 };
 const MATERIAL_NAMES = Object.fromEntries(Object.entries(MATERIAL_CODES).map(([name, code]) => [code, name]));
 

@@ -19,6 +19,7 @@ import { createVec3F } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
 import { findRoad } from "./vehicle.mjs";
+import { Boat, winchPull } from "./drawbridge.mjs";
 /** @typedef {import("./game-types.mjs").BestResult} BestResult */
 /** @typedef {import("./game-types.mjs").TestResult} TestResult */
 /** @typedef {import("./game-types.mjs").DragState} DragState */
@@ -45,6 +46,12 @@ export class GameCore {
      * @type {Vehicle[]}
      */
     this.vehicles = [];
+    /**
+     * On a drawbridge level, the boat that sails through before the traffic; exists while
+     * the convoy does.
+     * @type {Boat | undefined}
+     */
+    this.boat = undefined;
   }
 
   /**
@@ -127,6 +134,8 @@ export class GameCore {
       this.__snapshot = this.scene.snapshot();
       this.__roadAcrossAtStart = this.roadAcross;
       this.vehicles = this.level.createConvoy();
+      const draw = this.level.drawbridge;
+      this.boat = draw ? new Boat(draw, this.level.water ?? 0) : undefined;
       this.failedLink = undefined;
     }
     this.evalCtx.simulation = running;
@@ -150,6 +159,7 @@ export class GameCore {
       this.__snapshot = undefined;
     }
     this.vehicles = [];
+    this.boat = undefined;
     this.evalCtx.time = 0;
     this.result = undefined;
     // back to where the view was before the camera followed the traffic
@@ -227,7 +237,7 @@ export class GameCore {
   get testState() {
     const states = this.vehicles.map(v => v.state);
     if (!states.length) return "building";
-    if (states.includes("fell")) return "fell";
+    if (states.includes("fell") || this.boat?.state === "hit") return "fell";
     if (states.includes("falling")) return "falling";
     if (states.every(s => s === "crossed")) return "crossed";
     if (states.every(s => s === "waiting")) return "waiting";
@@ -341,7 +351,8 @@ export class GameCore {
       };
       this.__countTry();
       return {
-        ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken,
+        ...base, kind: "failed", stars: 0, best: previousBest, newBest: false,
+        reason: this.boat?.state === "hit" ? "boat" : lost?.lostReason ?? "fell", broken,
         failure: failure && { ...failure, time: first.time, x: first.x, y: first.y }, roadAcross: this.__roadAcrossAtStart,
       };
     }
@@ -514,9 +525,15 @@ export class GameCore {
   /** One physics step of the bridge and the vehicles; returns its length (s). */
   __substep() {
     const vehicles = this.vehicles;
+    const draw = this.level.drawbridge;
+    if (draw) {
+      const pull = winchPull(draw, this.evalCtx.time);
+      for (const link of this.scene.links) if (link.material.winch) link.pull = pull;
+    }
     const loads = vehicles.flatMap(v => v.loads(this.evalCtx, this.scene));
     const dt = this.scene.tick(this.evalCtx, loads);
     for (const vehicle of vehicles) vehicle.update(this.scene, this.evalCtx, dt);
+    this.boat?.update(this.scene, this.evalCtx.time);
     return dt;
   }
 

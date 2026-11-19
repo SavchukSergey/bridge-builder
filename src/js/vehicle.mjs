@@ -8,6 +8,7 @@
  */
 
 import { drawHeadlight, VEHICLE_TYPES } from "./vehicle-types.mjs";
+import { trafficStart } from "./drawbridge.mjs";
 
 /** Seconds to wait before driving: the gravity ramp-up in EvalCtx. */
 export const VEHICLE_START_DELAY = 2;
@@ -123,7 +124,9 @@ export class Vehicle {
     }
     if (this.finished) return;
     if (this.state === "waiting") {
-      if (evalCtx.time < VEHICLE_START_DELAY) return;
+      // (on a drawbridge, once the boat is through and the road is back down)
+      const draw = this.level.drawbridge;
+      if (evalCtx.time < (draw ? trafficStart(draw) : VEHICLE_START_DELAY)) return;
       this.state = "driving";
     }
 

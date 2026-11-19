@@ -68,6 +68,7 @@ const LEVEL_CHALLENGES = {
   viaduct: [["cost", 114600], ["members", 67]],
   gorge: [["light"], ["cost", 40700]],
   grand: [["cost", 105300], ["members", 60]],
+  drawbridge: [["members", 4], ["cost", 11000]],
   "branch-line": [["light"], ["cost", 20400]],
   freight: [["noCables"], ["cost", 56600]],
   mountain: [["noCables"], ["cost", 88100]],

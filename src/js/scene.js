@@ -336,6 +336,7 @@ export class Scene {
     this.content.links = snapshot.links.map(({ link, broken }) => {
       link.broken = broken;
       link.peakUtilization = 0;
+      link.pull = 1;
       link.preEval();
       return link;
     });

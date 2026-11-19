@@ -14,6 +14,7 @@ import { LEVEL_KEY, storageGet } from "./storage.mjs";
 import { findLevel, levels } from "./level.mjs";
 import { createVec3F } from "./math.js";
 import { renderBackground } from "./scenery.mjs";
+import { Boat, renderClearance } from "./drawbridge.mjs";
 import { materials } from "./materials/index.mjs";
 
 export { SPEEDS } from "./game-config.mjs";
@@ -86,6 +87,12 @@ export class Game extends GameInput {
       g.lineWidth = hovered.drawnWidth(this.ctx.zoom) * (hovered.material.look.kind === "deck" ? 2 : 1) + 8 / this.ctx.zoom;
       g.stroke();
     }
+    // a drawbridge: the space the boat needs, until it is through, and the boat
+    const draw = this.level.drawbridge;
+    const water = this.level.water ?? 0;
+    const boat = draw && (this.boat ?? new Boat(draw, water));
+    if (draw && boat && (boat.state === "waiting" || boat.state === "sailing")) renderClearance(this.ctx, draw, water);
+    if (boat) boat.render(this.ctx, this.evalCtx.time);
     if (this.isBuildMode) this.__renderSelection("under");
     this.scene.renderStructure(this.ctx, { stress: this.showStress });
     if (this.isBuildMode) {

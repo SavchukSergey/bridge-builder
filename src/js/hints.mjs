@@ -12,6 +12,7 @@ import { t } from './i18n.mjs';
  */
 export function failureTip(result, track = 'road') {
   const f = result.failure;
+  if (result.reason === 'boat') return t('tip.boat');
   if (!f) {
     if (result.roadAcross === false) return t(track === 'rail' ? 'tip.gapTrack' : 'tip.gapRoad');
     if (result.reason === 'crashed') return t('tip.crashed');
@@ -52,6 +53,7 @@ export const LEVEL_HINTS = {
   grand: 'Two long rows of triangles, about 7 m tall, meeting over two leaning steel pieces on the rock in the middle.',
   'branch-line': 'Trains need Rail instead of Road. The hanging bridge from Creek works here too: posts, a sagging cable, and thin cables down to the track.',
   freight: 'Cables stretch too much under this heavy train. Build triangles about 6 m tall, out of light steel, on top of the track.',
+  drawbridge: 'Stand a light steel post, 14 m tall, on the middle dot, with a thin cable from its top to the dot behind. Lay one road piece from the middle dot to the far edge, without joining it to the other side. Then a Winch from the top of the post to the end of the road.',
   mountain: 'Like River pier: two rows of triangles on the track, meeting over two leaning steel pieces on the rock.',
 };
 

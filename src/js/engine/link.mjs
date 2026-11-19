@@ -33,6 +33,11 @@ export class Link {
     this.directionN = vec3fmul(this.direction, 1 / this.length);
 
     this.broken = false;
+    /**
+     * How long it wants to be, as a share of {@link length}: 1, except a winch pulled in
+     * during a drawbridge's test.
+     */
+    this.pull = 1;
     /** Highest {@link utilization} reached since the simulation started. */
     this.peakUtilization = 0;
   }
@@ -120,7 +125,7 @@ export class Link {
 
   /** Axial spring stiffness k = E*A/L (N/m). */
   get stiffness() {
-    return this.material.youngModulus * this.crossSectionalArea / this.length;
+    return this.material.youngModulus * this.crossSectionalArea / (this.length * this.pull);
   }
 
   /**
@@ -136,7 +141,8 @@ export class Link {
   }
 
   get strain() {
-    return (this.actualLength - this.length) / this.length;
+    const rest = this.length * this.pull;
+    return (this.actualLength - rest) / rest;
   }
 
   /**

@@ -11,6 +11,7 @@
  * @property {number} costPerMeter - price of one metre of link, counted against a level's budget
  * @property {"road" | "rail"} [carries] - a deck: road vehicles drive on road, trains run on rail
  * @property {MaterialLook} [look] - how links of this material are drawn
+ * @property {boolean} [winch] - pulls itself in during a drawbridge's test, then lets out
  */
 
 /**

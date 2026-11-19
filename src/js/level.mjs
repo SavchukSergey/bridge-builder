@@ -35,6 +35,8 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @property {import("./themes.mjs").ThemeId} [theme] - scenery look; summer by default
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
  *   instead of bare anchors
+ * @property {import("./drawbridge.mjs").DrawbridgeSpec} [drawbridge] - a boat sails through
+ *   first, and winches lift the road for it
  * @property {import("./sandbox.mjs").SandboxSpec} [sandbox] - a level the player designed
  *   (sandbox.mjs): always open, and not part of the progression
  */
@@ -70,6 +72,7 @@ export class Level {
     this.water = opts.water;
     this.theme = THEMES[opts.theme ?? "summer"];
     this.sandbox = opts.sandbox;
+    this.drawbridge = opts.drawbridge;
   }
 
   /** The level's name, in the player's language. */
@@ -304,6 +307,26 @@ export const pierLevel = new Level({
 });
 
 /** The first level: a short gap that plain road can span. */
+/**
+ * The drawbridge: a tall-masted boat must get through the canal before the traffic crosses.
+ * A road hinged at the near bank and hung from a winch on a tower lifts out of its way.
+ */
+export const drawbridgeLevel = new Level({
+  id: "drawbridge",
+  name: "Drawbridge",
+  description: "A sailing boat comes through first, and its mast is tall. Hang the road from a yellow Winch on a tower: the winch lifts the road for the boat, then lets it down for the traffic. Keep the dashed space clear.",
+  terrain: cliffs(-10, 10),
+  anchors: [{ x: -20, y: 10 }, { x: -10, y: 10 }, { x: 20, y: 10 }],
+  startX: -16,
+  finishX: 18,
+  convoy: ["car", "icecream", "bus"],
+  budget: 16000, // a road on a winch from a light steel tower: ~$11,000
+  stars: { two: 13500, three: 11000 },
+  view: { x0: -32, x1: 28, y: 16 },
+  water: 3,
+  drawbridge: { x0: -6, x1: 6, top: 16, lift: [2, 8], pass: [9, 14], lower: [15, 21], pull: 0.35 },
+});
+
 export const brookLevel = new Level({
   id: "brook",
   name: "Brook",
@@ -576,7 +599,7 @@ export const mountainLevel = new Level({
 export const levels = [
   brookLevel, trianglesLevel, ledgesLevel, hangLevel, creekLevel, canyonLevel, stepLevel, heavyLevel,
   downhillLevel, rushLevel, pierLevel, longSpanLevel, viaductLevel, gorgeLevel, grandLevel,
-  branchLineLevel, freightLevel, mountainLevel,
+  drawbridgeLevel, branchLineLevel, freightLevel, mountainLevel,
 ];
 levels.forEach((level, i) => { level.number = i + 1; });
 

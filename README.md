@@ -88,11 +88,11 @@ and earns **badges** for milestones over the whole game: the first bridge, 10 an
 5 extra goals, a railway level, every level, every goal and every star. They show in the
 level list, and a result announces the ones it earned.
 
-Seven levels are built on the same idea as a famous bridge, and winning one shows **a real
+Eight levels are built on the same idea as a famous bridge, and winning one shows **a real
 bridge like yours**: a drawing of that kind of bridge and one fact about it (Tarr Steps after
 Brook, the Forth Bridge after Triangles, the Golden Gate after Hanging road, the Brooklyn
 Bridge after Creek, the Millau Viaduct after Viaduct, the Sydney Harbour Bridge after Deep
-gorge and the Glenfinnan Viaduct after Mountain railway). The level list collects them.
+gorge, Tower Bridge after Drawbridge and the Glenfinnan Viaduct after Mountain railway). The level list collects them.
 
 The win that completes the last level leads to the **ending**: a trophy, the stars, extra
 goals and badges won out of all there are, and how many stars are still waiting. The level
@@ -139,12 +139,13 @@ younger player doesn't need. Turn it off for every tool.
 | Light steel | $70/m | A quarter of the section and strength |
 | Cable | $60/m | Wire rope; tension only, goes slack when pushed |
 | Thin cable | $20/m | A fifth of the section and strength |
+| Winch | $150/m | Drawbridge only: a cable that pulls itself in during the test, then lets out |
 
 Links longer than 25 m are split into equal segments of 25 m or less.
 
 ### Levels
 
-Thirteen levels, each introducing one idea, in four settings: summer, desert, snow and
+Nineteen levels, each introducing one idea, in four settings: summer, desert, snow and
 night. Open the list from the level button in the
 toolbar: it shows your stars and best cost on each. A level unlocks once the one before it
 (or any later one) is won within budget.
@@ -171,9 +172,16 @@ compression *squashed*).
 | 13 | Viaduct | 180 m with two rocks: three spans |
 | 14 | Deep gorge | low ledges: an arch is cheaper than a truss |
 | 15 | Grand crossing | 160 m, climbing, six trucks |
-| 16 | Branch line | the railway: 40 m and a 240 t train, on Rail |
-| 17 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
-| 18 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
+| 16 | Drawbridge | a tall-masted boat sails through first: hang the road from a winch that lifts it |
+| 17 | Branch line | the railway: 40 m and a 240 t train, on Rail |
+| 18 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
+| 19 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
+
+On the **drawbridge** a sailing boat comes through the canal before the traffic, and the
+dashed space its mast needs must be clear while it sails. A **Winch** (shown only on that
+level) pulls itself in to 35% of its built length, lifting a road hinged at the near bank,
+then lets it back out; the traffic sets off once the road is down. A road that can't lift
+stops the boat, and the test is lost.
 
 **Sandbox** (the last card in the level list) lets you design your own gap: its width (20
 to 200 m), how much higher or lower the far bank is, a rock in the middle for a pier, the
@@ -232,6 +240,7 @@ src/
     challenges.mjs      each level's challenges
     badges.mjs          milestones over the whole game
     confetti.mjs        the confetti for a win
+    drawbridge.mjs      the drawbridge: winches, the boat and the space it needs
     ending.mjs          the ending, once every level is won
     real-bridges.mjs    famous bridges built on each level's idea, and their drawings
     speech.mjs          reading text aloud

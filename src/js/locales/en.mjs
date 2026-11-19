@@ -15,6 +15,10 @@ export default {
   "mode.members": { one: "{n} piece", other: "{n} pieces" },
   "mode.joints": { one: "{n} dot", other: "{n} dots" },
   "mode.loading": "Getting ready...",
+  "mode.lifting": "Lifting the road...",
+  "mode.boatSailing": "The boat is sailing through...",
+  "mode.lowering": "Letting the road down...",
+  "mode.boatHit": "The boat is stuck!",
   "mode.driving": "{Many} on the way...",
   "mode.driving.train": "Train on the way...",
   "mode.falling": "A {one} is falling!",
@@ -277,4 +281,11 @@ export default {
   "realBridge.glenfinnan.name": "Glenfinnan Viaduct",
   "realBridge.glenfinnan.place": "Scotland, 1901",
   "realBridge.glenfinnan.fact": "A curving railway bridge on 21 concrete arches. In summer, a steam train still crosses it.",
+
+  // ---- drawbridge
+  "result.boat": "The boat couldn't get under the bridge.",
+  "tip.boat": "The bridge was in the way of the boat. Keep the dashed space clear while it sails through: hang the road from a Winch, and don’t join the road to the far side.",
+  "realBridge.tower.name": "Tower Bridge",
+  "realBridge.tower.place": "London, England, 1894",
+  "realBridge.tower.fact": "Its road splits in the middle, and both halves lift up so tall ships can sail through. It still opens hundreds of times a year.",
 };

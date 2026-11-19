@@ -14,6 +14,24 @@ export const cable = new Material({
   look: { kind: "cable", color: "#25282c", width: 0.14, minPx: 2 },
 });
 
+/**
+ * A winch: a cable on a drum that pulls itself in to lift a drawbridge, then lets out again.
+ * As strong as {@link cable}, and dearer.
+ */
+export const winch = new Material({
+  name: "winch",
+  label: "Winch",
+  density: 7850,
+  crossSectionalArea: 0.0025,
+  youngModulus: 160000e6,
+  tensileStrength: 1500e6,
+  compressionStrength: 1500e6,
+  canCompress: false,
+  costPerMeter: 150,
+  winch: true,
+  look: { kind: "cable", color: "#e0a21b", width: 0.18, minPx: 2.5 },
+});
+
 /** A fifth of the section of {@link cable} (~25 mm rope), for hangers and light stays. */
 export const thinCable = new Material({
   name: "cable-thin",

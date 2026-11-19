@@ -80,8 +80,15 @@ function modeText(game) {
       if (sel.joints) parts.push(t('mode.joints', { n: sel.joints }));
       return { text: t('mode.selected', { what: parts.join(', ') }), kind: '' };
     }
-    case 'waiting':
-      return { text: t('mode.loading') + paused, kind: '' };
+    case 'waiting': {
+      // a drawbridge: what the road and the boat are doing before the traffic sets off
+      const draw = game.level.drawbridge;
+      const time = game.evalCtx.time;
+      const stage = !draw || time < draw.lift[0] ? 'mode.loading'
+        : game.boat?.state === 'sailing' ? 'mode.boatSailing'
+          : game.boat?.state === 'through' ? 'mode.lowering' : 'mode.lifting';
+      return { text: t(stage) + paused, kind: '' };
+    }
     case 'driving':
       return { text: say('mode.driving') + paused, kind: '' };
     case 'falling':
@@ -91,7 +98,7 @@ function modeText(game) {
         ? { text: say('mode.overBudget'), kind: 'failure' }
         : { text: say('mode.crossed'), kind: 'success' };
     case 'fell':
-      return { text: say('mode.fell'), kind: 'failure' };
+      return { text: game.boat?.state === 'hit' ? t('mode.boatHit') : say('mode.fell'), kind: 'failure' };
   }
 }
 
@@ -422,8 +429,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // the Winch only on a drawbridge level: elsewhere it would be a dear cable
+  const winchCard = byId('material-winch', HTMLLabelElement);
+  function showWinch() {
+    const drawbridge = game.level.drawbridge !== undefined;
+    winchCard.hidden = !drawbridge;
+    const pick = winchCard.querySelector('input');
+    if (!drawbridge && pick instanceof HTMLInputElement && pick.checked) {
+      const steel = document.querySelector('input[name="material"][value="steel"]');
+      if (steel instanceof HTMLInputElement) steel.click();
+    }
+  }
+
   function refreshLevels() {
     showDecks();
+    showWinch();
     txtLevelName.textContent = game.level.sandbox ? game.level.name : `${game.level.number}. ${game.level.name}`;
     if (txtLevel.textContent !== game.level.description) stopReading?.();
     txtLevel.textContent = game.level.description;
@@ -551,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function () {
       dlg.text.textContent = say('result.overBudgetText', { over: formatMoney(over) });
     } else {
       dlg.title.textContent = t('result.failed');
-      const how = { fell: 'result.fell', crashed: 'result.crashed', 'hard landing': 'result.hardLanding' };
+      const how = { fell: 'result.fell', crashed: 'result.crashed', 'hard landing': 'result.hardLanding', boat: 'result.boat' };
       const broke = result.broken ? t('result.broke', { n: result.broken }) : '';
       dlg.text.textContent = say(how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }

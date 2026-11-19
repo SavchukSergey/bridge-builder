@@ -21,6 +21,8 @@ export class Material {
     this.carries = opts.carries;
     /** Something drives on it. */
     this.drivable = opts.carries !== undefined;
+    /** Pulls itself in during a drawbridge's test (drawbridge.mjs), and lets out again. */
+    this.winch = opts.winch ?? false;
     /** @type {import("./material.types.mjs").MaterialLook} */
     this.look = opts.look ?? { kind: "beam", color: "#666", highlight: "#888", width: 0.3, minPx: 2 };
   }

@@ -15,6 +15,7 @@ export const REAL_BRIDGES = [
   { id: "brooklyn", level: "creek", kind: "suspension" },
   { id: "millau", level: "viaduct", kind: "tall" },
   { id: "sydney", level: "gorge", kind: "arch" },
+  { id: "tower", level: "drawbridge", kind: "lifting" },
   { id: "glenfinnan", level: "mountain", kind: "arches" },
 ];
 

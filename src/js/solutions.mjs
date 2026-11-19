@@ -347,6 +347,16 @@ export const solutions = {
   // ~$56,500: a 6 m truss; light diagonals, as cables stretch too much under 380 t
   freight: (level) => truss(level, -40, 10, 40, 10, { h: 6, diagonal: "steel-light", vertical: "steel-light", deck: "rail" }),
   // ~$88,000: two 60 m trusses meeting over an A-frame pier on the rock
+  // ~$11,000: a road hinged at the near bank, hung from a winch on a 14 m tower held by a cable
+  drawbridge: (level) => {
+    const b = new Builder(level);
+    const hinge = b.joint(-10, 10), top = b.joint(-10, 24), tip = b.joint(10, 10);
+    b.link(hinge, top, "steel-light");
+    b.link(b.joint(-20, 10), top, "cable-thin");
+    b.link(hinge, tip, "road");
+    b.link(top, tip, "winch");
+    return b.build();
+  },
   mountain: (level) => {
     const b = new Builder(level);
     const opts = { h: 4, diagonal: "steel-light", vertical: "steel-light", deck: "rail" };
