@@ -4,10 +4,13 @@ import { findLevel, levels } from './level.mjs';
 import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
 import { Sound } from './audio.mjs';
 import { renderLevelPreview } from './level-preview.mjs';
+import { SANDBOX_DEFAULT, SANDBOX_LIMITS, SANDBOX_TRAFFIC, normalizeSandbox, parseSandboxId, sandboxId } from './sandbox.mjs';
 import { failureTip, levelHint } from './hints.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
 const TUTORIAL_KEY = 'bridge-builder:tutorial';
+/** The last sandbox designed (its level id), to start the next one from. */
+const SANDBOX_KEY = 'bridge-builder:sandbox';
 const SPEED_KEY = 'bridge-builder:speed';
 const FOLLOW_KEY = 'bridge-builder:follow';
 const VOLUME_KEY = 'bridge-builder:volume';
@@ -360,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function refreshLevels() {
     showDecks();
-    txtLevelName.textContent = `${game.level.number}. ${game.level.name}`;
+    txtLevelName.textContent = game.level.sandbox ? game.level.name : `${game.level.number}. ${game.level.name}`;
     txtLevel.textContent = game.level.description;
     if (!picker.root.hidden) renderLevelCards();
 
@@ -543,10 +546,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---- level-select screen
   /**
-   * A card per level: preview, number and name, stars and best cost, or what unlocks it.
+   * A card per level: preview, number and name, stars and best cost, or what unlocks it. The
+   * sandbox card shows a sandbox level and opens the sandbox designer.
    * @param {import('./level.mjs').Level} level
+   * @param {{ sandbox?: boolean }} [options]
    */
-  function levelCard(level) {
+  function levelCard(level, { sandbox: isSandbox = false } = {}) {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'level-card';
@@ -555,7 +560,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const best = game.bestResult(level.id);
     const previous = levels[level.number - 2];
     card.disabled = !unlocked;
-    card.classList.toggle('current', level === game.level);
+    card.classList.toggle('current', isSandbox ? game.level.sandbox !== undefined : level === game.level);
+    card.classList.toggle('sandbox-card', isSandbox);
+    if (isSandbox) card.dataset.level = 'sandbox';
     card.classList.toggle('locked', !unlocked);
 
     const thumb = document.createElement('canvas');
@@ -573,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
     title.className = 'level-title';
     const num = document.createElement('span');
     num.className = 'level-num';
-    num.textContent = String(level.number);
+    num.textContent = isSandbox ? '✦' : String(level.number);
     const name = document.createElement('span');
     name.textContent = level.name;
     title.append(num, name);
@@ -594,6 +601,16 @@ document.addEventListener('DOMContentLoaded', function () {
       detail.append(svgIcon('icon-lock'), `Win ${previous.name} to unlock`);
     }
 
+    if (isSandbox) {
+      detail.textContent = 'Design your own gap';
+      card.append(thumb, title, detail);
+      card.title = 'Choose the gap, the traffic and the budget yourself';
+      card.addEventListener('click', () => {
+        hideLevels();
+        showSandbox();
+      });
+      return card;
+    }
     card.append(thumb, title, stars, detail);
     card.title = unlocked ? level.description : `Locked: win ${previous.name} within budget first`;
     card.addEventListener('click', () => {
@@ -615,8 +632,14 @@ document.addEventListener('DOMContentLoaded', function () {
     return svg;
   }
 
+  /** The last card: the sandbox, showing the sandbox being played or the last one designed. */
+  function sandboxCard() {
+    const level = /** @type {import('./level.mjs').Level} */ (findLevel(sandboxId(currentSandbox())));
+    return levelCard(level, { sandbox: true });
+  }
+
   function renderLevelCards() {
-    picker.grid.replaceChildren(...levels.map(levelCard));
+    picker.grid.replaceChildren(...levels.map(level => levelCard(level)), sandboxCard());
     const { earned, max } = game.totalStars;
     picker.total.textContent = `${earned} / ${max}`;
   }
@@ -880,6 +903,110 @@ document.addEventListener('DOMContentLoaded', function () {
     updateSound();
     requestAnimationFrame(tick);
   }
+
+  // ---- sandbox: a level the player designs
+  const sandbox = {
+    root: byId('sandbox', HTMLDivElement),
+    form: byId('sandbox-form', HTMLFormElement),
+    close: byId('sandbox-close', HTMLButtonElement),
+    cancel: byId('sandbox-cancel', HTMLButtonElement),
+    preview: byId('sandbox-preview', HTMLCanvasElement),
+    gap: byId('sandbox-gap', HTMLInputElement),
+    gapValue: byId('sandbox-gap-value', HTMLOutputElement),
+    far: byId('sandbox-far', HTMLInputElement),
+    farValue: byId('sandbox-far-value', HTMLOutputElement),
+    rock: byId('sandbox-rock', HTMLInputElement),
+    rockNote: byId('sandbox-rock-note', HTMLSpanElement),
+    traffic: byId('sandbox-traffic', HTMLSelectElement),
+    budget: byId('sandbox-budget', HTMLInputElement),
+    theme: byId('sandbox-theme', HTMLSelectElement),
+  };
+  sandbox.traffic.replaceChildren(...Object.entries(SANDBOX_TRAFFIC).map(([key, { label }]) => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = label;
+    return option;
+  }));
+
+  /** The sandbox being played, else the last one designed, else the default. */
+  function currentSandbox() {
+    if (game.level.sandbox) return game.level.sandbox;
+    try {
+      const last = parseSandboxId(localStorage.getItem(SANDBOX_KEY));
+      if (last) return last;
+    } catch { /* storage blocked */ }
+    return SANDBOX_DEFAULT;
+  }
+
+  /** @returns {import('./sandbox.mjs').SandboxSpec} */
+  function readSandboxForm() {
+    return normalizeSandbox({
+      gap: Number(sandbox.gap.value),
+      far: Number(sandbox.far.value),
+      rock: sandbox.rock.checked,
+      traffic: sandbox.traffic.value,
+      budget: Number(sandbox.budget.value),
+      theme: /** @type {import('./themes.mjs').ThemeId} */ (sandbox.theme.value),
+    });
+  }
+
+  /** Shows the values and redraws the preview after any change. */
+  function updateSandboxForm() {
+    const spec = readSandboxForm();
+    sandbox.gapValue.textContent = `${spec.gap} m`;
+    sandbox.farValue.textContent = spec.far === 0 ? 'level' : `${Math.abs(spec.far)} m ${spec.far > 0 ? 'higher' : 'lower'}`;
+    const roomForRock = spec.gap >= SANDBOX_LIMITS.rockMinGap;
+    sandbox.rock.disabled = !roomForRock;
+    sandbox.rockNote.textContent = roomForRock ? 'in the middle, to stand a pier on' : `needs a gap of ${SANDBOX_LIMITS.rockMinGap} m or more`;
+    const level = findLevel(sandboxId(spec));
+    const g = sandbox.preview.getContext('2d');
+    if (level && g) {
+      const ratio = window.devicePixelRatio || 1;
+      const W = 376, H = 140;
+      if (sandbox.preview.width !== Math.round(W * ratio)) {
+        sandbox.preview.width = Math.round(W * ratio);
+        sandbox.preview.height = Math.round(H * ratio);
+      }
+      g.setTransform(ratio, 0, 0, ratio, 0, 0);
+      g.clearRect(0, 0, W, H);
+      renderLevelPreview(g, level, W, H);
+    }
+  }
+
+  function showSandbox() {
+    hideResult();
+    const spec = currentSandbox();
+    sandbox.gap.value = String(spec.gap);
+    sandbox.far.value = String(spec.far);
+    sandbox.rock.checked = spec.rock;
+    sandbox.traffic.value = spec.traffic;
+    sandbox.budget.value = String(spec.budget);
+    sandbox.theme.value = spec.theme;
+    updateSandboxForm();
+    sandbox.root.hidden = false;
+    sandbox.gap.focus();
+  }
+  function hideSandbox() {
+    sandbox.root.hidden = true;
+  }
+  sandbox.form.addEventListener('input', updateSandboxForm);
+  sandbox.form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const id = sandboxId(readSandboxForm());
+    hideSandbox();
+    try { localStorage.setItem(SANDBOX_KEY, id); } catch { /* ignore */ }
+    if (id !== game.level.id) game.selectLevel(id);
+    chkSimulation.checked = false;
+  });
+  sandbox.close.addEventListener('click', hideSandbox);
+  sandbox.cancel.addEventListener('click', hideSandbox);
+  sandbox.root.addEventListener('click', (ev) => { if (ev.target === sandbox.root) hideSandbox(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !sandbox.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideSandbox();
+    }
+  }, true);
 
   // ---- settings
   const settings = {

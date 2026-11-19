@@ -290,6 +290,54 @@
     </div>
   </div>
 
+  <div id="sandbox" hidden>
+    <form id="sandbox-form" class="settings-card sandbox-card" role="dialog" aria-modal="true" aria-labelledby="sandbox-title">
+      <button type="button" id="sandbox-close" class="btn icon-only close" title="Close (Esc)" aria-label="Close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <h2 id="sandbox-title">Sandbox</h2>
+      <p class="sandbox-intro">Design your own gap, then bridge it. Nothing here counts towards your progress, and Share sends the level along with the bridge.</p>
+      <canvas id="sandbox-preview" width="376" height="140" aria-hidden="true"></canvas>
+
+      <div class="setting">
+        <label for="sandbox-gap">Gap</label>
+        <input type="range" id="sandbox-gap" min="20" max="200" step="10" value="60" />
+        <output id="sandbox-gap-value" for="sandbox-gap">60 m</output>
+      </div>
+      <div class="setting">
+        <label for="sandbox-far">Far bank</label>
+        <input type="range" id="sandbox-far" min="-12" max="12" step="2" value="0" />
+        <output id="sandbox-far-value" for="sandbox-far">level</output>
+      </div>
+      <div class="setting">
+        <label for="sandbox-rock">Rock</label>
+        <input type="checkbox" id="sandbox-rock" class="switch" />
+        <span class="setting-note" id="sandbox-rock-note">in the middle, to stand a pier on</span>
+      </div>
+      <div class="setting">
+        <label for="sandbox-traffic">Traffic</label>
+        <select id="sandbox-traffic" class="field"></select>
+      </div>
+      <div class="setting">
+        <label for="sandbox-budget">Budget</label>
+        <span class="money-field">$<input type="number" id="sandbox-budget" class="field" min="1000" max="1000000" step="500" value="40000" inputmode="numeric" /></span>
+      </div>
+      <div class="setting">
+        <label for="sandbox-theme">Scenery</label>
+        <select id="sandbox-theme" class="field">
+          <option value="summer">Summer</option>
+          <option value="desert">Desert</option>
+          <option value="snow">Snow</option>
+          <option value="night">Night</option>
+        </select>
+      </div>
+      <div class="confirm-actions sandbox-actions">
+        <button type="button" id="sandbox-cancel" class="btn">Cancel</button>
+        <button type="submit" id="sandbox-build" class="btn primary">Build it</button>
+      </div>
+    </form>
+  </div>
+
   <div id="result" hidden>
     <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title">
       <button type="button" id="result-close" class="btn icon-only close" title="Close to look at the bridge (Esc)"

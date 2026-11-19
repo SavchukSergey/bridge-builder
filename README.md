@@ -109,6 +109,13 @@ is won within budget.
 | 15 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
 | 16 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
 
+**Sandbox** (the last card in the level list) lets you design your own gap: its width (20
+to 200 m), how much higher or lower the far bank is, a rock in the middle for a pier, the
+traffic (cars, trucks, rush hour, the heavy hauler or a train), the budget and the scenery.
+A sandbox is always open and doesn't count towards progress. Its level id spells out the
+whole design, so its bridge is saved like any other, and **Share** sends the level along
+with the bridge.
+
 | Vehicle | Mass | Length | Axles |
 | --- | --- | --- | --- |
 | Car | 1.5 t | 4.4 m | 2 |
@@ -147,6 +154,7 @@ src/
     engine/             joints and links
     materials/          material properties and looks
     level.mjs           level definitions, star thresholds
+    sandbox.mjs         sandbox levels the player designs
     level-preview.mjs   level thumbnails for the level-select screen
     vehicle.mjs         driving, falling and axle loads
     vehicle-types.mjs   cars, buses, trucks, haulers, locomotives, wagons: sizes, axles, drawings

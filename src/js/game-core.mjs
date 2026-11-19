@@ -13,7 +13,7 @@ import { COMPLETED_KEY, BEST_KEY, TRIES_KEY, storageGet, storageSet } from "./st
 import { solutions } from "./solutions.mjs";
 import { Effects } from "./effects.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
-import { levels } from "./level.mjs";
+import { findLevel, levels } from "./level.mjs";
 import { createVec3F } from "./math.js";
 import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
@@ -255,6 +255,7 @@ export class GameCore {
    * @param {string} [id]
    */
   isUnlocked(id = this.level.id) {
+    if (findLevel(id)?.sandbox) return true;
     const i = levels.findIndex(level => level.id === id);
     if (i < 0) return false;
     return i === 0 || this.isCompleted(id) || this.isCompleted(levels[i - 1].id);
@@ -309,7 +310,9 @@ export class GameCore {
     const level = this.level;
     const cost = this.cost;
     const previousBest = this.bestResult();
-    const next = levels[levels.indexOf(level) + 1];
+    // a sandbox is not part of the progression: no next level, and nothing recorded
+    const sandbox = level.sandbox !== undefined;
+    const next = sandbox ? undefined : levels[levels.indexOf(level) + 1];
     const base = { cost, budget: level.budget, goals: level.stars, previousBest, nextLevel: next?.id };
     const broken = this.scene.links.filter(l => l.broken).length;
 
@@ -335,8 +338,8 @@ export class GameCore {
     const stars = level.starsFor(cost);
     const newBest = !previousBest || cost < previousBest.cost - 0.5;
     const best = newBest ? { cost, stars } : previousBest;
-    if (newBest) storageSet(BEST_KEY, JSON.stringify({ ...this.__bests(), [level.id]: best }));
-    this.__markCompleted();
+    if (newBest && !sandbox) storageSet(BEST_KEY, JSON.stringify({ ...this.__bests(), [level.id]: best }));
+    if (!sandbox) this.__markCompleted();
     this.onChange();
     return { ...base, kind: "success", stars, best, newBest, broken };
   }
@@ -363,7 +366,7 @@ export class GameCore {
   }
 
   __countTry() {
-    if (this.replay) return; // watching it again is not another try
+    if (this.replay || this.level.sandbox) return; // watching it again is not another try
     storageSet(TRIES_KEY, JSON.stringify({ ...this.__tries(), [this.level.id]: this.triesWithoutWin() + 1 }));
   }
 

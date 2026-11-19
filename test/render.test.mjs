@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { at, createGame, runFrames } from "./helpers.mjs";
 import { creekLevel, levels } from "../src/js/level.mjs";
 import { alternatives } from "./solutions.mjs";
+import { sandboxId } from "../src/js/sandbox.mjs";
 
 /**
  * A stand-in for CanvasRenderingContext2D that accepts every call, checks the numbers it
@@ -200,6 +201,21 @@ describe("rendering", () => {
     game.setSimulationRunning(true);
     game.render();
     assert.equal(outlineDash(), 0, "not during a test");
+  });
+
+  test("sandbox levels draw, from the narrowest to the widest with a rock", () => {
+    for (const spec of [
+      { gap: 20, far: -12, traffic: "cars", theme: "night" },
+      { gap: 200, far: 12, rock: true, traffic: "train6", theme: "snow" },
+      { gap: 90, rock: true, traffic: "rush", theme: "desert" },
+    ]) {
+      const game = createGame(sandboxId(spec));
+      const rec = withRecorder(game);
+      game.render();
+      runFrames(game, 120);
+      game.render();
+      assert.equal(rec.stackDepth, 0);
+    }
   });
 
   test("zoomed far out and far in", () => {

@@ -18,6 +18,7 @@ const TAGS = {
   HTMLParagraphElement: "p",
   HTMLLabelElement: "label",
   HTMLOutputElement: "output",
+  HTMLFormElement: "form",
 };
 
 test("every element main.js looks up exists in index.html with the expected tag", () => {

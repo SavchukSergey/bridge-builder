@@ -1330,7 +1330,8 @@ kbd {
 
 /* ---------- settings ---------- */
 
-#settings {
+#settings,
+#sandbox {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -1342,7 +1343,8 @@ kbd {
   animation: fade-in 0.2s ease-out;
 }
 
-#settings[hidden] {
+#settings[hidden],
+#sandbox[hidden] {
   display: none;
 }
 
@@ -1522,4 +1524,67 @@ kbd {
 
 #hint-button {
   align-self: flex-start;
+}
+
+/* ---------- sandbox ---------- */
+
+.sandbox-intro {
+  margin: -6px 0 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+#sandbox-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 376 / 140;
+  height: auto;
+  margin-bottom: 4px;
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+
+.field {
+  grid-column: 2 / -1;
+  justify-self: start;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+}
+
+.field:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+select.field option {
+  background: #18222e;
+  color: var(--text);
+}
+
+.money-field {
+  grid-column: 2 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.money-field .field {
+  width: 9em;
+}
+
+.sandbox-actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.level-card.sandbox-card .level-num {
+  letter-spacing: 0;
 }

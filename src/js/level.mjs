@@ -2,6 +2,7 @@ import { SAVE_FORMAT_VERSION, Scene } from "./scene.js";
 import { Vehicle } from "./vehicle.mjs";
 import { VEHICLE_TYPES } from "./vehicle-types.mjs";
 import { THEMES } from "./themes.mjs";
+import { findSandboxLevel } from "./sandbox.mjs";
 import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, renderWater, renderWaterFront } from "./scenery.mjs";
 
 /**
@@ -32,6 +33,8 @@ import { renderAbutment, renderFlag, renderGround, renderTrees, renderValley, re
  * @property {import("./themes.mjs").ThemeId} [theme] - scenery look; summer by default
  * @property {() => import("./scene.js").SavedStructure} [example] - starting structure
  *   instead of bare anchors
+ * @property {import("./sandbox.mjs").SandboxSpec} [sandbox] - a level the player designed
+ *   (sandbox.mjs): always open, and not part of the progression
  */
 
 /**
@@ -64,6 +67,7 @@ export class Level {
     this.example = opts.example;
     this.water = opts.water;
     this.theme = THEMES[opts.theme ?? "summer"];
+    this.sandbox = opts.sandbox;
   }
 
   /** What the convoy needs to drive on: road, or rail for a train. */
@@ -515,9 +519,10 @@ export const levels = [
 levels.forEach((level, i) => { level.number = i + 1; });
 
 /**
+ * A level by id: one of {@link levels}, or a sandbox level (whose id describes it).
  * @param {string | null | undefined} id
  * @returns {Level | undefined}
  */
 export function findLevel(id) {
-  return levels.find(level => level.id === id);
+  return levels.find(level => level.id === id) ?? findSandboxLevel(id);
 }
