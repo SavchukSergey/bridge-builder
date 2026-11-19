@@ -1,4 +1,5 @@
 // Main entry point for the Bridge Builder game
+import { Joint } from './engine/joint.mjs';
 import { Game, SPEEDS } from './game.js';
 import { findLevel, levels } from './level.mjs';
 import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
@@ -1156,6 +1157,12 @@ document.addEventListener('DOMContentLoaded', function () {
       hideSettings();
     }
   }, true);
+
+  // ---- a touch screen: bigger dots, for a finger to find
+  const coarse = window.matchMedia?.('(pointer: coarse)');
+  const sizeDots = () => { Joint.drawScale = coarse?.matches ? 1.6 : 1; };
+  sizeDots();
+  coarse?.addEventListener?.('change', sizeDots);
 
   // ---- simple controls: the extra tools put away, for younger players (on unless turned off)
   /** @param {boolean} on */

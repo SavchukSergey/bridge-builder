@@ -1107,6 +1107,20 @@ kbd {
     display: grid;
   }
 
+  /* fingers need room: buttons at least 44 px, materials easy to tap */
+  .btn {
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .material-option .card {
+    padding: 11px 12px;
+  }
+
+  .switch {
+    transform: scale(1.25);
+  }
+
   .mouse-help {
     display: none;
   }

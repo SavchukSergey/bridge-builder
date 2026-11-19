@@ -498,7 +498,7 @@ export class GameEditing extends GameLevels {
 
   /** Pick radius in world units, constant on screen regardless of zoom. */
   __pickRadius() {
-    return (this.pointerType === "touch" ? TOUCH_PICK_RADIUS_PX : PICK_RADIUS_PX) / this.ctx.zoom;
+    return (this.pointerType === "mouse" ? PICK_RADIUS_PX : TOUCH_PICK_RADIUS_PX) / this.ctx.zoom;
   }
 
   /** Esc while dragging a joint: put it back. */

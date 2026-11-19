@@ -28,8 +28,8 @@ export const SEEK_BUDGET_MS = 12;
 export const FOLLOW_RATE = 2.5;
 /** Hit radius (in screen pixels) for snapping to joints and picking links. */
 export const PICK_RADIUS_PX = 12;
-/** A fingertip covers more than a mouse pointer: pick within this radius on touch. */
-export const TOUCH_PICK_RADIUS_PX = 24;
+/** A fingertip (or a pen) covers more than a mouse pointer: pick within this radius. */
+export const TOUCH_PICK_RADIUS_PX = 28;
 /** Holding a finger still this long deletes what is under it (the touch right-click). */
 export const LONG_PRESS_MS = 500;
 /** View zoom limits, pixels per metre. */
