@@ -31,6 +31,7 @@ const SHELL = [
   "js/engine/joint.mjs",
   "js/engine/link.mjs",
   "js/eval-ctx.mjs",
+  "js/friend.mjs",
   "js/game-config.mjs",
   "js/game-core.mjs",
   "js/game-editing.mjs",

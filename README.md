@@ -215,6 +215,10 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+**Challenge a friend** (after a win) copies a link with the level and the price, but not
+the bridge: opening it sets that price as a goal on the level, shown in the panel until it is
+beaten or put away.
+
 **Today's challenge** (top of the level list) picks one of the open levels each day, with a
 twist its hint bridge meets: a tight cost, few pieces, no cables or no heavy steel. It shows
 in the panel on that level, a win that meets it is ticked in the result, and days done in a
@@ -249,6 +253,7 @@ src/
     game-levels.mjs     switching levels, undo and redo, saves, import and export
     game-editing.mjs    building, mirroring, dragging and deleting links and joints
     game-input.mjs      mouse, touch, wheel and keyboard
+    friend.mjs          challenge a friend: a level and a price to beat, in a link
     game-config.mjs     tuning values (pick radii, zoom limits, link lengths, speeds)
     game-types.mjs      shared JSDoc types
     storage.mjs         localStorage keys and safe access

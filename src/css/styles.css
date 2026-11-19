@@ -1633,6 +1633,36 @@ kbd {
   display: none;
 }
 
+/* ---------- a friend's price to beat ---------- */
+
+.friend-goal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.friend-goal[hidden] {
+  display: none;
+}
+
+.friend-goal span {
+  flex: 1;
+}
+
+.friend-goal .btn.icon-only {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+}
+
+.friend-goal .btn .icon {
+  width: 12px;
+  height: 12px;
+}
+
 /* ---------- the daily challenge ---------- */
 
 .daily-card {

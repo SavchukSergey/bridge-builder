@@ -317,4 +317,15 @@ export default {
   "daily.new": "A new one every day.",
   "daily.streak": { one: "{n} day in a row so far: keep it going!", other: "{n} days in a row so far: keep it going!" },
   "daily.done": { one: "Done! {n} day in a row. Come back tomorrow.", other: "Done! {n} days in a row. Come back tomorrow." },
+
+  // ---- challenge a friend
+  "friend.title": "Beat your friend",
+  "friend.goal": "Beat your friend: under {cost}",
+  "friend.beaten": "You beat your friend’s {cost}!",
+  "friend.won": "Your friend’s bridge cost {cost}: yours is {diff} cheaper!",
+  "friend.notYet": "Your friend’s bridge cost {cost}: build one for less to win.",
+  "friend.text": "My bridge on {name} cost {cost}. Can you build one for less?",
+  "friend.copied": "Challenge link copied: send it to a friend.",
+  "friend.opened": "A friend’s bridge on {name} cost {cost}. Can you build one for less?",
+  "friend.locked": "A friend dares you to build {number}. {name}: win {before} first.",
 };

@@ -15,6 +15,7 @@ import { endingSummary, isFinished } from './ending.mjs';
 import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
 import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
+import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -235,6 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
     challenges: byId('result-challenges', HTMLUListElement),
     badges: byId('result-badges', HTMLUListElement),
     real: byId('result-real', HTMLButtonElement),
+    friend: byId('result-friend', HTMLButtonElement),
     name: byId('result-name', HTMLParagraphElement),
     compare: byId('result-compare', HTMLDivElement),
     compareText: byId('result-compare-text', HTMLParagraphElement),
@@ -489,11 +491,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const best = game.bestResult();
     goals.best.textContent = best ? t('goal.best', { cost: formatMoney(best.cost), stars: starText(best.stars) }) : '';
     const earned = game.challengesEarned();
+    showFriendGoal();
     const daily = today();
     goalChallenges.replaceChildren(...challengesFor(game.level.id).map(c =>
       challengeItem(c.name, c.label, { earned: earned.includes(c.id) })),
     ...(daily?.level === game.level.id ? [challengeItem(t('daily.title'), dailyLabel(daily), { earned: daysDone().includes(daily.date) })] : []));
   }
+
+  // ---- a friend's price to beat on this level
+  const friendBox = {
+    root: byId('friend-goal', HTMLDivElement),
+    text: byId('friend-goal-text', HTMLSpanElement),
+    clear: byId('friend-goal-clear', HTMLButtonElement),
+  };
+  function showFriendGoal() {
+    const goal = friendGoal(game.level.id);
+    friendBox.root.hidden = !goal;
+    if (goal) friendBox.text.textContent = t(goal.beaten ? 'friend.beaten' : 'friend.goal', { cost: formatMoney(goal.cost) });
+  }
+  friendBox.clear.addEventListener('click', () => {
+    clearFriendGoal(game.level.id);
+    showFriendGoal();
+  });
+  /** @type {ReturnType<typeof judgeFriend>} */
+  let friendResult;
 
   // ---- the daily challenge: one open level, with a twist, each day
   /** Today's challenge, among the levels open now. */
@@ -672,6 +693,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // after a win, how the bridge did on the level's challenges
     dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
       challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })),
+    ...(friendResult ? [challengeItem(t('friend.title'), friendResult.beat
+      ? t('friend.won', { cost: formatMoney(friendResult.goal.cost), diff: formatMoney(friendResult.goal.cost - result.cost) })
+      : t('friend.notYet', { cost: formatMoney(friendResult.goal.cost) }),
+    { earned: friendResult.beat, met: friendResult.beat, isNew: friendResult.isNew })] : []),
     ...(dailyResult ? [challengeItem(t('daily.title'), dailyResult.isNew ? `${dailyResult.label} · ${t('daily.done', { n: streak(dayOf()) })}` : dailyResult.label,
       { earned: dailyResult.met, met: dailyResult.met, isNew: dailyResult.isNew })] : []));
     dlg.cost.textContent = formatMoney(result.cost);
@@ -713,6 +738,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // a win on a level built on the same idea as a famous bridge: a button to see it
     const famous = result.kind === 'success' ? realBridgeFor(game.level.id) : undefined;
     dlg.real.hidden = !famous;
+    dlg.friend.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
     if (famous) {
       const picture = dlg.real.firstElementChild;
       if (picture) picture.innerHTML = bridgeDrawing(famous.kind);
@@ -957,6 +983,8 @@ document.addEventListener('DOMContentLoaded', function () {
   game.onResult = (result) => {
     if (result.kind === 'success' && isGuiding()) guide.end();
     dailyResult = dailyAfter(result);
+    friendResult = result.kind === 'success' && !game.level.sandbox ? judgeFriend(game.level.id, result.cost) : undefined;
+    if (friendResult) showFriendGoal();
     updateHint();
     showResult(result);
     sound.jingle(result.kind === 'success');
@@ -1165,13 +1193,26 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // ---- bridges in links
-  async function shareBridge() {
-    const url = bridgeUrl(location.href.split('#')[0], game.exportStructure());
+  function shareBridge() {
+    return shareLink(bridgeUrl(location.href.split('#')[0], game.exportStructure()), t('share.text', { name: game.level.name }));
+  }
+  /** A link that dares a friend to build this level for less than the last win. */
+  function shareFriend() {
+    const cost = game.result?.kind === 'success' ? game.result.cost : game.bestResult()?.cost;
+    if (cost === undefined) return;
+    return shareLink(friendUrl(location.href.split('#')[0], game.level.id, cost),
+      t('friend.text', { name: game.level.name, cost: formatMoney(cost) }), t('friend.copied'));
+  }
+  /**
+   * Shares a link: the system share sheet on phones, else copied.
+   * @param {string} url @param {string} text @param {string} [copied] - the message once copied
+   */
+  async function shareLink(url, text, copied = t('share.copied')) {
     const coarse = window.matchMedia?.('(pointer: coarse)').matches;
     if (coarse && navigator.share) {
       // phones: the system share sheet
       try {
-        await navigator.share({ title: 'Bridge Builder', text: t('share.text', { name: game.level.name }), url });
+        await navigator.share({ title: 'Bridge Builder', text, url });
       } catch (err) {
         if (!(err instanceof DOMException && err.name === 'AbortError')) showStatus(t('share.failed'), true);
       }
@@ -1180,12 +1221,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Copy within the click itself: the async clipboard API can wait on a permission
     // prompt, and the click no longer counts by the time that is answered.
     if (copyNow(url)) {
-      showStatus(t('share.copied'));
+      showStatus(copied);
       return;
     }
     try {
       await navigator.clipboard.writeText(url);
-      showStatus(t('share.copied'));
+      showStatus(copied);
     } catch {
       showStatus(t('share.copyFailed'), true);
     }
@@ -1211,9 +1252,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   btnShare.addEventListener('click', shareBridge);
   dlg.share.addEventListener('click', shareBridge);
+  dlg.friend.addEventListener('click', shareFriend);
 
   /** Opens the bridge in the address's #hash, if there is one, then clears the hash. */
   function openSharedBridge() {
+    if (openFriendChallenge()) return;
     const text = bridgeInHash(location.hash);
     if (text === undefined) return;
     history.replaceState(null, '', location.pathname + location.search);
@@ -1246,6 +1289,31 @@ document.addEventListener('DOMContentLoaded', function () {
     showStatus(t('link.opened', { name: level.name }));
   }
   window.addEventListener('hashchange', openSharedBridge);
+
+  /** Opens a friend's challenge in the address's #hash, if it is one: its level, with the price to beat. */
+  function openFriendChallenge() {
+    const dare = friendInHash(location.hash);
+    if (!location.hash.startsWith('#beat=')) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    const level = dare && findLevel(dare.level);
+    if (!dare || !level || level.sandbox) {
+      showStatus(t(dare ? 'link.noLevel' : 'link.damaged'), true);
+      return true;
+    }
+    if (!game.isUnlocked(level.id)) {
+      const before = levels[levels.indexOf(level) - 1];
+      showStatus(t('friend.locked', { number: level.number, name: level.name, before: before.name }), true);
+      return true;
+    }
+    setFriendGoal(level.id, dare.cost);
+    if (!dlg.root.hidden) hideResult();
+    if (!picker.root.hidden) hideLevels();
+    if (game.level.id === level.id) showFriendGoal();
+    else game.selectLevel(level.id);
+    chkSimulation.checked = false;
+    showStatus(t('friend.opened', { name: level.name, cost: formatMoney(dare.cost) }));
+    return true;
+  }
 
   btnImport.addEventListener('click', () => fileImport.click());
   fileImport.addEventListener('change', async () => {

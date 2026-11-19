@@ -172,6 +172,10 @@
         <div class="goal" id="goal-two" title="Two stars" data-i18n-title="ui.twoStars"><span class="mini-stars" data-stars="2"></span><span></span></div>
         <div class="goal" id="goal-three" title="Three stars" data-i18n-title="ui.threeStars"><span class="mini-stars" data-stars="3"></span><span></span></div>
         <div class="goal best" id="best" title="Your cheapest bridge that worked on this level" data-i18n-title="ui.bestTitle"></div>
+        <div class="goal friend-goal" id="friend-goal" hidden>
+          <span id="friend-goal-text"></span>
+          <button type="button" id="friend-goal-clear" class="btn icon-only" title="Put this challenge away" data-i18n-title="friend.clear" aria-label="Put this challenge away" data-i18n-aria="friend.clear"><svg class="icon"><use href="#icon-close" /></svg></button>
+        </div>
         <ul class="challenges" id="goal-challenges" aria-label="Challenges" data-i18n-aria="ui.challenges"></ul>
       </div>
     </section>
@@ -446,6 +450,7 @@
       <p id="result-hint"></p>
       <div class="result-actions">
         <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
+        <button type="button" id="result-friend" class="btn" title="Copy a link that dares a friend to build this level for less" data-i18n-title="friend.shareTitle"><svg class="icon"><use href="#icon-star" /></svg><span data-i18n="friend.share">Challenge a friend</span></button>
         <button type="button" id="result-replay" class="btn" title="Watch the moment it broke again, in slow motion" data-i18n-title="ui.replayTitle"><svg class="icon"><use href="#icon-play" /></svg><span data-i18n="ui.replay">Watch it break</span></button>
         <button type="button" id="result-help" class="btn"><svg class="icon"><use href="#icon-bulb" /></svg><span></span></button>
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
