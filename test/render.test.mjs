@@ -231,6 +231,16 @@ describe("rendering", () => {
     assert.equal(rec.stackDepth, 0);
   });
 
+  test("the keyboard cursor, and carrying a joint with it", () => {
+    const game = createGame("creek");
+    const rec = withRecorder(game);
+    game.__handleKeyDown({ key: "j", target: null, preventDefault() { } });
+    const arcs = rec.counts.arc;
+    game.render();
+    assert.ok(rec.counts.arc > arcs);
+    assert.equal(rec.stackDepth, 0);
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);

@@ -63,6 +63,16 @@ export class RenderCtx {
     );
   }
 
+  /**
+   * The inverse of {@link clientToGlobal}: where a world point is on the canvas.
+   * @param {import("./math.js").Vec3F} vec
+   * @returns {import("./math.js").Vec3F}
+   */
+  globalToClient(vec) {
+    const { shift, zoom, width, height } = this;
+    return createVec3F((vec.x - shift.x) * zoom + width / 2, height / 2 - (vec.y - shift.y) * zoom, 0);
+  }
+
   clear() {
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.width * this.pixelRatio, this.height * this.pixelRatio);

@@ -207,20 +207,198 @@ export class GameInput extends GameEditing {
         return;
       }
       if (!jointA) this.clearSelection(); // a click on empty space lets go of the selection
-      if (jointA) {
-        const preview = new CompositeScene();
-        this.__clickState = {
-          startGlobal: globalPoint,
-          startClient: client,
-          jointA: jointA,
-          preview: preview,
-          previewBackup: this.scene.preview
-        };
-        this.scene.preview = preview;
-      }
+      if (jointA) this.__startLink(jointA, globalPoint, client);
     } else {
       this.__finishLink(globalPoint, !ev.altKey);
     }
+  }
+
+  /**
+   * Starts placing a link from `joint`: its preview follows the pointer (or the cursor).
+   * @param {import("./engine/joint.mjs").Joint} joint
+   * @param {import("./math.js").Vec3F} globalPoint
+   * @param {import("./math.js").Vec3F} client
+   */
+  __startLink(joint, globalPoint, client) {
+    const preview = new CompositeScene();
+    this.__clickState = {
+      startGlobal: globalPoint,
+      startClient: client,
+      jointA: joint,
+      preview,
+      previewBackup: this.scene.preview,
+    };
+    this.scene.preview = preview;
+  }
+
+  /**
+   * The keyboard cursor: a point in the world that the arrow keys move along the grid, and
+   * that Enter clicks. Shown once an arrow key (or J) is pressed; the mouse takes over again
+   * as soon as it moves over the canvas.
+   * @type {import("./math.js").Vec3F | undefined}
+   */
+  keyCursor = undefined;
+
+  /**
+   * A joint picked up with G, carried by the arrow keys until G or Enter puts it down (Esc:
+   * back where it was).
+   * @type {{ moves: import("./game-types.mjs").JointMove[] } | undefined}
+   */
+  __keyGrab = undefined;
+
+  /**
+   * Building with the keyboard alone: arrows move the cursor (Shift: 5 m), Enter or Space
+   * clicks there, J and Shift+J jump between joints, G picks up and puts down the joint
+   * under the cursor, Del deletes what is under it.
+   * @param {KeyboardEvent} ev
+   * @returns {boolean} whether the key was used
+   */
+  __handleBuildKey(ev) {
+    if (!this.isBuildMode || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
+    /** @type {Record<string, [number, number]>} */
+    const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+    const dir = arrows[ev.key];
+    if (dir) {
+      ev.preventDefault();
+      if (!this.keyCursor) this.__moveCursor(this.__cursorStart());
+      else {
+        const step = ev.shiftKey ? 5 * SNAP_STEP : SNAP_STEP;
+        // the first step from a joint off the grid lands back on the grid
+        const snap = (/** @type {number} */ v) => Math.round(v / SNAP_STEP) * SNAP_STEP;
+        this.__moveCursor(createVec3F(snap(this.keyCursor.x + dir[0] * step), snap(this.keyCursor.y + dir[1] * step), 0));
+      }
+      return true;
+    }
+    const key = ev.key.toLowerCase();
+    if (key === "j") {
+      ev.preventDefault();
+      const joints = [...this.scene.joints].sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y);
+      if (!joints.length) return true;
+      const here = this.keyCursor && this.scene.findJoint(this.keyCursor, 1e-6);
+      const i = here ? joints.indexOf(here) : -1;
+      const next = i < 0 ? (ev.shiftKey ? joints.length - 1 : 0) : (i + (ev.shiftKey ? -1 : 1) + joints.length) % joints.length;
+      this.__moveCursor({ ...joints[next].position });
+      return true;
+    }
+    if (!this.keyCursor) return false;
+    if (ev.key === "Enter" || ev.key === " ") {
+      ev.preventDefault();
+      if (this.__keyGrab) this.__dropGrab();
+      else this.__cursorClick();
+      return true;
+    }
+    if (key === "g") {
+      ev.preventDefault();
+      if (this.__keyGrab) this.__dropGrab();
+      else {
+        const joint = this.scene.findJoint(this.keyCursor, this.__cursorRadius());
+        if (joint && !joint.fixed) {
+          this.__cancelLink();
+          this.__keyGrab = { moves: this.__jointMoves(joint) };
+          this.keyCursor = { ...joint.position };
+        }
+      }
+      return true;
+    }
+    if ((ev.key === "Delete" || ev.key === "Backspace") && !this.__keyGrab && !this.selectionInfo) {
+      ev.preventDefault();
+      if (this.__clickState) this.__cancelLink();
+      else this.__deleteAt(this.keyCursor);
+      return true;
+    }
+    return false;
+  }
+
+  /** How near the cursor a joint must be to count as under it, m. */
+  __cursorRadius() {
+    return Math.max(0.3, this.__pickRadius());
+  }
+
+  /** Where the cursor first appears: the link's start, or the joint nearest the middle of the view. */
+  __cursorStart() {
+    if (this.__clickState) return { ...this.__clickState.jointA.position };
+    const centre = this.ctx.shift;
+    let best = this.scene.joints[0];
+    for (const j of this.scene.joints) {
+      const d = Math.hypot(j.position.x - centre.x, j.position.y - centre.y);
+      if (!best || d < Math.hypot(best.position.x - centre.x, best.position.y - centre.y)) best = j;
+    }
+    return best ? { ...best.position } : createVec3F(Math.round(centre.x), Math.round(centre.y), 0);
+  }
+
+  /**
+   * Moves the keyboard cursor, carrying a grabbed joint or the link being placed along, and
+   * pans to keep it in view.
+   * @param {import("./math.js").Vec3F} p
+   */
+  __moveCursor(p) {
+    this.keyCursor = p;
+    // keep a margin of 60 px between the cursor and the edges of the visible canvas
+    const margin = 60;
+    const { top, right, bottom = 0 } = this.viewInsets;
+    const w = this.ctx.width - right, h = this.ctx.height - bottom;
+    const c = this.ctx.globalToClient(p);
+    const zoom = this.ctx.zoom;
+    let dx = 0, dy = 0;
+    if (c.x < margin) dx = (c.x - margin) / zoom;
+    else if (c.x > w - margin) dx = (c.x - (w - margin)) / zoom;
+    if (c.y < top + margin) dy = -(c.y - top - margin) / zoom;
+    else if (c.y > h - margin) dy = -(c.y - (h - margin)) / zoom;
+    if (dx || dy) this.ctx.shift = createVec3F(this.ctx.shift.x + dx, this.ctx.shift.y + dy, 0);
+    const client = this.ctx.globalToClient(p);
+    this.__hoverClient = client; // the tooltip and the placement readout follow the cursor
+    if (this.__keyGrab) this.__dragJoints(this.__keyGrab.moves, p);
+    else if (this.__clickState) this.__updatePreview(client);
+  }
+
+  /** Enter: a click at the cursor. */
+  __cursorClick() {
+    const p = /** @type {import("./math.js").Vec3F} */ (this.keyCursor);
+    if (this.__clickState) {
+      this.__finishLink(p, true);
+      return;
+    }
+    const joint = this.scene.findJoint(p, this.__cursorRadius());
+    if (joint) this.__startLink(joint, p, this.ctx.globalToClient(p));
+  }
+
+  /** Puts the grabbed joint down where it is now, as one undoable move. */
+  __dropGrab() {
+    const grab = this.__keyGrab;
+    if (!grab) return;
+    this.__keyGrab = undefined;
+    const final = grab.moves.map(m => ({ joint: m.joint, position: { ...m.joint.position } }));
+    this.__placeJoints(grab.moves.map(m => ({ joint: m.joint, position: m.start })));
+    const changed = final.some(({ joint, position }) => position.x !== joint.position.x || position.y !== joint.position.y);
+    if (changed) this.__edit(() => this.__placeJoints(final));
+  }
+
+  /** Esc while carrying a joint: back where it was. @returns {boolean} whether one was carried */
+  __cancelGrab() {
+    const grab = this.__keyGrab;
+    if (!grab) return false;
+    this.__keyGrab = undefined;
+    this.__placeJoints(grab.moves.map(m => ({ joint: m.joint, position: m.start })));
+    return true;
+  }
+
+  /**
+   * A test starting puts down nothing: a joint being carried goes back, and the cursor goes.
+   * @param {boolean} running
+   */
+  setSimulationRunning(running) {
+    if (running) {
+      this.__cancelGrab();
+      this.keyCursor = undefined;
+    }
+    super.setSimulationRunning(running);
+  }
+
+  /** The mouse is back: the keyboard cursor goes away. */
+  __leaveKeyboard() {
+    if (!this.keyCursor) return;
+    this.__cancelGrab();
+    this.keyCursor = undefined;
   }
 
   /**
@@ -237,6 +415,7 @@ export class GameInput extends GameEditing {
         return;
       }
     }
+    if (ev.pointerType !== "touch") this.__leaveKeyboard();
     this.__hoverClient = client;
     if (this.__box) {
       this.__box.client = client;
@@ -303,9 +482,13 @@ export class GameInput extends GameEditing {
   __handleKeyDown(ev) {
     const target = /** @type {HTMLElement | null} */ (ev.target);
     if (target?.closest?.("input[type=text], input[type=number], textarea, [contenteditable]")) return;
+    // a focused button, menu or slider keeps its own arrows, Enter and Space
+    const onControl = Boolean(target?.closest?.("button, select, input, a, summary, [role=dialog]"));
+    if (!onControl && ev.key !== "Escape" && this.__handleBuildKey(ev)) return;
 
     if (ev.key === "Escape") {
       if (this.__box) this.__box = undefined;
+      else if (this.__cancelGrab()) { /* the joint is back */ }
       else if (this.__cancelDrag()) { /* the drag is undone */ }
       else if (this.__clickState) this.__cancelLink();
       else this.clearSelection();

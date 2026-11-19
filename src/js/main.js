@@ -285,6 +285,31 @@ document.addEventListener('DOMContentLoaded', function () {
     chkSimulation.checked = false;
   });
 
+  // ---- keyboard: materials by number, T to test
+  const materialInputs = () => [...document.querySelectorAll('input[name="material"]')]
+    .filter(el => el instanceof HTMLInputElement && !el.closest('[hidden]'));
+  for (const input of materialInputs()) {
+    // a clicked card would keep the arrow keys for itself: give them back to the cursor
+    input.addEventListener('change', () => { if (input instanceof HTMLInputElement) input.blur(); });
+  }
+  window.addEventListener('keydown', (ev) => {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const target = ev.target;
+    if (target instanceof Element && target.closest('input[type=text], input[type=number], textarea, select, [contenteditable]')) return;
+    if (!picker.root.hidden || !dlg.root.hidden || !settings.root.hidden || !sandbox.root.hidden) return;
+    const n = Number(ev.key);
+    if (Number.isInteger(n) && n >= 1) {
+      const input = materialInputs()[n - 1];
+      if (input instanceof HTMLInputElement) {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    } else if (ev.key.toLowerCase() === 't' && !(target instanceof HTMLButtonElement)) {
+      chkSimulation.checked = !chkSimulation.checked;
+      chkSimulation.dispatchEvent(new Event('change'));
+    }
+  });
+
   btnUndo.addEventListener('click', () => game.undo());
   btnRedo.addEventListener('click', () => game.redo());
 

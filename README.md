@@ -43,6 +43,14 @@ none is impossible.
 | Undo / redo | <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> |
 | Cancel | <kbd>Esc</kbd> |
 
+Everything can be built from the keyboard alone: the arrow keys move a cursor along the grid
+(<kbd>Shift</kbd>: 5 m at a time), <kbd>Enter</kbd> or <kbd>Space</kbd> clicks where it is,
+<kbd>J</kbd> / <kbd>Shift</kbd>+<kbd>J</kbd> jump to the next / previous joint,
+<kbd>G</kbd> picks up a joint to carry with the arrows (<kbd>G</kbd> again puts it down,
+<kbd>Esc</kbd> puts it back), <kbd>Del</kbd> deletes what is under the cursor,
+<kbd>1</kbd>&ndash;<kbd>6</kbd> choose a material and <kbd>T</kbd> starts or pauses the test.
+The view follows the cursor; moving the mouse hands back to it.
+
 While placing a link, a readout next to the pointer shows its length, its cost and how much
 of the budget would be left. Brook has a short step-by-step tutorial.
 

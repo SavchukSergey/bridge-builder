@@ -88,6 +88,7 @@ export class Game extends GameInput {
     if (this.isBuildMode) {
       this.__renderSelection("over");
       this.__renderMarks();
+      this.__renderKeyCursor();
     }
     const grab = this.hoveredJoint;
     if (grab) {
@@ -206,6 +207,36 @@ export class Game extends GameInput {
       g.fill();
       g.stroke();
       g.setLineDash([]);
+    }
+    g.restore();
+  }
+
+  /** The keyboard cursor: a crosshair on its grid point, filled while carrying a joint. */
+  __renderKeyCursor() {
+    const p = this.keyCursor;
+    if (!p) return;
+    const g = this.ctx.ctx;
+    const zoom = this.ctx.zoom;
+    const r = 9 / zoom, arm = 15 / zoom;
+    g.save();
+    g.strokeStyle = "rgba(242, 178, 51, 0.95)";
+    g.lineWidth = 2.5 / zoom;
+    g.beginPath();
+    g.arc(p.x, p.y, r, 0, 2 * Math.PI);
+    g.moveTo(p.x - arm, p.y);
+    g.lineTo(p.x - r, p.y);
+    g.moveTo(p.x + r, p.y);
+    g.lineTo(p.x + arm, p.y);
+    g.moveTo(p.x, p.y - arm);
+    g.lineTo(p.x, p.y - r);
+    g.moveTo(p.x, p.y + r);
+    g.lineTo(p.x, p.y + arm);
+    g.stroke();
+    if (this.__keyGrab) {
+      g.fillStyle = "rgba(242, 178, 51, 0.35)";
+      g.beginPath();
+      g.arc(p.x, p.y, r, 0, 2 * Math.PI);
+      g.fill();
     }
     g.restore();
   }
