@@ -1670,3 +1670,15 @@ select.field option {
 body.simple .advanced {
   display: none !important;
 }
+
+/* the hint, opened from the result: a glow to say where it is */
+#hint.flash {
+  animation: hint-flash 1.6s ease-out;
+}
+@keyframes hint-flash {
+  0%, 30% { box-shadow: 0 0 0 3px var(--accent, #f5b301); }
+  100% { box-shadow: 0 0 0 3px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #hint.flash { animation: none; }
+}

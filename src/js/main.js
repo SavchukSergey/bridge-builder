@@ -190,6 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
     best: byId('result-best', HTMLElement),
     hint: byId('result-hint', HTMLElement),
     retry: byId('result-retry', HTMLButtonElement),
+    help: byId('result-help', HTMLButtonElement),
     next: byId('result-next', HTMLButtonElement),
     close: byId('result-close', HTMLButtonElement),
     tip: byId('result-tip', HTMLParagraphElement),
@@ -482,9 +483,11 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
     dlg.share.hidden = result.kind !== 'success';
     dlg.replay.hidden = !game.canReplay;
-    if (result.kind !== 'success' && game.hintAvailable && hintStage === 0) {
-      dlg.hint.textContent = t('result.stuck');
-    }
+    // help straight from the result: the hint in words, then the bridge that works
+    const helpful = result.kind !== 'success' && game.hintAvailable && Boolean(levelHint(game.level.id));
+    if (helpful && hintStage === 0) dlg.hint.textContent = t('result.stuck');
+    dlg.help.hidden = !helpful || (hintStage > 0 && game.showOutline);
+    lastChild(dlg.help).textContent = t(hintStage === 0 ? 'result.help' : 'hint.show');
     dlg.root.hidden = false;
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
@@ -561,13 +564,17 @@ document.addEventListener('DOMContentLoaded', function () {
     lastChild(hint.button).textContent = t(hintStage === 0 ? 'hint.offer'
       : game.showOutline ? 'hint.hide' : 'hint.show');
   }
-  hint.button.addEventListener('click', () => {
+  /** The next step of the hint: the words, then the outline on and off. */
+  function advanceHint() {
     if (hintStage === 0) hintStage = 1;
     else {
       hintStage = 2;
       game.showOutline = !game.showOutline;
     }
     updateHint();
+  }
+  hint.button.addEventListener('click', () => {
+    advanceHint();
     hint.button.blur();
   });
 
@@ -577,6 +584,16 @@ document.addEventListener('DOMContentLoaded', function () {
     sound.jingle(result.kind === 'success');
   };
   dlg.close.addEventListener('click', hideResult);
+  dlg.help.addEventListener('click', () => {
+    hideResult();
+    game.reset();
+    chkSimulation.checked = false;
+    advanceHint();
+    hint.root.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    hint.root.classList.remove('flash');
+    void hint.root.offsetWidth; // restart the animation
+    hint.root.classList.add('flash');
+  });
   dlg.retry.addEventListener('click', () => {
     hideResult();
     game.reset();

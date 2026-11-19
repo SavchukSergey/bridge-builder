@@ -77,7 +77,8 @@ export default {
   "result.cheaper": "Зробити дешевше",
   "result.rebuild": "Збудувати знову",
   "result.retry": "Ще раз",
-  "result.stuck": "Не виходить? На панелі є підказка.",
+  "result.stuck": "Не виходить? Підказка допоможе.",
+  "result.help": "Підказка",
 
   // ---- список рівнів
   "card.best": "Найкращий: {cost}",

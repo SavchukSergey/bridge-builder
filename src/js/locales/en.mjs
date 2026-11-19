@@ -75,7 +75,8 @@ export default {
   "result.cheaper": "Make it cheaper",
   "result.rebuild": "Build again",
   "result.retry": "Try again",
-  "result.stuck": "Stuck? There's a hint in the panel.",
+  "result.stuck": "Stuck? A hint can help.",
+  "result.help": "Get a hint",
 
   // ---- the level list
   "card.best": "Best {cost}",
