@@ -96,16 +96,3 @@ function floor(vec, step) {
     Math.floor(vec.z / step) * step,
   )
 }
-
-/**
- * @param {import("./math.js").Vec3F} vec 
- * @param {number} step
- * @returns {import("./math.js").Vec3F}
- */
-function ceil(vec, step) {
-  return createVec3F(
-    Math.ceil(vec.x / step) * step,
-    Math.ceil(vec.y / step) * step,
-    Math.ceil(vec.z / step) * step,
-  )
-}

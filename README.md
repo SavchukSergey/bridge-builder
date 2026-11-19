@@ -150,10 +150,11 @@ test/                   node:test suites
 ```sh
 npm test            # unit and simulation tests (node:test)
 npm run typecheck   # TypeScript checks the JSDoc types; nothing is compiled
-npm run check       # both
+npm run lint        # ESLint (eslint.config.js)
+npm run check       # all three
 ```
 
-GitHub Actions runs both on every push and pull request. A second workflow can publish
+GitHub Actions runs all three on every push and pull request. A second workflow can publish
 `src/` to GitHub Pages; see the comments in `.github/workflows/pages.yml` for how to turn
 it on.
 

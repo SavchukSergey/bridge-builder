@@ -124,7 +124,7 @@ describe("rendering", () => {
       const fills = [];
       const real = rec.fillRect;
       rec.fillRect = (...args) => { fills.push(rec.fillStyle); real(...args); };
-      Object.defineProperty(rec, "globalCompositeOperation", { set: v => composites.push(v), get: () => "source-over", configurable: true });
+      Object.defineProperty(rec, "globalCompositeOperation", { set: v => { composites.push(v); }, get: () => "source-over", configurable: true });
       game.render();
       const shade = fills.some(f => String(f).startsWith("rgba(4, 10, 28"));
       assert.equal(shade, night, `${levelId}: darkened`);
