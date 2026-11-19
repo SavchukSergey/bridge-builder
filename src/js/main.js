@@ -17,6 +17,7 @@ import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
 import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
 import { addScore, lastPlayer, players, scoresFor } from './scoreboard.mjs';
+import { drawPostcard, postcardFileName } from './postcard.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -238,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
     badges: byId('result-badges', HTMLUListElement),
     real: byId('result-real', HTMLButtonElement),
     friend: byId('result-friend', HTMLButtonElement),
+    picture: byId('result-picture', HTMLButtonElement),
     score: byId('result-score', HTMLFormElement),
     scoreName: byId('result-score-name', HTMLInputElement),
     scoreDone: byId('result-score-done', HTMLParagraphElement),
@@ -743,6 +745,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const famous = result.kind === 'success' ? realBridgeFor(game.level.id) : undefined;
     dlg.real.hidden = !famous;
     dlg.friend.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
+    dlg.picture.hidden = result.kind !== 'success';
     // a win: put a name to it on the family scoreboard
     dlg.score.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
     dlg.score.classList.remove('added');
@@ -769,6 +772,91 @@ document.addEventListener('DOMContentLoaded', function () {
     if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
+
+  // ---- a picture of the bridge to keep: a postcard, shown first, then saved or shared
+  const card = {
+    root: byId('postcard', HTMLDivElement),
+    image: byId('postcard-image', HTMLImageElement),
+    close: byId('postcard-close', HTMLButtonElement),
+    done: byId('postcard-done', HTMLButtonElement),
+    save: byId('postcard-save', HTMLButtonElement),
+    fromLooks: byId('looks-picture', HTMLButtonElement),
+  };
+  /** @type {{ blob: Blob, name: string } | undefined} */
+  let picture;
+  /** The last win, for its picture: kept when the result comes in. @type {{ level: string, cost: number, stars: number } | undefined} */
+  let lastWin;
+  /** @type {HTMLElement | null} */
+  let pictureOpener = null;
+  async function showPicture() {
+    if (!game.scene.links.length) {
+      showStatus(t('postcard.empty'), true);
+      return;
+    }
+    const looks = loadLooks(game.level.id);
+    // the win just shown, else the best one on this level
+    const win = lastWin?.level === game.level.id ? lastWin : undefined;
+    const best = game.bestResult();
+    const info = {
+      level: game.level,
+      scene: game.scene,
+      paint: PAINTS[looks.paint],
+      name: looks.name,
+      cost: win?.cost ?? best?.cost,
+      stars: win?.stars ?? best?.stars ?? 0,
+      player: scoresFor(game.level.id).length || dlg.score.classList.contains('added') ? lastPlayer() : '',
+      date: new Date(),
+    };
+    const canvas = drawPostcard(info);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      showStatus(t('postcard.failed'), true);
+      return;
+    }
+    if (card.image.src) URL.revokeObjectURL(card.image.src);
+    card.image.src = URL.createObjectURL(blob);
+    card.image.alt = t('postcard.alt', { name: info.name || game.level.name });
+    picture = { blob, name: postcardFileName(info) };
+    pictureOpener = /** @type {HTMLElement | null} */ (document.activeElement);
+    card.root.hidden = false;
+    card.save.focus();
+  }
+  function hidePicture() {
+    card.root.hidden = true;
+    pictureOpener?.focus?.();
+  }
+  card.save.addEventListener('click', async () => {
+    if (!picture) return;
+    const file = new File([picture.blob], picture.name, { type: 'image/png' });
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+    if (coarse && navigator.canShare?.({ files: [file] })) {
+      // phones: the share sheet, which can save to the photos
+      try {
+        await navigator.share({ files: [file], title: 'Bridge Builder' });
+        hidePicture();
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) showStatus(t('postcard.failed'), true);
+      }
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = card.image.src;
+    a.download = picture.name;
+    a.click();
+    showStatus(t('postcard.saved'));
+    hidePicture();
+  });
+  dlg.picture.addEventListener('click', showPicture);
+  card.fromLooks.addEventListener('click', showPicture);
+  card.close.addEventListener('click', hidePicture);
+  card.done.addEventListener('click', hidePicture);
+  card.root.addEventListener('click', (ev) => { if (ev.target === card.root) hidePicture(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !card.root.hidden) {
+      ev.stopImmediatePropagation();
+      hidePicture();
+    }
+  }, true);
 
   // ---- the family scoreboard: names put to wins, on this browser
   dlg.scoreName.addEventListener('keydown', (ev) => ev.stopPropagation()); // typing isn't building
@@ -1057,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', function () {
   game.onResult = (result) => {
     if (result.kind === 'success' && isGuiding()) guide.end();
     dailyResult = dailyAfter(result);
+    lastWin = result.kind === 'success' ? { level: game.level.id, cost: result.cost, stars: result.stars } : undefined;
     friendResult = result.kind === 'success' && !game.level.sandbox ? judgeFriend(game.level.id, result.cost) : undefined;
     if (friendResult) showFriendGoal();
     updateHint();

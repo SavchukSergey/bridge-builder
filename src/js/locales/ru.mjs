@@ -608,4 +608,18 @@ export default {
   "ui.wind.storm": "Буря",
   "sandbox.wind.breeze": "Слева дует ветерок.",
   "sandbox.wind.storm": "Слева дует буря: укрепи всё высокое!",
+
+  // ---- картинка моста
+  "postcard.make": "Сфотографировать",
+  "postcard.makeTitle": "Картинка твоего моста на память",
+  "postcard.short": "Картинка",
+  "postcard.title": "Картинка твоего моста",
+  "postcard.done": "Закрыть",
+  "postcard.save": "Сохранить картинку",
+  "postcard.untitled": "Мой мост: «{level}»",
+  "postcard.by": "Строитель: {name} · {date}",
+  "postcard.alt": "Картинка: {name}",
+  "postcard.saved": "Картинка сохранена.",
+  "postcard.failed": "Не получилось сделать картинку.",
+  "postcard.empty": "Сначала построй что-нибудь, потом сфотографируй.",
 };

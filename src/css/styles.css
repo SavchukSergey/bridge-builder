@@ -1672,7 +1672,8 @@ kbd {
 #ending,
 #real-bridge,
 #grownups,
-#scoreboard {
+#scoreboard,
+#postcard {
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -1689,7 +1690,8 @@ kbd {
 #ending[hidden],
 #real-bridge[hidden],
 #grownups[hidden],
-#scoreboard[hidden] {
+#scoreboard[hidden],
+#postcard[hidden] {
   display: none;
 }
 
@@ -1770,6 +1772,53 @@ kbd {
 
 .daily-card.done #daily-play {
   display: none;
+}
+
+/* ---------- a picture of the bridge ---------- */
+
+#postcard {
+  z-index: 47;
+}
+
+.postcard-card {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.postcard-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 470;
+  margin: 4px 0 14px;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  transform: rotate(-1.2deg);
+  animation: postcard-in 0.35s ease-out;
+}
+
+@keyframes postcard-in {
+  from {
+    opacity: 0;
+    transform: rotate(-6deg) scale(0.92) translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .postcard-image {
+    animation: none;
+  }
+}
+
+.postcard-actions .btn .icon {
+  margin-right: 2px;
+}
+
+.looks-picture {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
 }
 
 /* ---------- the family scoreboard ---------- */

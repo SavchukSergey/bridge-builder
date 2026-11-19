@@ -608,4 +608,18 @@ export default {
   "ui.wind.storm": "Буря",
   "sandbox.wind.breeze": "Зліва дме вітерець.",
   "sandbox.wind.storm": "Зліва дме буря: зміцни все високе!",
+
+  // ---- картинка мосту
+  "postcard.make": "Сфотографувати",
+  "postcard.makeTitle": "Картинка твого мосту на згадку",
+  "postcard.short": "Картинка",
+  "postcard.title": "Картинка твого мосту",
+  "postcard.done": "Закрити",
+  "postcard.save": "Зберегти картинку",
+  "postcard.untitled": "Мій міст: «{level}»",
+  "postcard.by": "Будівельник: {name} · {date}",
+  "postcard.alt": "Картинка: {name}",
+  "postcard.saved": "Картинку збережено.",
+  "postcard.failed": "Не вдалося зробити картинку.",
+  "postcard.empty": "Спершу збудуй щось, потім сфотографуй.",
 };

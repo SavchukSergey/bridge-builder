@@ -29,6 +29,7 @@
       <symbol id="icon-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zm12 1 5 5m0-5-5 5" /></symbol>
       <symbol id="icon-stress" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" /></symbol>
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M5 5v14M19 5 9 12l10 7z" /></symbol>
+      <symbol id="icon-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4zm8 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8" /></symbol>
       <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" /></symbol>
       <symbol id="icon-follow" viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3m8 0h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3m-8 0H5a2 2 0 0 1-2-2v-3m6-4h6m-3-3 3 3-3 3" /></symbol>
       <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2-1.2L14.5 3h-4l-.4 2.6a7.5 7.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7.5 7.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z" /></symbol>
@@ -263,6 +264,7 @@
           <label class="paint-swatch" title="Yellow" data-i18n-title="paint.yellow"><input type="radio" name="paint" value="yellow" class="visually-hidden" aria-label="Yellow" data-i18n-aria="paint.yellow" /><span style="--paint: #d39a16"></span></label>
           <label class="paint-swatch" title="Purple" data-i18n-title="paint.purple"><input type="radio" name="paint" value="purple" class="visually-hidden" aria-label="Purple" data-i18n-aria="paint.purple" /><span style="--paint: #6f45a3"></span></label>
       </div>
+      <button type="button" id="looks-picture" class="btn looks-picture"><svg class="icon"><use href="#icon-camera" /></svg><span data-i18n="postcard.make">Take a picture</span></button>
     </details>
 
     <details id="help" open>
@@ -464,6 +466,7 @@
       <p id="result-hint"></p>
       <div class="result-actions">
         <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
+        <button type="button" id="result-picture" class="btn" title="A picture of your bridge to keep" data-i18n-title="postcard.makeTitle"><svg class="icon"><use href="#icon-camera" /></svg><span data-i18n="postcard.short">Picture</span></button>
         <button type="button" id="result-friend" class="btn" title="Copy a link that dares a friend to build this level for less" data-i18n-title="friend.shareTitle"><svg class="icon"><use href="#icon-star" /></svg><span data-i18n="friend.share">Challenge a friend</span></button>
         <button type="button" id="result-replay" class="btn" title="Watch the moment it broke again, in slow motion" data-i18n-title="ui.replayTitle"><svg class="icon"><use href="#icon-play" /></svg><span data-i18n="ui.replay">Watch it break</span></button>
         <button type="button" id="result-help" class="btn"><svg class="icon"><use href="#icon-bulb" /></svg><span></span></button>
@@ -487,6 +490,20 @@
       </table>
       <h3 data-i18n="score.byLevel">Cheapest on each level</h3>
       <ol id="scoreboard-levels" class="scoreboard-levels"></ol>
+    </div>
+  </div>
+
+  <div id="postcard" hidden>
+    <div class="settings-card postcard-card" role="dialog" aria-modal="true" aria-labelledby="postcard-title">
+      <button type="button" id="postcard-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <h2 id="postcard-title" data-i18n="postcard.title">A picture of your bridge</h2>
+      <img id="postcard-image" class="postcard-image" alt="" />
+      <div class="confirm-actions postcard-actions">
+        <button type="button" id="postcard-done" class="btn" data-i18n="postcard.done">Close</button>
+        <button type="button" id="postcard-save" class="btn primary"><svg class="icon"><use href="#icon-download" /></svg><span data-i18n="postcard.save">Save picture</span></button>
+      </div>
     </div>
   </div>
 

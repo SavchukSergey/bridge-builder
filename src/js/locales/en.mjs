@@ -336,4 +336,12 @@ export default {
   // ---- wind
   "sandbox.wind.breeze": "A breeze blows from the left.",
   "sandbox.wind.storm": "A storm blows from the left: brace anything tall!",
+
+  // ---- a picture of the bridge
+  "postcard.untitled": "My bridge on {level}",
+  "postcard.by": "Built by {name} · {date}",
+  "postcard.alt": "A picture of {name}",
+  "postcard.saved": "Picture saved.",
+  "postcard.failed": "Couldn’t make the picture.",
+  "postcard.empty": "Build something first, then take its picture.",
 };

@@ -217,6 +217,11 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+**Picture** (after a win, or in Paint and name) makes a postcard of the bridge: the bridge in
+its scenery and paint, with its name, the level, what it cost, its stars, who built it and
+the date. It shows first, then Save picture downloads it (on phones, the share sheet, which
+can save it to the photos).
+
 The **family scoreboard** (in the level list) is for everyone who plays on one browser:
 after a win, type a name in the result and add it. Each player keeps their cheapest win on
 each level; the board ranks players by stars and shows who built each level cheapest.
@@ -281,6 +286,7 @@ src/
     daily.mjs           today's challenge: a level and a twist each day, and the streak
     drawbridge.mjs      the drawbridge: winches, the boat and the space it needs
     ending.mjs          the ending, once every level is won
+    postcard.mjs        a picture of the bridge to keep, as a framed postcard
     real-bridges.mjs    famous bridges built on each level's idea, and their drawings
     speech.mjs          reading text aloud
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
