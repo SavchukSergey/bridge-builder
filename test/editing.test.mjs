@@ -79,10 +79,10 @@ describe("dragging joints", () => {
     assert.ok(!game.canUndo);
   });
 
-  test("won't stretch a link past 10 m or drop onto another joint", () => {
+  test("won't stretch a link past 25 m or drop onto another joint", () => {
     const game = aFrame();
     const joint = jointAt(game, ...APEX);
-    drag(game, APEX, [-14, 25]); // both legs would be ~16 m
+    drag(game, APEX, [-14, 45]); // both legs would be ~35 m
     assert.equal(joint.position.y, 14);
     drag(game, APEX, [-8, 10]); // onto the right anchor
     assert.equal(joint.position.y, 14);
@@ -132,15 +132,15 @@ describe("dragging joints", () => {
     assert.notEqual(game.ctx.shift.y, 0, "panned");
   });
 
-  test("a link already longer than 10 m (as in an example bridge) may shorten, not grow", () => {
-    const game = aFrame({ joints: [{ x: -21, y: 23 }], links: [{ a: 1, b: 3, material: "cable" }] });
-    const tip = jointAt(game, -21, 23); // on an 11.4 m cable from the apex
+  test("a link already longer than 25 m (as in an example bridge) may shorten, not grow", () => {
+    const game = aFrame({ joints: [{ x: -21, y: 41 }], links: [{ a: 1, b: 3, material: "cable" }] });
+    const tip = jointAt(game, -21, 41); // on a 27.9 m cable from the apex
     const apexToTip = () => Math.hypot(tip.position.x - APEX[0], tip.position.y - APEX[1]);
-    assert.ok(apexToTip() > 11);
-    drag(game, [-21, 23], [-21, 22]);
-    assert.deepEqual([tip.position.x, tip.position.y], [-21, 22], "shorter is fine, though still over 10 m");
-    drag(game, [-21, 22], [-23, 25]);
-    assert.deepEqual([tip.position.x, tip.position.y], [-21, 22], "longer than it was is not");
+    assert.ok(apexToTip() > 27);
+    drag(game, [-21, 41], [-21, 40]);
+    assert.deepEqual([tip.position.x, tip.position.y], [-21, 40], "shorter is fine, though still over 25 m");
+    drag(game, [-21, 40], [-23, 43]);
+    assert.deepEqual([tip.position.x, tip.position.y], [-21, 40], "longer than it was is not");
   });
 
   test("the joint under the pointer is highlighted only when it can be dragged", () => {
@@ -182,20 +182,20 @@ describe("mirror mode", () => {
 
   test("the image joins existing joints, and long links are split the same way", () => {
     const game = mirrored();
-    buildLink(game, -20, 10, -5, 10); // 15 m: two segments
+    buildLink(game, -20, 10, -20, 40); // 30 m: two segments
     assert.equal(game.scene.links.length, 4);
-    assert.ok(jointAt(game, 12.5, 10), "mirrored mid joint");
-    buildLink(game, -5, 10, -5, 15);
-    assert.ok(hasLinkBetween(game, [5, 10], [5, 15]), "starts from the existing mirrored joint");
-    assert.equal(game.scene.joints.filter(j => j.position.x === 5 && j.position.y === 10).length, 1);
+    assert.ok(jointAt(game, 20, 25), "mirrored mid joint");
+    buildLink(game, -20, 40, -15, 40);
+    assert.ok(hasLinkBetween(game, [20, 40], [15, 40]), "starts from the existing mirrored joint");
+    assert.equal(game.scene.joints.filter(j => j.position.x === 20 && j.position.y === 40).length, 1);
   });
 
   test("a link that is its own mirror image isn't doubled", () => {
     const game = mirrored();
-    buildLink(game, -20, 10, -6, 14);
+    buildLink(game, -20, 10, -14, 14);
     const before = game.scene.links.length;
-    buildLink(game, -6, 14, 6, 14); // across the axis, symmetric
-    assert.equal(game.scene.links.length, before + 2, "12 m: two segments, once");
+    buildLink(game, -14, 14, 14, 14); // across the axis, symmetric
+    assert.equal(game.scene.links.length, before + 2, "28 m: two segments, once");
     buildLink(game, 0, 14, 0, 20); // on the axis
     assert.equal(game.scene.links.length, before + 3);
   });

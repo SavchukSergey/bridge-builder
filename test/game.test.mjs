@@ -9,14 +9,14 @@ import { SAVE_FORMAT_VERSION } from "../src/js/scene.js";
 const HANGER_10 = [10, 12.8];
 
 describe("building links", () => {
-  test("clicking a joint then a point creates a link split into <= 10 m segments", () => {
+  test("clicking a joint then a point creates a link split into <= 25 m segments", () => {
     const game = createGame();
     const { joints, links } = game.scene;
     const [j, l] = [joints.length, links.length];
-    buildLink(game, -40, 25, -40, 50);
+    buildLink(game, -40, 25, -40, 85);
     assert.equal(game.scene.links.length, l + 3);
     assert.equal(game.scene.joints.length, j + 3);
-    assert.ok(game.scene.links.slice(-3).every(link => Math.abs(link.length - 25 / 3) < 1e-9));
+    assert.ok(game.scene.links.slice(-3).every(link => Math.abs(link.length - 20) < 1e-9));
   });
 
   test("clicking empty space does not start a link", () => {
@@ -51,8 +51,8 @@ describe("building links", () => {
   test("ending on an existing joint connects to it instead of adding a joint", () => {
     const game = createGame();
     const joints = game.scene.joints.length;
-    buildLink(game, -30, 20.625, -20, 10); // diagonal brace between two existing joints, 14.6 m -> 2 segments
-    assert.equal(game.scene.joints.length, joints + 1, "only the mid-segment joint is new");
+    buildLink(game, -30, 20.625, -20, 10); // diagonal brace between two existing joints, 14.6 m
+    assert.equal(game.scene.joints.length, joints, "no new joint");
     const end = game.scene.findJoint({ x: -20, y: 10, z: 0 }, 0.1);
     assert.equal(game.scene.links.at(-1).b, end);
   });
@@ -97,7 +97,7 @@ describe("building links", () => {
   test("the preview follows the cursor and is discarded on cancel", () => {
     const game = createGame();
     game.__handleClick(at(game, -40, 25));
-    game.__handleMouseMove(at(game, -40, 40));
+    game.__handleMouseMove(at(game, -40, 70)); // 45 m: two segments
     assert.equal(game.scene.preview.links.length, 2);
     key(game, "Escape");
     assert.equal(game.__clickState, undefined);
@@ -287,7 +287,7 @@ describe("undo and redo", () => {
   test("undo history is capped", () => {
     const game = createGame();
     for (let i = 0; i < 105; i++) {
-      buildLink(game, -40, 25, -40 + (i % 2 ? 0 : 1), 30 + i);
+      buildLink(game, -40, 25, -40 + 3 * (i % 5), 30 + 3 * Math.floor(i / 5)); // each to a new point
     }
     let steps = 0;
     while (game.canUndo) { game.undo(); steps++; }

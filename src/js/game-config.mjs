@@ -30,6 +30,8 @@ export const FOLLOW_RATE = 2.5;
 export const PICK_RADIUS_PX = 12;
 /** A fingertip (or a pen) covers more than a mouse pointer: pick within this radius. */
 export const TOUCH_PICK_RADIUS_PX = 28;
+/** While guiding, a click this close (in metres) to a glowing dot lands exactly on it. */
+export const GUIDE_SNAP_M = 1.2;
 /** Holding a finger still this long deletes what is under it (the touch right-click). */
 export const LONG_PRESS_MS = 500;
 /** View zoom limits, pixels per metre. */
@@ -38,7 +40,7 @@ export const MAX_ZOOM = 80;
 /** Grid step (in metres) that new joints snap to. */
 export const SNAP_STEP = 1;
 /** Longest single link (m); longer ones are split into segments when built. */
-export const MAX_LINK_LENGTH = 10;
+export const MAX_LINK_LENGTH = 25;
 /** Shortest link (m): zero-length links would divide by zero in strain. */
 export const MIN_LINK_LENGTH = 0.1;
 /** Joints closer than this (m) count as the same point when matching mirror images. */

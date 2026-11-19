@@ -121,7 +121,7 @@ younger player doesn't need. Turn it off for every tool.
 | Cable | $60/m | Wire rope; tension only, goes slack when pushed |
 | Thin cable | $20/m | A fifth of the section and strength |
 
-Links longer than 10 m are split into 10 m segments.
+Links longer than 25 m are split into equal segments of 25 m or less.
 
 ### Levels
 
