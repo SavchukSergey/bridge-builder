@@ -2119,7 +2119,8 @@ kbd {
 
 .setting {
   display: grid;
-  grid-template-columns: 110px 1fr auto;
+  /* minmax: a long option in a field shrinks the field, not widen the card */
+  grid-template-columns: 110px minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px 12px;
   padding: 12px 0;
@@ -2302,6 +2303,8 @@ kbd {
   grid-column: 2 / -1;
   justify-self: start;
   min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
   height: 32px;
   padding: 0 8px;
   border-radius: 6px;
