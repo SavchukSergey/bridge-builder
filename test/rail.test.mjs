@@ -77,7 +77,7 @@ describe("rail", () => {
     assert.equal(game.roadAcross, false, "road doesn't count as track");
     game.importStructure(bareDeck(findLevel("branch-line"), -20, 10, 20, 10, "rail"));
     assert.equal(game.roadAcross, true);
-    assert.match(failureTip({ kind: "failed", roadAcross: false }, "rail"), /Trains run only on Rail/);
-    assert.match(failureTip({ kind: "failed", failure: { material: "rail", label: "Rail", kind: "deck", mode: "tension" } }, "rail"), /^The rail deck/);
+    assert.match(failureTip({ kind: "failed", roadAcross: false }, "rail"), /Trains need Rail/);
+    assert.match(failureTip({ kind: "failed", failure: { material: "rail", label: "Rail", kind: "deck", mode: "tension" } }, "rail"), /^The track/);
   });
 });

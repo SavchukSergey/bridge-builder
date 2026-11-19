@@ -51,7 +51,7 @@ describe("first failure", () => {
     const result = runTest(game);
     assert.equal(result.failure, undefined);
     assert.equal(result.roadAcross, false);
-    assert.match(failureTip(result), /gap in the road/);
+    assert.match(failureTip(result), /road has a hole/);
   });
 
   test("a win records no failure", () => {
@@ -69,19 +69,19 @@ describe("failure tips", () => {
   const base = { kind: "failed", reason: "fell", roadAcross: true };
   const tip = (failure, extra = {}) => failureTip({ ...base, ...extra, failure });
   test("name what to do for each way a member breaks", () => {
-    assert.match(tip({ material: "road", label: "Road", kind: "deck", mode: "tension" }), /sagged/);
-    assert.match(tip({ material: "road", label: "Road", kind: "deck", mode: "compression" }), /crushed end to end/);
-    assert.match(tip({ material: "cable-thin", label: "Thin cable", kind: "cable", mode: "tension" }), /full cable/);
-    assert.match(tip({ material: "cable", label: "Cable", kind: "cable", mode: "tension" }), /more cables/);
-    assert.match(tip({ material: "steel-light", label: "Light steel", kind: "beam", mode: "compression" }), /Use full steel/);
-    assert.match(tip({ material: "steel", label: "Steel", kind: "beam", mode: "compression" }), /steel member was crushed/);
+    assert.match(tip({ material: "road", label: "Road", kind: "deck", mode: "tension" }), /bent down and snapped/);
+    assert.match(tip({ material: "road", label: "Road", kind: "deck", mode: "compression" }), /got squashed\. Add triangles/);
+    assert.match(tip({ material: "cable-thin", label: "Thin cable", kind: "cable", mode: "tension" }), /normal cable/);
+    assert.match(tip({ material: "cable", label: "Cable", kind: "cable", mode: "tension" }), /^A cable snapped\. Add more cables/);
+    assert.match(tip({ material: "steel-light", label: "Light steel", kind: "beam", mode: "compression" }), /Use normal steel/);
+    assert.match(tip({ material: "steel", label: "Steel", kind: "beam", mode: "compression" }), /A steel piece got squashed/);
     assert.match(tip({ material: "steel", label: "Steel", kind: "beam", mode: "tension" }), /pulled apart/);
   });
 
   test("explain crashes and hard landings when nothing broke", () => {
     assert.match(tip(undefined, { reason: "crashed" }), /cliff/);
     assert.match(tip(undefined, { reason: "hard landing" }), /steeply/);
-    assert.match(tip(undefined), /sagged/);
+    assert.match(tip(undefined), /bent down too far/);
   });
 });
 

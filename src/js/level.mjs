@@ -233,7 +233,7 @@ const cliffs = (/** @type {number} */ x0, /** @type {number} */ x1, leftY = 10, 
 export const creekLevel = new Level({
   id: "creek",
   name: "Creek",
-  description: "A 40 m gap and two 40 t trucks. A bare road deck won't hold: support it.",
+  description: "A wider gap and two big trucks. Build a post on each side, then hang the road from them, like on Hanging road.",
   terrain: cliffs(-20, 20),
   anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
   startX: -26,
@@ -255,7 +255,7 @@ export const canyonLevel = new Level({
   id: "canyon",
   theme: "desert",
   name: "Canyon",
-  description: "80 m and four 40 t trucks. The example bridge works, but costs too much.",
+  description: "A huge canyon and four trucks. The bridge is already built and it works, but it costs too much. Make it cheaper!",
   terrain: cliffs(-40, 40),
   anchors: [{ x: -50, y: 10 }, { x: -40, y: 10 }, { x: 40, y: 10 }, { x: 50, y: 10 }],
   startX: -46,
@@ -272,7 +272,7 @@ export const canyonLevel = new Level({
 export const stepLevel = new Level({
   id: "step",
   name: "Step up",
-  description: "A 60 m gap with the far side 8 m higher. Three 40 t trucks.",
+  description: "The other side is higher, so the road has to climb. Hold it up with triangles. Three trucks.",
   terrain: cliffs(-30, 30, 10, 18),
   anchors: [{ x: -40, y: 10 }, { x: -30, y: 10 }, { x: 30, y: 18 }, { x: 40, y: 18 }],
   startX: -36,
@@ -288,7 +288,7 @@ export const stepLevel = new Level({
 export const pierLevel = new Level({
   id: "pier",
   name: "River pier",
-  description: "A 120 m river with a rock in the middle, 16 m below the road. Four 40 t trucks.",
+  description: "A wide river with a rock in the middle. Build on the rock to hold up the middle. Four trucks.",
   terrain: [...cliffs(-60, 60), { x0: -4, x1: 4, y: -6 }],
   anchors: [
     { x: -70, y: 10 }, { x: -60, y: 10 }, { x: 60, y: 10 }, { x: 70, y: 10 },
@@ -307,7 +307,7 @@ export const pierLevel = new Level({
 export const brookLevel = new Level({
   id: "brook",
   name: "Brook",
-  description: "A 20 m brook, a car and a bus. Lay a road across: click an anchor, then the other bank.",
+  description: "A little brook, a car and a bus. Build a road across: click an anchor, then the one on the other side.",
   terrain: cliffs(-10, 10),
   anchors: [{ x: -20, y: 10 }, { x: -10, y: 10 }, { x: 10, y: 10 }, { x: 20, y: 10 }],
   startX: -16,
@@ -319,11 +319,62 @@ export const brookLevel = new Level({
   water: 5,
 });
 
+/**
+ * Teaches triangles: a 30 m gap a plain road would hold for a truck, but not for the 200 t
+ * hauler. A row of light steel triangles on top holds it if they are tall enough (5 m or
+ * more; 4 m ones break), and full steel ones hold at any height.
+ */
+export const trianglesLevel = new Level({
+  id: "triangles",
+  name: "Triangles",
+  description: "A giant 200 t truck! A plain road will break. Build triangles on top of the road: tall ones are stronger.",
+  terrain: cliffs(-15, 15),
+  anchors: [{ x: -25, y: 10 }, { x: -15, y: 10 }, { x: 15, y: 10 }, { x: 25, y: 10 }],
+  startX: -21,
+  finishX: 23,
+  convoy: ["hauler"],
+  budget: 21000, // light steel triangles 6 m tall: ~$13,700; full steel ones 3 m tall: ~$20,000
+  stars: { two: 16000, three: 14000 },
+  view: { x0: -35, x1: 35, y: 14 },
+  water: 4,
+});
+
+/**
+ * Teaches hanging the road from above: the posts are already up, with their backstays, and a
+ * plain 50 m road breaks under two trucks. Cables from the post tops down to the road (a fan,
+ * ~$20,000 in thin cable) or a sagging main cable with hangers both hold.
+ */
+export const hangLevel = new Level({
+  id: "hang",
+  name: "Hanging road",
+  description: "The posts are already up. Build a road across, then hang it from them: a cable from the top of a post down to each dot of the road.",
+  terrain: cliffs(-25, 25),
+  anchors: [{ x: -35, y: 10 }, { x: -25, y: 10 }, { x: 25, y: 10 }, { x: 35, y: 10 }],
+  startX: -31,
+  finishX: 33,
+  convoy: trucks(2),
+  budget: 26000, // a fan of thin cables: ~$20,000; of full cables: ~$23,700
+  stars: { two: 23000, three: 20500 },
+  view: { x0: -45, x1: 45, y: 16 },
+  water: 4,
+  example: () => ({
+    version: SAVE_FORMAT_VERSION,
+    joints: [
+      { x: -35, y: 10, fixed: true }, { x: -25, y: 10, fixed: true }, { x: 25, y: 10, fixed: true }, { x: 35, y: 10, fixed: true },
+      { x: -25, y: 20 }, { x: 25, y: 20 },
+    ],
+    links: [
+      { a: 1, b: 4, material: "steel-light" }, { a: 2, b: 5, material: "steel-light" },
+      { a: 0, b: 4, material: "cable" }, { a: 3, b: 5, material: "cable" },
+    ],
+  }),
+});
+
 /** Ledges 10 m below the road on both sides: struts from them shorten the span. */
 export const ledgesLevel = new Level({
   id: "ledges",
   name: "Ledges",
-  description: "A 50 m gorge with rock ledges 10 m below the road. Prop the deck up from them.",
+  description: "Rocks stick out below the road. Put a light steel piece from each rock up to the road, to hold it from below.",
   terrain: [...cliffs(-25, 25), { x0: -25, x1: -20, y: 0 }, { x0: 20, x1: 25, y: 0 }],
   anchors: [
     { x: -35, y: 10 }, { x: -25, y: 10 }, { x: 25, y: 10 }, { x: 35, y: 10 },
@@ -343,7 +394,7 @@ export const heavyLevel = new Level({
   id: "heavy",
   theme: "desert",
   name: "Heavy load",
-  description: "A 40 m dry gully and one 200 t heavy hauler carrying a transformer.",
+  description: "A dry gully and one giant 200 t truck carrying a huge machine.",
   terrain: cliffs(-20, 20),
   anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
   startX: -26,
@@ -359,7 +410,7 @@ export const downhillLevel = new Level({
   id: "downhill",
   theme: "snow",
   name: "Downhill",
-  description: "A 60 m gap down to a far side 10 m lower. Five 40 t trucks.",
+  description: "The other side is lower, so the road goes downhill. Five trucks.",
   terrain: cliffs(-30, 30, 18, 8),
   anchors: [{ x: -40, y: 18 }, { x: -30, y: 18 }, { x: 30, y: 8 }, { x: 40, y: 8 }],
   startX: -36,
@@ -376,7 +427,7 @@ export const rushLevel = new Level({
   id: "rush",
   theme: "night",
   name: "Rush hour",
-  description: "A 60 m river and nine vehicles nose to tail: cars, buses and trucks.",
+  description: "A river and nine cars, buses and trucks, one right after another.",
   terrain: cliffs(-30, 30),
   anchors: [{ x: -40, y: 10 }, { x: -30, y: 10 }, { x: 30, y: 10 }, { x: 40, y: 10 }],
   startX: -36,
@@ -394,7 +445,7 @@ export const longSpanLevel = new Level({
   id: "long-span",
   theme: "snow",
   name: "Long span",
-  description: "100 m across a deep valley, nothing to stand on in between. Two 40 t trucks.",
+  description: "A very long gap, with nothing to build on in the middle. Two trucks.",
   terrain: cliffs(-50, 50),
   anchors: [{ x: -60, y: 10 }, { x: -50, y: 10 }, { x: 50, y: 10 }, { x: 60, y: 10 }],
   startX: -56,
@@ -410,7 +461,7 @@ export const longSpanLevel = new Level({
 export const viaductLevel = new Level({
   id: "viaduct",
   name: "Viaduct",
-  description: "A 180 m river with two rocks 14 m below the road. Five 40 t trucks.",
+  description: "A very wide river with two rocks in it. Build on both. Five trucks.",
   terrain: [...cliffs(-90, 90), { x0: -34, x1: -26, y: -4 }, { x0: 26, x1: 34, y: -4 }],
   anchors: [
     { x: -100, y: 10 }, { x: -90, y: 10 }, { x: 90, y: 10 }, { x: 100, y: 10 },
@@ -430,7 +481,7 @@ export const gorgeLevel = new Level({
   id: "gorge",
   theme: "desert",
   name: "Deep gorge",
-  description: "An 80 m gorge with ledges 16 m down. Arch over it from the ledges. Four 40 t trucks.",
+  description: "A deep gorge. Build an arch from the rocks at the bottom up to the road. Four trucks.",
   terrain: [...cliffs(-40, 40), { x0: -40, x1: -34, y: -6 }, { x0: 34, x1: 40, y: -6 }],
   anchors: [
     { x: -50, y: 10 }, { x: -40, y: 10 }, { x: 40, y: 10 }, { x: 50, y: 10 },
@@ -450,7 +501,7 @@ export const grandLevel = new Level({
   id: "grand",
   theme: "snow",
   name: "Grand crossing",
-  description: "160 m, climbing 6 m, with a rock mid-river. Six 40 t trucks.",
+  description: "The longest crossing: it climbs, and there is a rock in the river. Six trucks.",
   terrain: [...cliffs(-80, 80, 10, 16), { x0: -4, x1: 4, y: -6 }],
   anchors: [
     { x: -90, y: 10 }, { x: -80, y: 10 }, { x: 80, y: 16 }, { x: 90, y: 16 },
@@ -470,7 +521,7 @@ export const grandLevel = new Level({
 export const branchLineLevel = new Level({
   id: "branch-line",
   name: "Branch line",
-  description: "The railway arrives: a 40 m gap and a 240 t train. Trains run only on Rail.",
+  description: "Here comes the train! Trains run only on Rail, so build the road out of Rail.",
   terrain: cliffs(-20, 20),
   anchors: [{ x: -30, y: 10 }, { x: -20, y: 10 }, { x: 20, y: 10 }, { x: 30, y: 10 }],
   startX: -26,
@@ -488,7 +539,7 @@ export const freightLevel = new Level({
   id: "freight",
   theme: "desert",
   name: "Freight",
-  description: "An 80 m canyon and a 380 t freight train, nearly as long as the bridge.",
+  description: "A long, heavy goods train, almost as long as the bridge.",
   terrain: cliffs(-40, 40),
   anchors: [{ x: -50, y: 10 }, { x: -40, y: 10 }, { x: 40, y: 10 }, { x: 50, y: 10 }],
   startX: -46,
@@ -506,7 +557,7 @@ export const mountainLevel = new Level({
   id: "mountain",
   theme: "snow",
   name: "Mountain railway",
-  description: "A 120 m valley with a rock in the middle, 16 m down. A 520 t freight train.",
+  description: "A valley with a rock in the middle, and the heaviest train of all.",
   terrain: [...cliffs(-60, 60), { x0: -4, x1: 4, y: -6 }],
   anchors: [
     { x: -70, y: 10 }, { x: -60, y: 10 }, { x: 60, y: 10 }, { x: 70, y: 10 },
@@ -523,7 +574,7 @@ export const mountainLevel = new Level({
 });
 
 export const levels = [
-  brookLevel, creekLevel, ledgesLevel, canyonLevel, stepLevel, heavyLevel,
+  brookLevel, trianglesLevel, ledgesLevel, hangLevel, creekLevel, canyonLevel, stepLevel, heavyLevel,
   downhillLevel, rushLevel, pierLevel, longSpanLevel, viaductLevel, gorgeLevel, grandLevel,
   branchLineLevel, freightLevel, mountainLevel,
 ];

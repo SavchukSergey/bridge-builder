@@ -125,6 +125,59 @@ export function suspension(level, half, top, sag, { backstay = "cable", tower = 
 }
 
 /**
+ * A row of triangles on a level road from -half to half (joints every 10 m): each apex h
+ * above the middle of a stretch, joined to its neighbours.
+ * @param {Level} level
+ * @param {number} half
+ * @param {number} h
+ * @param {string} material
+ * @returns {SavedStructure}
+ */
+export function triangles(level, half, h, material) {
+  const b = new Builder(level);
+  /** @type {number[]} */
+  const xs = [];
+  for (let x = -half; x <= half; x += 10) xs.push(x);
+  const deck = xs.map(x => b.joint(x, 10));
+  b.chain(deck, "road");
+  const apexes = xs.slice(1).map(x => b.joint(x - 5, 10 + h));
+  apexes.forEach((apex, i) => {
+    b.link(deck[i], apex, material);
+    b.link(apex, deck[i + 1], material);
+  });
+  b.chain(apexes, material);
+  return b.build();
+}
+
+/**
+ * Posts at ±half up to `top` (with cable backstays to the outer anchors) and a fan of cables
+ * from each post's top to the road joints on its half.
+ * @param {Level} level
+ * @param {number} half
+ * @param {number} top
+ * @param {string} stay - the fan's material
+ * @returns {SavedStructure}
+ */
+export function fan(level, half, top, stay) {
+  const b = new Builder(level);
+  const left = b.joint(-half, top), right = b.joint(half, top);
+  b.link(b.joint(-half, 10), left, "steel-light");
+  b.link(b.joint(half, 10), right, "steel-light");
+  b.link(left, b.joint(-half - 10, 10), "cable");
+  b.link(right, b.joint(half + 10, 10), "cable");
+  /** @type {number[]} */
+  const xs = [];
+  for (let x = -half; x <= half; x += 10) xs.push(x);
+  const deck = xs.map(x => b.joint(x, 10));
+  b.chain(deck, "road");
+  xs.forEach((x, i) => {
+    if (x < 0 && x > -half) b.link(left, deck[i], stay);
+    else if (x > 0 && x < half) b.link(right, deck[i], stay);
+  });
+  return b.build();
+}
+
+/**
  * Just a road from (x0, y0) to (x1, y1), joints every 10 m.
  * @param {Level} level
  * @param {number} x0
@@ -244,6 +297,10 @@ export function aFrame(b, rockX0, rockX1, rockY, deckJoint) {
 export const solutions = {
   // $6,000: two links of road are enough for a car and an 18 t bus
   brook: (level) => bareDeck(level, -10, 10, 10, 10),
+  // ~$13,700: light steel triangles, 6 m tall (4 m ones break under the 200 t hauler)
+  triangles: (level) => triangles(level, 15, 6, "steel-light"),
+  // ~$20,000: thin cables fanning down from the posts the level starts with
+  hang: (level) => fan(level, 25, 20, "cable-thin"),
   // ~$16,400
   creek: (level) => suspension(level, 20, 14, 3, { tower: "steel-light", hanger: "cable-thin" }),
   // ~$35,300

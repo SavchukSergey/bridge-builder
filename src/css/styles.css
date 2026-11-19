@@ -1665,3 +1665,8 @@ select.field option {
 .setting[hidden] {
   display: none;
 }
+
+/* Simple controls (Settings): the extra tools are put away */
+body.simple .advanced {
+  display: none !important;
+}

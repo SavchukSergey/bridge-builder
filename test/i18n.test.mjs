@@ -110,17 +110,17 @@ describe("translations", () => {
 
 describe("t", () => {
   test("English by default, with placeholders filled", () => {
-    assert.equal(t("card.locked", { name: "Brook" }), "Win Brook to unlock");
-    assert.equal(t("mode.members", { n: 1 }), "1 member");
-    assert.equal(t("mode.members", { n: 3 }), "3 members");
+    assert.equal(t("card.locked", { name: "Brook" }), "Win Brook to open");
+    assert.equal(t("mode.members", { n: 1 }), "1 piece");
+    assert.equal(t("mode.members", { n: 3 }), "3 pieces");
   });
 
   test("Russian and Ukrainian counting: one, few, many", () => {
     setLanguage("ru");
     assert.deepEqual([1, 3, 5, 21, 22, 25].map(n => t("mode.members", { n })),
-      ["1 элемент", "3 элемента", "5 элементов", "21 элемент", "22 элемента", "25 элементов"]);
+      ["1 деталь", "3 детали", "5 деталей", "21 деталь", "22 детали", "25 деталей"]);
     setLanguage("uk");
-    assert.deepEqual([1, 3, 5, 11].map(n => t("mode.joints", { n })), ["1 вузол", "3 вузли", "5 вузлів", "11 вузлів"]);
+    assert.deepEqual([1, 3, 5, 11].map(n => t("mode.joints", { n })), ["1 точка", "3 точки", "5 точок", "11 точок"]);
   });
 
   test("{One} capitalises the param", () => {
@@ -152,10 +152,10 @@ describe("the game in Russian and Ukrainian", () => {
     setLanguage("ru");
     const creek = findLevel("creek");
     assert.equal(creek.name, "Речка");
-    assert.match(creek.description, /два грузовика по 40 т/);
+    assert.match(creek.description, /два больших грузовика/);
     assert.equal(creek.convoySummary, "2 грузовика по 40 т");
     assert.equal(findLevel("downhill").convoySummary, "5 грузовиков по 40 т");
-    assert.equal(findLevel("brook").convoySummary, "1 автомобиль · 1 автобус");
+    assert.equal(findLevel("brook").convoySummary, "1 машина · 1 автобус");
     assert.equal(findLevel("branch-line").convoySummary, "Поезд 240 т: локомотив + 2 вагона");
     assert.equal(findLevel("freight").convoySummary, "Поезд 380 т: локомотив + 4 вагона");
     assert.equal(findLevel("mountain").convoySummary, "Поезд 520 т: локомотив + 6 вагонов");
@@ -174,13 +174,13 @@ describe("the game in Russian and Ukrainian", () => {
     setLanguage("ru");
     assert.equal(materials["steel-light"].label, "Лёгкая сталь");
     assert.match(CHALLENGE_KINDS.cost.label(16400), /^Стоимость не больше \$16\s400$/);
-    assert.equal(CHALLENGE_KINDS.members.label(7), "Не больше 7 элементов");
-    assert.equal(CHALLENGE_KINDS.light.name, "Пёрышко");
-    assert.match(failureTip({ kind: "failed", roadAcross: false }, "rail"), /только по рельсам/);
+    assert.equal(CHALLENGE_KINDS.members.label(7), "Не больше 7 деталей");
+    assert.equal(CHALLENGE_KINDS.light.name, "Лёгкий как пёрышко");
+    assert.match(failureTip({ kind: "failed", roadAcross: false }, "rail"), /нужны рельсы/);
     assert.match(failureTip({ kind: "failed", failure: { kind: "steel", material: "steel", label: materials.steel.label, mode: "compression" } }), /\(сталь\)/);
     setLanguage("uk");
     assert.equal(materials.cable.label, "Трос");
-    assert.equal(CHALLENGE_KINDS.members.label(3), "Не більше 3 елементів");
+    assert.equal(CHALLENGE_KINDS.members.label(3), "Не більше 3 деталей");
   });
 
   test("a sandbox describes itself in the language", () => {
@@ -188,7 +188,7 @@ describe("the game in Russian and Ukrainian", () => {
     const level = findSandboxLevel(sandboxId(spec));
     setLanguage("uk");
     assert.equal(level.name, "Пісочниця");
-    assert.equal(level.description, "Ваш власний рівень: проліт 80 м, дальній берег на 6 м нижчий, скеля посередині. Чотири вантажівки по 40 т.");
+    assert.equal(level.description, "Твій власний рівень: проліт 80 м, інший берег на 6 м нижчий, скеля посередині. Чотири вантажівки по 40 т.");
   });
 
   test("what the game reports while you build is in the language", () => {
@@ -258,8 +258,8 @@ describe("translatePage", () => {
     assert.equal(text.textContent, "English", "English: nothing to do");
     setLanguage("ru");
     translatePage(root);
-    assert.equal(text.textContent, "Испытать");
-    assert.equal(markup.innerHTML, "<kbd>Shift</kbd>+перетаскивание");
+    assert.equal(text.textContent, "Проверить");
+    assert.equal(markup.innerHTML, "<kbd>Shift</kbd>+тащи");
     assert.equal(titled.attrs.title, "Отменить (Ctrl+Z)");
     assert.equal(titled.attrs["aria-label"], "Отменить");
     assert.equal(unknown.textContent, "English", "a key without a translation keeps its English");

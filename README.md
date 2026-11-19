@@ -30,8 +30,8 @@ within budget earns one star; cheaper bridges earn two or three. Your cheapest w
 level is remembered.
 
 Each level also has one or two **challenges**, done by a win within budget with a twist:
-**No cables**, **Featherweight** (no full-size steel), **Minimalist** (a few members) or
-**Shoestring** (a cost a little under three stars). They show under the star goals, in the
+**No cables**, **Light as a feather** (no full-size steel), **Few pieces** (a few members) or
+**Penny pincher** (a cost a little under three stars). They show under the star goals, in the
 results and as ◆ on the level cards. Every one is met by the level's reference bridge, so
 none is impossible.
 
@@ -91,7 +91,10 @@ kinds of colour blindness (a test checks this with simulated protanopia, deutera
 tritanopia).
 
 **Settings** (the gear) has the sound volume, screen shake (off by default if the system
-asks for reduced motion), the tutorial again, and a reset of all progress.
+asks for reduced motion), **Simple controls**, the language, the tutorial again, and a reset of
+all progress. Simple controls are on at first: they put away the mirror, the stress view,
+snapping, camera follow, export and import (and their keys and help rows), which a
+younger player doesn't need. Turn it off for every tool.
 
 ### Materials
 
@@ -111,26 +114,33 @@ Links longer than 10 m are split into 10 m segments.
 Thirteen levels, each introducing one idea, in four settings: summer, desert, snow and
 night. Open the list from the level button in the
 toolbar: it shows your stars and best cost on each. A level unlocks once the one before it
-is won within budget.
+(or any later one) is won within budget.
+
+The game is written for players from about nine: the first five levels teach one idea
+each (a road, triangles, props from below, hanging from posts, building the posts), and the
+words are everyday ones (a member is a *piece*, a joint a *dot*, tension *pulled* and
+compression *squashed*).
 
 | # | Level | The idea |
 | --- | --- | --- |
 | 1 | Brook | 20 m, a car and a bus: lay a road across |
-| 2 | Creek | 40 m: a bare deck sags and snaps, so hold it up |
+| 2 | Triangles | 30 m and the 200 t hauler: triangles on top of the road |
 | 3 | Ledges | rock ledges below the road to prop the deck from |
-| 4 | Canyon | 80 m: the example bridge works but costs too much |
-| 5 | Step up | the far side is 8 m higher |
-| 6 | Heavy load | one 200 t heavy hauler: cables stretch too much |
-| 7 | Downhill | the far side is 10 m lower, five trucks |
-| 8 | Rush hour | nine vehicles nose to tail, at night |
-| 9 | River pier | 120 m with a rock in the river for a pier |
-| 10 | Long span | 100 m with nothing to stand on |
-| 11 | Viaduct | 180 m with two rocks: three spans |
-| 12 | Deep gorge | low ledges: an arch is cheaper than a truss |
-| 13 | Grand crossing | 160 m, climbing, six trucks |
-| 14 | Branch line | the railway: 40 m and a 240 t train, on Rail |
-| 15 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
-| 16 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
+| 4 | Hanging road | 50 m with the posts already up: hang the road from them |
+| 5 | Creek | 40 m: build the posts too, and hang the road |
+| 6 | Canyon | 80 m: the example bridge works but costs too much |
+| 7 | Step up | the far side is 8 m higher |
+| 8 | Heavy load | one 200 t heavy hauler: cables stretch too much |
+| 9 | Downhill | the far side is 10 m lower, five trucks |
+| 10 | Rush hour | nine vehicles nose to tail, at night |
+| 11 | River pier | 120 m with a rock in the river for a pier |
+| 12 | Long span | 100 m with nothing to stand on |
+| 13 | Viaduct | 180 m with two rocks: three spans |
+| 14 | Deep gorge | low ledges: an arch is cheaper than a truss |
+| 15 | Grand crossing | 160 m, climbing, six trucks |
+| 16 | Branch line | the railway: 40 m and a 240 t train, on Rail |
+| 17 | Freight | 80 m and a 380 t train, nearly as long as the bridge |
+| 18 | Mountain railway | 120 m with a rock for a pier, a 520 t train |
 
 **Sandbox** (the last card in the level list) lets you design your own gap: its width (20
 to 200 m), how much higher or lower the far bank is, a rock in the middle for a pier, the

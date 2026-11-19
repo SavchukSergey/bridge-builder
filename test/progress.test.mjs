@@ -17,17 +17,17 @@ function win(game, levelId) {
 describe("progression", () => {
   test("levels are numbered in play order", () => {
     assert.deepEqual(levels.map(l => l.number), levels.map((_, i) => i + 1));
-    assert.equal(levels.length, 16);
+    assert.equal(levels.length, 18);
   });
 
   test("only the first level is open at the start; winning one opens the next", () => {
     const game = createGame("brook");
     assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook"]);
-    assert.deepEqual(game.totalStars, { earned: 0, max: 48 });
+    assert.deepEqual(game.totalStars, { earned: 0, max: 54 });
 
     win(game, "brook");
-    assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook", "creek"]);
-    assert.deepEqual(game.totalStars, { earned: 3, max: 48 });
+    assert.deepEqual(levels.filter(l => game.isUnlocked(l.id)).map(l => l.id), ["brook", "triangles"]);
+    assert.deepEqual(game.totalStars, { earned: 3, max: 54 });
     assert.equal(game.isUnlocked("nope"), false);
   });
 
@@ -39,20 +39,21 @@ describe("progression", () => {
     assert.equal(game.isUnlocked("step"), false);
   });
 
-  test("a level won before stays open, even if the one before it is not won (e.g. a level added later)", () => {
+  test("winning a level opens every level before it too (e.g. one added in between later)", () => {
     createGame("brook");
     localStorage.setItem("bridge-builder:completed", JSON.stringify(["canyon"]));
     const game = createGame("brook", { keepStorage: true });
     assert.equal(game.isUnlocked("canyon"), true, "won");
     assert.equal(game.isUnlocked("step"), true, "after a won level");
-    assert.equal(game.isUnlocked("ledges"), false, "the level before canyon was never won");
+    for (const id of ["triangles", "ledges", "hang", "creek"]) assert.equal(game.isUnlocked(id), true, `${id}: before a won level`);
+    assert.equal(game.isUnlocked("heavy"), false, "two after the last win");
   });
 
   test("the game starts on the last level played, unless it is locked", () => {
     createGame("brook");
     localStorage.setItem("bridge-builder:completed", JSON.stringify(["brook"]));
-    localStorage.setItem("bridge-builder:level", "creek");
-    assert.equal(createGame(null, { keepStorage: true }).level.id, "creek");
+    localStorage.setItem("bridge-builder:level", "triangles");
+    assert.equal(createGame(null, { keepStorage: true }).level.id, "triangles");
 
     localStorage.setItem("bridge-builder:level", "grand");
     assert.equal(createGame(null, { keepStorage: true }).level.id, "brook", "locked: back to the first level");

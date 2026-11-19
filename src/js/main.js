@@ -20,6 +20,8 @@ const SPEED_KEY = 'bridge-builder:speed';
 const FOLLOW_KEY = 'bridge-builder:follow';
 const VOLUME_KEY = 'bridge-builder:volume';
 const SHAKE_KEY = 'bridge-builder:shake';
+/** 'off' once the player asks for every tool; simple controls are the default. */
+const SIMPLE_KEY = 'bridge-builder:simple';
 
 
 /**
@@ -1082,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', function () {
     volumeValue: byId('setting-volume-value', HTMLOutputElement),
     shake: byId('setting-shake', HTMLInputElement),
     tutorial: byId('setting-tutorial', HTMLButtonElement),
+    simple: byId('setting-simple', HTMLInputElement),
     language: byId('setting-language', HTMLSelectElement),
     installRow: byId('setting-install-row', HTMLDivElement),
     install: byId('setting-install', HTMLButtonElement),
@@ -1134,6 +1137,33 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ev.key === 'Escape' && !settings.root.hidden) {
       ev.stopImmediatePropagation();
       hideSettings();
+    }
+  }, true);
+
+  // ---- simple controls: the extra tools put away, for younger players (on unless turned off)
+  /** @param {boolean} on */
+  function applySimple(on) {
+    document.body.classList.toggle('simple', on);
+    if (!on) return;
+    // nothing hidden stays switched on
+    for (const chk of [chkMirror, chkStress]) {
+      if (chk.checked) {
+        chk.checked = false;
+        chk.dispatchEvent(new Event('change'));
+      }
+    }
+  }
+  try { settings.simple.checked = localStorage.getItem(SIMPLE_KEY) !== 'off'; } catch { settings.simple.checked = true; }
+  applySimple(settings.simple.checked);
+  settings.simple.addEventListener('change', () => {
+    applySimple(settings.simple.checked);
+    try { localStorage.setItem(SIMPLE_KEY, settings.simple.checked ? 'on' : 'off'); } catch { /* ignore */ }
+  });
+  // M would switch on the mirror, whose button is put away: ignore it (this runs before the game sees the key)
+  window.addEventListener('keydown', (ev) => {
+    if (settings.simple.checked && ev.key.toLowerCase() === 'm' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const target = ev.target;
+      if (!(target instanceof Element && target.closest('input, textarea, select, [contenteditable]'))) ev.stopImmediatePropagation();
     }
   }, true);
 

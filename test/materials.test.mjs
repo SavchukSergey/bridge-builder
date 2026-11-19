@@ -58,12 +58,15 @@ describe("member sizes", () => {
 });
 
 describe("budgets stay tight", () => {
+  // the levels that teach one idea leave room for a first try that isn't the cheapest
+  const TEACHING = new Set(["triangles", "hang"]);
   for (const level of levels) {
-    test(`${level.name}: the cheapest known bridge uses 85-95% of the budget`, () => {
+    const low = TEACHING.has(level.id) ? 0.6 : 0.85;
+    test(`${level.name}: the cheapest known bridge uses ${low * 100}-95% of the budget`, () => {
       const scene = new Scene();
       scene.load(solutions[level.id](level));
       const share = scene.cost / level.budget;
-      assert.ok(share >= 0.85 && share <= 0.95, `reference $${Math.round(scene.cost)} is ${Math.round(share * 100)}% of $${level.budget}`);
+      assert.ok(share >= low && share <= 0.95, `reference $${Math.round(scene.cost)} is ${Math.round(share * 100)}% of $${level.budget}`);
     });
   }
 });

@@ -259,7 +259,8 @@ export class GameCore {
     if (findLevel(id)?.sandbox) return true;
     const i = levels.findIndex(level => level.id === id);
     if (i < 0) return false;
-    return i === 0 || this.isCompleted(id) || this.isCompleted(levels[i - 1].id);
+    // open once the one before is won, or any later one (a level added in between since)
+    return i === 0 || levels.slice(i - 1).some(level => this.isCompleted(level.id));
   }
 
   /** Stars earned over all levels (the best result on each), and how many there are. */

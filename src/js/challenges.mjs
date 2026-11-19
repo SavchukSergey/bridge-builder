@@ -54,6 +54,8 @@ export const CHALLENGE_KINDS = {
  */
 const LEVEL_CHALLENGES = {
   brook: [["members", 2]],
+  triangles: [["light"], ["cost", 13700]],
+  hang: [["light"], ["cost", 20000]],
   creek: [["light"], ["cost", 16400]],
   ledges: [["noCables"], ["members", 7]],
   canyon: [["cost", 35400], ["members", 27]],

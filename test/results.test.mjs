@@ -46,7 +46,7 @@ describe("test results", () => {
     assert.equal(result.stars, 3);
     assert.equal(result.newBest, true);
     assert.equal(result.previousBest, undefined);
-    assert.equal(result.nextLevel, "ledges");
+    assert.equal(result.nextLevel, "canyon");
     assert.deepEqual(game.bestResult("creek"), { cost: game.cost, stars: 3 });
     assert.ok(game.isCompleted("creek"));
 
