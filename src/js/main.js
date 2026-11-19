@@ -4,7 +4,7 @@ import { findLevel, levels } from './level.mjs';
 import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
 import { Sound } from './audio.mjs';
 import { renderLevelPreview } from './level-preview.mjs';
-import { failureTip } from './hints.mjs';
+import { failureTip, levelHint } from './hints.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
 const TUTORIAL_KEY = 'bridge-builder:tutorial';
@@ -419,6 +419,9 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
     dlg.share.hidden = result.kind !== 'success';
     dlg.replay.hidden = !game.canReplay;
+    if (result.kind !== 'success' && game.hintAvailable && hintStage === 0) {
+      dlg.hint.textContent = 'Stuck? There is a hint in the panel.';
+    }
     dlg.root.hidden = false;
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
@@ -468,7 +471,45 @@ document.addEventListener('DOMContentLoaded', function () {
   /** @type {number | undefined} */
   let lastWater;
 
+  // ---- a hint for a level that keeps failing: first in words, then as an outline
+  const hint = {
+    root: byId('hint', HTMLElement),
+    text: byId('hint-text', HTMLParagraphElement),
+    button: byId('hint-button', HTMLButtonElement),
+  };
+  /** 0: offered, 1: the words shown, 2: the outline offered or shown. */
+  let hintStage = 0;
+  let hintLevel = '';
+  function updateHint() {
+    if (game.level.id !== hintLevel) {
+      hintLevel = game.level.id;
+      hintStage = 0;
+    }
+    const words = levelHint(game.level.id);
+    hint.root.hidden = !words || (hintStage === 0 && !game.hintAvailable);
+    hint.text.hidden = hintStage === 0;
+    if (hintStage > 0 && words) {
+      const cost = document.createElement('span');
+      cost.className = 'outline-cost';
+      const outline = game.outline;
+      cost.textContent = game.showOutline && outline ? `The outline costs ${formatMoney(outline.cost)}.` : '';
+      hint.text.replaceChildren(words, cost);
+    }
+    lastChild(hint.button).textContent = hintStage === 0 ? 'Stuck? Get a hint'
+      : game.showOutline ? 'Hide the outline' : 'Show the outline';
+  }
+  hint.button.addEventListener('click', () => {
+    if (hintStage === 0) hintStage = 1;
+    else {
+      hintStage = 2;
+      game.showOutline = !game.showOutline;
+    }
+    updateHint();
+    hint.button.blur();
+  });
+
   game.onResult = (result) => {
+    updateHint();
     showResult(result);
     sound.jingle(result.kind === 'success');
   };
@@ -493,8 +534,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!picker.root.hidden) hideLevels();
     else if (!dlg.root.hidden) hideResult();
   });
-  game.onChange = refreshLevels;
+  game.onChange = () => {
+    refreshLevels();
+    updateHint();
+  };
   refreshLevels();
+  updateHint();
 
   // ---- level-select screen
   /**

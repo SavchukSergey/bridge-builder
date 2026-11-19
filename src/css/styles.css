@@ -1490,3 +1490,36 @@ kbd {
     left: 8px;
   }
 }
+
+/* ---------- hint for a level that keeps failing ---------- */
+
+.hint-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: rgba(130, 225, 255, 0.08);
+  border: 1px solid rgba(130, 225, 255, 0.25);
+}
+
+.hint-card[hidden],
+#hint-text[hidden] {
+  display: none;
+}
+
+#hint-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+#hint-text .outline-cost {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+#hint-button {
+  align-self: flex-start;
+}

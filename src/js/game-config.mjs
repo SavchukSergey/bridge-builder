@@ -14,6 +14,8 @@ export const MAX_FRAME_TIME = 0.1;
 export const MAX_SUBSTEPS = 1000;
 /** Simulation speeds the player can pick: simulated seconds per real second. */
 export const SPEEDS = [0.5, 1, 2, 4];
+/** A hint is offered after this many tests on a level end without a win. */
+export const HINT_AFTER = 3;
 /** Speed of the slow-motion replay of a failure. */
 export const REPLAY_SPEED = 0.25;
 /** The replay starts this many simulated seconds before the first member breaks. */

@@ -182,6 +182,26 @@ describe("rendering", () => {
     assert.deepEqual(dashes.at(-1), [], "and the dash is cleared after");
   });
 
+  test("the hint outline draws in build mode only, and builds nothing", () => {
+    const game = createGame("canyon");
+    const rec = withRecorder(game);
+    const outlineDash = () => dashes.filter(d => d.length === 2 && Math.abs(d[0] * game.ctx.zoom - 7) < 1e-9).length;
+    const dashes = [];
+    rec.setLineDash = (d) => dashes.push(d);
+    const links = game.scene.links.length;
+    game.render();
+    assert.equal(outlineDash(), 0, "off by default");
+    game.showOutline = true;
+    game.render();
+    assert.ok(outlineDash() > 0, "drawn");
+    assert.equal(rec.stackDepth, 0);
+    assert.equal(game.scene.links.length, links, "nothing was built");
+    dashes.length = 0;
+    game.setSimulationRunning(true);
+    game.render();
+    assert.equal(outlineDash(), 0, "not during a test");
+  });
+
   test("zoomed far out and far in", () => {
     const game = createGame();
     withRecorder(game);

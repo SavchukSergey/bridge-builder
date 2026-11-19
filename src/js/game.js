@@ -14,6 +14,7 @@ import { LEVEL_KEY, storageGet } from "./storage.mjs";
 import { findLevel, levels } from "./level.mjs";
 import { createVec3F } from "./math.js";
 import { renderBackground } from "./scenery.mjs";
+import { materials } from "./materials/index.mjs";
 
 export { SPEEDS } from "./game-config.mjs";
 /** @typedef {import("./game-types.mjs").TestResult} TestResult */
@@ -54,6 +55,7 @@ export class Game extends GameInput {
     renderBackground(this.ctx, this.level.startY, this.level.theme);
     this.level.render(this.ctx);
     if (this.isBuildMode) this.scene.grid.render(this.ctx);
+    if (this.isBuildMode && this.showOutline) this.__renderOutline();
     if (this.isBuildMode && this.mirror) {
       const g = this.ctx.ctx;
       const x = this.level.mirrorAxis;
@@ -118,6 +120,41 @@ export class Game extends GameInput {
         vehicle.renderLights(this.ctx);
       }
     }
+  }
+
+  /**
+   * The hint's outline: the reference bridge, dashed, under the player's own. Decks are drawn
+   * wider than beams and cables, as in the game.
+   */
+  __renderOutline() {
+    const outline = this.outline;
+    if (!outline) return;
+    const { joints, links } = outline.structure;
+    const g = this.ctx.ctx;
+    const zoom = this.ctx.zoom;
+    g.save();
+    g.lineCap = "round";
+    for (const pass of ["shadow", "line"]) {
+      g.setLineDash(pass === "line" ? [7 / zoom, 5 / zoom] : []);
+      for (const { a, b, material } of links) {
+        const deck = materials[material]?.look.kind === "deck";
+        g.beginPath();
+        g.moveTo(joints[a].x, joints[a].y);
+        g.lineTo(joints[b].x, joints[b].y);
+        g.lineWidth = ((deck ? 7 : 3.5) + (pass === "shadow" ? 3 : 0)) / zoom;
+        g.strokeStyle = pass === "shadow" ? "rgba(10, 20, 35, 0.35)" : "rgba(130, 225, 255, 0.85)";
+        g.stroke();
+      }
+    }
+    g.setLineDash([]);
+    g.fillStyle = "rgba(130, 225, 255, 0.95)";
+    for (const j of joints) {
+      if (j.fixed) continue;
+      g.beginPath();
+      g.arc(j.x, j.y, 3.5 / zoom, 0, 2 * Math.PI);
+      g.fill();
+    }
+    g.restore();
   }
 
   /** The member that broke first, and the tutorial's next click, both pulsing. */

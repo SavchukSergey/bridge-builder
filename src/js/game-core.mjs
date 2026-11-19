@@ -8,8 +8,9 @@
  * it or the layers below it define.
  */
 
-import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
-import { COMPLETED_KEY, BEST_KEY, storageGet, storageSet } from "./storage.mjs";
+import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, HINT_AFTER, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
+import { COMPLETED_KEY, BEST_KEY, TRIES_KEY, storageGet, storageSet } from "./storage.mjs";
+import { solutions } from "./solutions.mjs";
 import { Effects } from "./effects.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
 import { levels } from "./level.mjs";
@@ -321,12 +322,14 @@ export class GameCore {
         kind: first.link.material.look.kind,
         mode: first.mode,
       };
+      this.__countTry();
       return {
         ...base, kind: "failed", stars: 0, best: previousBest, newBest: false, reason: lost?.lostReason ?? "fell", broken,
         failure: failure && { ...failure, time: first.time, x: first.x, y: first.y }, roadAcross: this.__roadAcrossAtStart,
       };
     }
     if (this.overBudget) {
+      this.__countTry();
       return { ...base, kind: "over-budget", stars: 0, best: previousBest, newBest: false, broken };
     }
     const stars = level.starsFor(cost);
@@ -336,6 +339,54 @@ export class GameCore {
     this.__markCompleted();
     this.onChange();
     return { ...base, kind: "success", stars, best, newBest, broken };
+  }
+
+  /** Load tests on a level that ended without a win (on this browser). */
+  triesWithoutWin(id = this.level.id) {
+    const n = this.__tries()[id];
+    return Number.isInteger(n) && n > 0 ? n : 0;
+  }
+
+  /** Whether the player seems stuck on this level: offer a hint. */
+  get hintAvailable() {
+    return this.triesWithoutWin() >= HINT_AFTER && this.outline !== undefined;
+  }
+
+  /** @returns {Record<string, number>} */
+  __tries() {
+    try {
+      const all = JSON.parse(storageGet(TRIES_KEY) ?? "{}");
+      return all && typeof all === "object" && !Array.isArray(all) ? all : {};
+    } catch {
+      return {};
+    }
+  }
+
+  __countTry() {
+    if (this.replay) return; // watching it again is not another try
+    storageSet(TRIES_KEY, JSON.stringify({ ...this.__tries(), [this.level.id]: this.triesWithoutWin() + 1 }));
+  }
+
+  /** Draw the {@link outline} over the build area. */
+  showOutline = false;
+
+  /** @type {{ level: import("./level.mjs").Level, structure: import("./scene.js").SavedStructure, cost: number } | undefined} */
+  __outlineCache = undefined;
+
+  /**
+   * The level's reference bridge, for the hint: a design known to win within budget.
+   * @returns {{ structure: import("./scene.js").SavedStructure, cost: number } | undefined}
+   */
+  get outline() {
+    const build = solutions[this.level.id];
+    if (!build) return undefined;
+    if (this.__outlineCache?.level !== this.level) {
+      const structure = build(this.level);
+      const scene = new Scene();
+      scene.load(structure);
+      this.__outlineCache = { level: this.level, structure, cost: scene.cost };
+    }
+    return this.__outlineCache;
   }
 
   /**

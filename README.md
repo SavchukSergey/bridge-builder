@@ -43,6 +43,11 @@ crushed) with a tip, and it stays marked in red on the bridge until you change i
 break** replays the test in slow motion (¼×) from just before that member gave way, with
 the view on it.
 
+After three tests on a level end without a win, the panel offers a hint: first a few words
+about a design that works, then, if you want it, its outline drawn over the build area
+(with what it costs) to build over. The outlines are the reference bridges the tests use to
+prove every level can be won.
+
 On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to place a link;
 hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along
 the bottom.
@@ -113,7 +118,7 @@ is won within budget.
 | Locomotive | 100 t | 20 m | 4 (two bogies) |
 | Wagon | 70 t | 15 m | 4 (two bogies) |
 
-Every level has a reference bridge in the tests that crosses within budget, and the budgets
+Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
 ## How it works
@@ -146,7 +151,8 @@ src/
     vehicle.mjs         driving, falling and axle loads
     vehicle-types.mjs   cars, buses, trucks, haulers, locomotives, wagons: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
-    hints.mjs           advice after a failed test
+    hints.mjs           advice after a failed test, and a hint for each level
+    solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
