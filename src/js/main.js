@@ -5,6 +5,7 @@ import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
 import { Sound } from './audio.mjs';
 import { renderLevelPreview } from './level-preview.mjs';
 import { SANDBOX_DEFAULT, SANDBOX_LIMITS, SANDBOX_TRAFFIC, normalizeSandbox, parseSandboxId, sandboxId } from './sandbox.mjs';
+import { challengesFor } from './challenges.mjs';
 import { failureTip, levelHint } from './hints.mjs';
 
 const SOUND_KEY = 'bridge-builder:sound';
@@ -170,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
     peak: byId('link-tooltip-peak', HTMLDivElement),
     load: byId('link-tooltip-load', HTMLDivElement),
   };
+  const goalChallenges = byId('goal-challenges', HTMLUListElement);
   const txtLevel = byId('level-description', HTMLDivElement);
   const boxCost = byId('cost', HTMLElement);
   const txtCost = byId('cost-value', HTMLSpanElement);
@@ -196,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tip: byId('result-tip', HTMLParagraphElement),
     share: byId('result-share', HTMLButtonElement),
     replay: byId('result-replay', HTMLButtonElement),
+    challenges: byId('result-challenges', HTMLUListElement),
   };
   const placeTip = {
     root: byId('place-tip', HTMLDivElement),
@@ -372,6 +375,38 @@ document.addEventListener('DOMContentLoaded', function () {
     lastChild(goals.three).textContent = `\u2264 ${formatMoney(stars.three)}`;
     const best = game.bestResult();
     goals.best.textContent = best ? `Best ${formatMoney(best.cost)}  ${starText(best.stars)}` : '';
+    const earned = game.challengesEarned();
+    goalChallenges.replaceChildren(...challengesFor(game.level.id).map(c =>
+      challengeItem(c.name, c.label, { earned: earned.includes(c.id) })));
+  }
+
+  /**
+   * One line of a challenge list: a diamond (filled once earned), the name and what it asks.
+   * @param {string} name
+   * @param {string} label
+   * @param {{ earned?: boolean, met?: boolean, isNew?: boolean }} state
+   */
+  function challengeItem(name, label, { earned = false, met = false, isNew = false }) {
+    const li = document.createElement('li');
+    li.className = 'challenge';
+    li.classList.toggle('earned', earned);
+    li.classList.toggle('met', met);
+    const title = document.createElement('span');
+    title.className = 'name';
+    title.textContent = name;
+    const what = document.createElement('span');
+    what.className = 'what';
+    what.textContent = label;
+    li.append(title);
+    if (isNew) {
+      const badge = document.createElement('span');
+      badge.className = 'new-best';
+      badge.textContent = 'Done';
+      title.append(badge);
+    }
+    li.append(what);
+    li.title = earned ? `Done: ${label}` : `Challenge: ${label}, and win within budget`;
+    return li;
   }
 
   /** @param {import('./game.js').TestResult} result */
@@ -399,6 +434,9 @@ document.addEventListener('DOMContentLoaded', function () {
     dlg.tip.textContent = result.kind === 'failed'
       ? failureTip(result, game.level.track) + (result.failure ? ' It is marked in red on your bridge.' : '')
       : '';
+    // after a win, how the bridge did on the level's challenges
+    dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
+      challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })));
     dlg.cost.textContent = formatMoney(result.cost);
     dlg.budget.textContent = formatMoney(result.budget);
     dlg.best.replaceChildren(result.best ? `${formatMoney(result.best.cost)} ${starText(result.best.stars)}` : '\u2014');
@@ -597,6 +635,16 @@ document.addEventListener('DOMContentLoaded', function () {
     detail.className = 'level-detail';
     if (unlocked) {
       detail.textContent = best ? `Best ${formatMoney(best.cost)}` : `Budget ${formatMoney(level.budget)}`;
+      const all = challengesFor(level.id);
+      if (all.length) {
+        const done = game.challengesEarned(level.id).length;
+        const chip = document.createElement('span');
+        chip.className = 'level-challenges';
+        chip.classList.toggle('all', done === all.length);
+        chip.textContent = `\u25C6 ${done}/${all.length}`;
+        chip.title = `Challenges done: ${done} of ${all.length}`;
+        detail.append(chip);
+      }
     } else {
       detail.append(svgIcon('icon-lock'), `Win ${previous.name} to unlock`);
     }

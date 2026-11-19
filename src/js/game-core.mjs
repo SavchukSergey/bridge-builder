@@ -9,7 +9,8 @@
  */
 
 import { SIM_TIME_PER_FRAME, MAX_FRAME_TIME, MAX_SUBSTEPS, FOLLOW_RATE, HINT_AFTER, MAX_ZOOM, REPLAY_LEAD, REPLAY_SPEED, REPLAY_VIEW_M, SEEK_BUDGET_MS } from "./game-config.mjs";
-import { COMPLETED_KEY, BEST_KEY, TRIES_KEY, storageGet, storageSet } from "./storage.mjs";
+import { COMPLETED_KEY, BEST_KEY, CHALLENGES_KEY, TRIES_KEY, storageGet, storageSet } from "./storage.mjs";
+import { challengesFor } from "./challenges.mjs";
 import { solutions } from "./solutions.mjs";
 import { Effects } from "./effects.mjs";
 import { EvalCtx } from "./eval-ctx.mjs";
@@ -313,7 +314,7 @@ export class GameCore {
     // a sandbox is not part of the progression: no next level, and nothing recorded
     const sandbox = level.sandbox !== undefined;
     const next = sandbox ? undefined : levels[levels.indexOf(level) + 1];
-    const base = { cost, budget: level.budget, goals: level.stars, previousBest, nextLevel: next?.id };
+    const base = { cost, budget: level.budget, goals: level.stars, previousBest, nextLevel: next?.id, challenges: this.__challengeResults(false) };
     const broken = this.scene.links.filter(l => l.broken).length;
 
     if (this.testState === "fell") {
@@ -340,8 +341,51 @@ export class GameCore {
     const best = newBest ? { cost, stars } : previousBest;
     if (newBest && !sandbox) storageSet(BEST_KEY, JSON.stringify({ ...this.__bests(), [level.id]: best }));
     if (!sandbox) this.__markCompleted();
+    const challenges = this.__challengeResults(true);
     this.onChange();
-    return { ...base, kind: "success", stars, best, newBest, broken };
+    return { ...base, kind: "success", stars, best, newBest, broken, challenges };
+  }
+
+  /** The current bridge, as challenges judge it. @returns {import("./challenges.mjs").BridgeStats} */
+  get bridgeStats() {
+    const links = this.scene.links;
+    return { cost: this.cost, members: links.length, materials: [...new Set(links.map(l => l.material.name))] };
+  }
+
+  /**
+   * Challenges on a level met in a win so far (on this browser).
+   * @param {string} [id]
+   * @returns {string[]}
+   */
+  challengesEarned(id = this.level.id) {
+    try {
+      const all = JSON.parse(storageGet(CHALLENGES_KEY) ?? "{}");
+      const list = all && typeof all === "object" ? all[id] : undefined;
+      return Array.isArray(list) ? list.filter(c => typeof c === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * The level's challenges against this test: after a win, which ones the bridge met
+   * (recording any new ones).
+   * @param {boolean} won - within budget
+   * @returns {import("./game-types.mjs").ChallengeResult[]}
+   */
+  __challengeResults(won) {
+    const earned = this.challengesEarned();
+    const stats = this.bridgeStats;
+    const results = challengesFor(this.level.id).map(c => {
+      const met = won && c.met(stats);
+      return { id: c.id, name: c.name, label: c.label, met, earned: met || earned.includes(c.id), isNew: met && !earned.includes(c.id) };
+    });
+    if (results.some(r => r.isNew) && !this.level.sandbox) {
+      let all = {};
+      try { all = JSON.parse(storageGet(CHALLENGES_KEY) ?? "{}") ?? {}; } catch { /* start afresh */ }
+      storageSet(CHALLENGES_KEY, JSON.stringify({ ...all, [this.level.id]: results.filter(r => r.earned).map(r => r.id) }));
+    }
+    return results;
   }
 
   /** Load tests on a level that ended without a win (on this browser). */

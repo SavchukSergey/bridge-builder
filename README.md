@@ -22,6 +22,12 @@ Get every vehicle to the chequered flag without spending more than the budget. C
 within budget earns one star; cheaper bridges earn two or three. Your cheapest win on each
 level is remembered.
 
+Each level also has one or two **challenges**, done by a win within budget with a twist:
+**No cables**, **Featherweight** (no full-size steel), **Minimalist** (a few members) or
+**Shoestring** (a cost a little under three stars). They show under the star goals, in the
+results and as ◆ on the level cards. Every one is met by the level's reference bridge, so
+none is impossible.
+
 ### Controls
 
 | Action | How |
@@ -160,6 +166,7 @@ src/
     vehicle-types.mjs   cars, buses, trucks, haulers, locomotives, wagons: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
     hints.mjs           advice after a failed test, and a hint for each level
+    challenges.mjs      each level's challenges
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water

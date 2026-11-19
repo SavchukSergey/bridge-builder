@@ -10,6 +10,8 @@ export const COMPLETED_KEY = "bridge-builder:completed";
 export const BEST_KEY = "bridge-builder:best";
 /** Load tests that ended without a win, per level: { [levelId]: count }. */
 export const TRIES_KEY = "bridge-builder:tries";
+/** Challenges met in a win, per level: { [levelId]: challengeId[] }. */
+export const CHALLENGES_KEY = "bridge-builder:challenges";
 
 /**
  * localStorage access that never throws (private mode, blocked storage, quota).

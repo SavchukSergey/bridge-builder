@@ -5,7 +5,7 @@
 
 import { GameCore } from "./game-core.mjs";
 import { MAX_UNDO } from "./game-config.mjs";
-import { AUTOSAVE_KEY, LEVEL_KEY, TRIES_KEY, COMPLETED_KEY, BEST_KEY, storageGet, storageSet } from "./storage.mjs";
+import { AUTOSAVE_KEY, LEVEL_KEY, TRIES_KEY, CHALLENGES_KEY, COMPLETED_KEY, BEST_KEY, storageGet, storageSet } from "./storage.mjs";
 import { findLevel, levels } from "./level.mjs";
 import { Scene } from "./scene.js";
 
@@ -96,7 +96,7 @@ export class GameLevels extends GameCore {
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key === COMPLETED_KEY || key === BEST_KEY || key === LEVEL_KEY || key === TRIES_KEY || key?.startsWith(`${AUTOSAVE_KEY}:`)) keys.push(key);
+        if (key === COMPLETED_KEY || key === BEST_KEY || key === LEVEL_KEY || key === TRIES_KEY || key === CHALLENGES_KEY || key?.startsWith(`${AUTOSAVE_KEY}:`)) keys.push(key);
       }
       for (const key of keys) localStorage.removeItem(key);
     } catch {

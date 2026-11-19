@@ -39,6 +39,17 @@
  * @property {boolean} [roadAcross] - failed: whether road spanned the whole gap at the start
  * @property {number} broken - members that broke
  * @property {string | undefined} nextLevel - id of the following level, if any
+ * @property {ChallengeResult[]} challenges - the level's challenges (met only in a win)
+ */
+
+/**
+ * @typedef {Object} ChallengeResult
+ * @property {string} id
+ * @property {string} name
+ * @property {string} label - what it asks for
+ * @property {boolean} met - by this bridge, in this win
+ * @property {boolean} earned - ever, including now
+ * @property {boolean} isNew - met for the first time in this win
  */
 
 /**
