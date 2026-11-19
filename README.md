@@ -128,7 +128,14 @@ src/
   index.html, css/      page and styles
   js/
     main.js             UI wiring
-    game.js             modes, editing, undo, saves, the load test
+    game.js             the Game class: wiring the layers below together, and drawing
+    game-core.mjs       shared state, options, view, progress, running the load test
+    game-levels.mjs     switching levels, undo and redo, saves, import and export
+    game-editing.mjs    building, mirroring, dragging and deleting links and joints
+    game-input.mjs      mouse, touch, wheel and keyboard
+    game-config.mjs     tuning values (pick radii, zoom limits, link lengths, speeds)
+    game-types.mjs      shared JSDoc types
+    storage.mjs         localStorage keys and safe access
     scene.js            the structure and the physics step
     engine/             joints and links
     materials/          material properties and looks
