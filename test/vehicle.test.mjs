@@ -316,3 +316,25 @@ describe("budget", () => {
     assert.equal(game.cost, 64000, "deformation doesn't change the cost");
   });
 });
+
+test("a car is across only once it reaches the flag; a long truck once its rear is off the bridge", async () => {
+  const { solutions } = await import("./solutions.mjs");
+  const { findLevel } = await import("../src/js/level.mjs");
+  for (const id of ["brook", "heavy"]) { // a car, an ice-cream van and a bus; the 22 m hauler
+    const level = /** @type {import("../src/js/level.mjs").Level} */ (findLevel(id));
+    const game = createGame(id);
+    game.importStructure(solutions[id](level));
+    game.setSimulationRunning(true);
+    const seen = new Set();
+    while (!game.testFinished && game.evalCtx.time < 120) {
+      game.tick();
+      for (const v of game.vehicles) {
+        if (v.state !== "crossed" || seen.has(v)) continue;
+        seen.add(v);
+        assert.ok(v.x + v.length / 2 >= level.finishX, `${id} ${v.type.id}: its front is at the flag`);
+        assert.ok(v.x - v.length / 2 >= level.finishX - 6.01, `${id} ${v.type.id}: its rear is off the bridge`);
+      }
+    }
+    assert.equal(game.testState, "crossed", id);
+  }
+});

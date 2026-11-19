@@ -39,8 +39,10 @@ export const MAX_SAFE_DROP = 4;
  */
 
 /**
- * A vehicle has crossed once its rear is this far short of the level's finish line: where
- * a 12 m truck's rear is when its centre reaches the line.
+ * A vehicle has crossed once its front reaches the level's finish line (the flag) and its
+ * rear is no more than this short of it: where a 12 m truck's rear is when its centre
+ * reaches the line, off the bridge. A long one drives on until its rear is that far; a car
+ * still has to reach the flag.
  */
 const FINISH_REAR_OFFSET = 6;
 
@@ -170,7 +172,8 @@ export class Vehicle {
     this.y = support.y;
     this.contact = support.road;
 
-    if (this.x - this.length / 2 >= this.level.finishX - FINISH_REAR_OFFSET) {
+    const front = this.x + this.length / 2, rear = this.x - this.length / 2;
+    if (front >= this.level.finishX && rear >= this.level.finishX - FINISH_REAR_OFFSET) {
       this.contact = undefined;
       this.state = "crossed";
     }
