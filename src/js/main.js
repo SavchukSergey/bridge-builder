@@ -1,6 +1,7 @@
 // Main entry point for the Bridge Builder game
 import { Game } from './game.js';
-import { levels } from './level.mjs';
+import { findLevel, levels } from './level.mjs';
+import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
 import { Sound } from './audio.mjs';
 import { renderLevelPreview } from './level-preview.mjs';
 import { failureTip } from './hints.mjs';
@@ -139,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const btnNew = byId('new-structure', HTMLButtonElement);
   const btnExport = byId('export-structure', HTMLButtonElement);
   const btnImport = byId('import-structure', HTMLButtonElement);
+  const btnShare = byId('share-structure', HTMLButtonElement);
   const fileImport = byId('import-file', HTMLInputElement);
   const txtStatus = byId('status-message', HTMLDivElement);
   const btnLevel = byId('level-button', HTMLButtonElement);
@@ -181,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
     next: byId('result-next', HTMLButtonElement),
     close: byId('result-close', HTMLButtonElement),
     tip: byId('result-tip', HTMLParagraphElement),
+    share: byId('result-share', HTMLButtonElement),
   };
   const placeTip = {
     root: byId('place-tip', HTMLDivElement),
@@ -346,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
       : result.kind === 'over-budget' ? 'Make it cheaper' : 'Try again';
     dlg.retry.classList.toggle('primary', result.kind !== 'success' || !result.nextLevel);
     dlg.next.hidden = result.kind !== 'success' || !result.nextLevel;
+    dlg.share.hidden = result.kind !== 'success';
     dlg.root.hidden = false;
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
@@ -527,6 +531,89 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => URL.revokeObjectURL(url), 0);
   });
 
+  // ---- bridges in links
+  async function shareBridge() {
+    const url = bridgeUrl(location.href.split('#')[0], game.exportStructure());
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+    if (coarse && navigator.share) {
+      // phones: the system share sheet
+      try {
+        await navigator.share({ title: 'Bridge Builder', text: `My bridge for ${game.level.name}`, url });
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'AbortError')) showStatus('Could not share the link.', true);
+      }
+      return;
+    }
+    // Copy within the click itself: the async clipboard API can wait on a permission
+    // prompt, and the click no longer counts by the time that is answered.
+    if (copyNow(url)) {
+      showStatus('Link copied: anyone who opens it gets this bridge.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showStatus('Link copied: anyone who opens it gets this bridge.');
+    } catch {
+      showStatus('Could not copy the link.', true);
+    }
+  }
+
+  /**
+   * Copies text with a selection and the copy command, which works right away in a click.
+   * @param {string} text
+   * @returns {boolean} whether it was copied
+   */
+  function copyNow(text) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.append(area);
+    area.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch { /* unsupported */ }
+    area.remove();
+    return ok;
+  }
+  btnShare.addEventListener('click', shareBridge);
+  dlg.share.addEventListener('click', shareBridge);
+
+  /** Opens the bridge in the address's #hash, if there is one, then clears the hash. */
+  function openSharedBridge() {
+    const text = bridgeInHash(location.hash);
+    if (text === undefined) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    let data;
+    try {
+      data = decodeBridge(text);
+    } catch {
+      showStatus('This bridge link is damaged: it could not be opened.', true);
+      return;
+    }
+    const level = findLevel(data.level);
+    if (!level) {
+      showStatus('This bridge link is for a level that doesn\u2019t exist.', true);
+      return;
+    }
+    if (!game.isUnlocked(level.id)) {
+      const before = levels[levels.indexOf(level) - 1];
+      showStatus(`This bridge is for ${level.number}. ${level.name}: win ${before.name} first to open it.`, true);
+      return;
+    }
+    try {
+      game.importStructure(data);
+    } catch {
+      showStatus('This bridge link is damaged: it could not be opened.', true);
+      return;
+    }
+    chkSimulation.checked = false;
+    if (!dlg.root.hidden) hideResult();
+    if (!picker.root.hidden) hideLevels();
+    showStatus(`Opened a shared bridge for ${level.name}. Undo to get yours back.`);
+  }
+  window.addEventListener('hashchange', openSharedBridge);
+
   btnImport.addEventListener('click', () => fileImport.click());
   fileImport.addEventListener('change', async () => {
     const file = fileImport.files?.[0];
@@ -655,5 +742,6 @@ document.addEventListener('DOMContentLoaded', function () {
     requestAnimationFrame(tick);
   }
 
+  openSharedBridge();
   tick();
 });

@@ -44,6 +44,10 @@ On a phone or tablet: tap a joint, then tap (or slide a finger and lift) to plac
 hold to delete, drag to pan, pinch to zoom. On a phone the materials sit in a sheet along
 the bottom.
 
+**Share** (in the toolbar, and in the results after a win) copies a link that opens your
+bridge: the design is packed into the address's `#bridge=` part, so nothing is uploaded.
+A link to a level the player hasn't unlocked yet doesn't open.
+
 Hover over any member to see its load: tension or compression in kN, and how much of its
 strength it uses (during a test, also its peak). **Stress view** colours the whole bridge
 by load.
@@ -117,6 +121,7 @@ src/
     vehicle-types.mjs   cars, buses, trucks, heavy haulers: sizes, axles, drawings
     themes.mjs          scenery palettes: summer, snow, desert, night
     hints.mjs           advice after a failed test
+    share.mjs           bridges packed into links
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes
     audio.mjs           synthesized sound (Web Audio)
