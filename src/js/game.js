@@ -257,6 +257,20 @@ export class Game extends GameInput {
     const zoom = this.ctx.zoom;
     // (steady when the system asks for reduced motion)
     const pulse = REDUCED_MOTION?.matches ? 0.6 : 0.5 + 0.5 * Math.sin((globalThis.performance?.now() ?? 0) / 220);
+    const idle = this.idleLink;
+    if (idle && this.scene.links.includes(idle)) {
+      // the piece that hardly worked in the last win: a place to save money
+      g.save();
+      g.beginPath();
+      g.moveTo(idle.a.position.x, idle.a.position.y);
+      g.lineTo(idle.b.position.x, idle.b.position.y);
+      g.strokeStyle = `rgba(90, 200, 120, ${0.4 + 0.4 * pulse})`;
+      g.lineCap = "round";
+      g.setLineDash([6 / zoom, 5 / zoom]);
+      g.lineWidth = idle.drawnWidth(zoom) + (6 + 4 * pulse) / zoom;
+      g.stroke();
+      g.restore();
+    }
     const failed = this.failedLink;
     if (failed && this.scene.links.includes(failed)) {
       g.save();

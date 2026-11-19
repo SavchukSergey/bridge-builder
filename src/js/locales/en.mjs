@@ -294,4 +294,7 @@ export default {
   "replay.watch.compression": "Watch the glowing {what} piece: it is being squashed harder and harder.",
   "replay.broke.tension": "Snap! It was pulled harder than a {what} piece can take.",
   "replay.broke.compression": "Crunch! It was squashed harder than a {what} piece can take.",
+
+  // ---- a piece that hardly worked
+  "result.idle": "Money saver: the {what} piece marked in green only did {n}% of the work it can. A {to} piece there would be strong enough, and saves {saving}.",
 };

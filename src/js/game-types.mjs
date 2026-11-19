@@ -38,6 +38,9 @@
  * @property {{ material: string, label: string, kind: "deck" | "beam" | "cable", mode: "tension" | "compression", time: number, x: number, y: number }} [failure]
  *   - failed: the first member to break, and how
  * @property {boolean} [roadAcross] - failed: whether road spanned the whole gap at the start
+ * @property {{ label: string, load: number, to: string, saving: number }} [idle] - success: a
+ *   piece that hardly worked (its highest load, 0 to 1), the cheaper piece that would do, and
+ *   the money that saves
  * @property {number} broken - members that broke
  * @property {string | undefined} nextLevel - id of the following level, if any
  * @property {ChallengeResult[]} challenges - the level's challenges (met only in a win)

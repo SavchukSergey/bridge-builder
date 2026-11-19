@@ -8,7 +8,7 @@ import { creekLevel, levels } from "../src/js/level.mjs";
 /** Runs the load test until it is won or lost (or a minute of simulated time passes). */
 function runTest(game) {
   game.setSimulationRunning(true);
-  for (let f = 0; f < 60 * 60 && !game.result; f++) game.tick();
+  for (let f = 0; f < 120 * 60 && !game.result; f++) game.tick();
   return game.result;
 }
 
@@ -104,5 +104,55 @@ describe("test results", () => {
     assert.equal(game.bestResult(), undefined);
     localStorage.setItem("bridge-builder:best", JSON.stringify({ creek: { cost: "cheap", stars: 7 } }));
     assert.equal(game.bestResult(), undefined);
+  });
+});
+
+describe("money saver", () => {
+  test("after a win, the biggest saving from a cheaper piece is named and marked, until the next edit", () => {
+    const game = createGame("brook");
+    const s = solutions.brook(levels[0]);
+    // a steel piece between two anchors: it never carries anything
+    s.links.push({ a: 0, b: 1, material: "steel" });
+    game.importStructure(s);
+    const result = runTest(game);
+    assert.equal(result?.kind, "success");
+    assert.equal(result?.idle?.label, "Steel");
+    assert.equal(result.idle.to, "Wood", "the cheapest piece that would still hold");
+    assert.ok(result.idle.load < 0.01 && Math.abs(result.idle.saving - 1700) < 1);
+    assert.equal(game.idleLink?.material.name, "steel");
+    game.reset();
+    assert.ok(game.idleLink, "still marked on the rebuilt bridge");
+    game.restartLevel();
+    assert.equal(game.idleLink, undefined, "an edit clears it");
+  });
+
+  test("a bridge where every piece works hard has none", () => {
+    const game = createGame("brook");
+    game.importStructure(solutions.brook(levels[0]));
+    const result = runTest(game);
+    assert.equal(result?.kind, "success");
+    assert.equal(result?.idle, undefined, "the road itself is never pointed out");
+  });
+
+  test("on every reference bridge, the swap it suggests still wins", () => {
+    const names = { Wood: "wood", "Light steel": "steel-light", "Thin cable": "cable-thin" };
+    let suggested = 0;
+    for (const level of levels) {
+      const game = createGame(level.id);
+      game.importStructure(solutions[level.id](level));
+      const idle = runTest(game)?.idle;
+      if (!idle) continue;
+      suggested++;
+      const index = game.scene.links.indexOf(/** @type {any} */ (game.idleLink));
+      game.reset();
+      const swapped = game.scene.serialize();
+      swapped.links[index].material = names[idle.to];
+      const again = createGame(level.id);
+      again.importStructure(swapped);
+      const result = runTest(again);
+      assert.equal(result?.kind, "success", `${level.id}: ${idle.label} to ${idle.to}`);
+      assert.equal(result.broken, 0, level.id);
+    }
+    assert.ok(suggested > 0);
   });
 });

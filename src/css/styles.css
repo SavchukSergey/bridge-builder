@@ -1236,6 +1236,11 @@ kbd {
   line-height: 1.45;
 }
 
+#result-tip.saver {
+  background: rgba(90, 200, 120, 0.1);
+  border-color: rgba(90, 200, 120, 0.35);
+}
+
 /* ---------- touch ---------- */
 
 .touch-help {

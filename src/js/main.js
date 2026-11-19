@@ -575,10 +575,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const broke = result.broken ? t('result.broke', { n: result.broken }) : '';
       dlg.text.textContent = say(how[result.reason ?? 'fell'] ?? how.fell) + broke;
     }
-    dlg.tip.hidden = result.kind !== 'failed';
+    // after a failure, what to try; after a win, a piece that hardly worked, to save money on
+    const idle = result.kind === 'success' ? result.idle : undefined;
+    dlg.tip.hidden = result.kind !== 'failed' && !idle;
+    dlg.tip.classList.toggle('saver', Boolean(idle));
     dlg.tip.textContent = result.kind === 'failed'
       ? failureTip(result, game.level.track) + (result.failure ? t('result.marked') : '')
-      : '';
+      : idle ? t('result.idle', { what: idle.label.toLowerCase(), to: idle.to.toLowerCase(), saving: formatMoney(idle.saving), n: Math.max(1, Math.round(idle.load * 100)) }) : '';
     // after a win, how the bridge did on the level's challenges
     dlg.challenges.replaceChildren(...(result.kind === 'success' ? result.challenges : []).map(c =>
       challengeItem(c.name, c.label, { earned: c.earned, met: c.met, isNew: c.isNew })));

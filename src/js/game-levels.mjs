@@ -60,6 +60,7 @@ export class GameLevels extends GameCore {
 
   __afterChange() {
     this.failedLink = undefined;
+    this.idleLink = undefined;
     this.__saveAutosave();
     this.onChange();
   }
@@ -76,6 +77,7 @@ export class GameLevels extends GameCore {
     this.showOutline = false;
     this.effects.level = this.level;
     this.failedLink = undefined;
+    this.idleLink = undefined;
     this.__undoStack = [];
     this.__redoStack = [];
     this.__convoyPreviewCache = undefined;

@@ -20,6 +20,18 @@ import { RenderCtx } from "./render-ctx.mjs";
 import { Scene } from "./scene.js";
 import { findRoad } from "./vehicle.mjs";
 import { Boat, winchPull } from "./drawbridge.mjs";
+import { materials } from "./materials/index.mjs";
+
+/**
+ * Cheaper pieces of the same sort, dearest first: what a piece that hardly worked could be
+ * swapped for. (Not taking it away: a piece that carries almost nothing can still be what
+ * stops a truss folding up.)
+ */
+const CHEAPER = { steel: ["steel-light", "wood"], "steel-light": ["wood"], cable: ["cable-thin"] };
+/** A swap must leave the piece at no more than this share of what the cheaper one can take. */
+const SWAP_LOAD = 0.5;
+/** Savings smaller than this ($) aren't worth pointing out. */
+const MIN_SAVING = 100;
 /** @typedef {import("./game-types.mjs").BestResult} BestResult */
 /** @typedef {import("./game-types.mjs").TestResult} TestResult */
 /** @typedef {import("./game-types.mjs").DragState} DragState */
@@ -137,6 +149,7 @@ export class GameCore {
       const draw = this.level.drawbridge;
       this.boat = draw ? new Boat(draw, this.level.water ?? 0) : undefined;
       this.failedLink = undefined;
+      this.idleLink = undefined;
     }
     this.evalCtx.simulation = running;
   }
@@ -366,9 +379,48 @@ export class GameCore {
     if (newBest && !sandbox) storageSet(BEST_KEY, JSON.stringify({ ...this.__bests(), [level.id]: best }));
     if (!sandbox) this.__markCompleted();
     const challenges = this.__challengeResults(true);
+    const saver = this.__moneySaver();
+    this.idleLink = saver?.link;
     this.onChange();
-    return { ...base, kind: "success", stars, best, newBest, broken, challenges };
+    return {
+      ...base, kind: "success", stars, best, newBest, broken, challenges,
+      idle: saver && { label: saver.link.material.label, load: saver.link.peakUtilization, to: saver.to.label, saving: saver.saving },
+    };
   }
+
+  /**
+   * After a win: the biggest saving from swapping one piece that hardly worked for a cheaper
+   * one of the same sort ({@link CHEAPER}) that would still be at most {@link SWAP_LOAD} loaded,
+   * judged by the highest load it took in this test.
+   * @returns {{ link: import("./engine/link.mjs").Link, to: import("./materials/material.mjs").Material, saving: number } | undefined}
+   */
+  __moneySaver() {
+    /** @type {ReturnType<typeof this.__moneySaver>} */
+    let best;
+    for (const link of this.scene.links) {
+      const from = link.material;
+      const options = /** @type {Record<string, string[]>} */ (CHEAPER)[from.name];
+      if (link.broken || !options) continue;
+      for (const id of options) {
+        const to = materials[id];
+        // how much harder the cheaper piece would be working, pulled or pushed
+        const ratio = Math.max(
+          from.tensileStrength * from.crossSectionalArea / (to.tensileStrength * to.crossSectionalArea),
+          from.compressionStrength * from.crossSectionalArea / (to.compressionStrength * to.crossSectionalArea));
+        if (link.peakUtilization * ratio > SWAP_LOAD) continue;
+        const saving = link.length * (from.costPerMeter - to.costPerMeter);
+        if (saving >= MIN_SAVING && (!best || saving > best.saving)) best = { link, to, saving };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * The piece the last win found could be cheaper ({@link __moneySaver}), marked on the bridge
+   * until the next test, edit or level.
+   * @type {import("./engine/link.mjs").Link | undefined}
+   */
+  idleLink = undefined;
 
   /** The current bridge, as challenges judge it. @returns {import("./challenges.mjs").BridgeStats} */
   get bridgeStats() {

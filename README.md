@@ -88,6 +88,12 @@ and earns **badges** for milestones over the whole game: the first bridge, 10 an
 5 extra goals, a railway level, every level, every goal and every star. They show in the
 level list, and a result announces the ones it earned.
 
+After a win, a **money saver** may point at a piece that hardly worked: it is marked in
+green, with the cheaper piece of the same sort that would still be strong enough there (steel
+to light steel or wood, cable to thin cable) and what that saves. It suggests a swap, never
+taking a piece away: a piece that carries almost nothing can still be what stops a truss
+folding up.
+
 Eight levels are built on the same idea as a famous bridge, and winning one shows **a real
 bridge like yours**: a drawing of that kind of bridge and one fact about it (Tarr Steps after
 Brook, the Forth Bridge after Triangles, the Golden Gate after Hanging road, the Brooklyn
