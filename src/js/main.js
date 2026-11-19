@@ -862,7 +862,10 @@ document.addEventListener('DOMContentLoaded', function () {
     chkSimulation.checked = false;
   });
   dlg.replay.addEventListener('click', () => {
+    const result = game.result;
     hideResult();
+    replayOf = result?.kind === 'failed' ? result : undefined;
+    replayLink = game.scene.firstFailure?.link; // the same piece, once the bridge is put back
     if (game.replayFailure()) chkSimulation.checked = true;
   });
   dlg.next.addEventListener('click', () => {
@@ -1233,6 +1236,36 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tutorial.skip.textContent !== skip) tutorial.skip.textContent = skip;
   }
 
+  // ---- the replay's note: which piece to watch, its load as it rises, and why it broke
+  const replayNote = {
+    root: byId('replay-note', HTMLDivElement),
+    text: byId('replay-note-text', HTMLParagraphElement),
+    bar: byId('replay-note-bar', HTMLSpanElement),
+    tip: byId('replay-note-tip', HTMLParagraphElement),
+  };
+  /** The failed test being replayed. @type {import("./game-types.mjs").TestResult | undefined} */
+  let replayOf;
+  /** @type {import("./engine/link.mjs").Link | undefined} */
+  let replayLink;
+  function updateReplayNote() {
+    const failure = replayOf?.kind === 'failed' ? replayOf.failure : undefined;
+    const link = replayLink;
+    const show = Boolean(game.replay && !game.replay.seeking && failure && link);
+    if (replayNote.root.hidden === show) replayNote.root.hidden = !show;
+    if (!show || !failure || !link) {
+      if (!game.replay) replayOf = undefined;
+      return;
+    }
+    const what = failure.label.toLowerCase();
+    const broke = link.broken;
+    const text = t(broke ? `replay.broke.${failure.mode}` : `replay.watch.${failure.mode}`, { what });
+    if (replayNote.text.textContent !== text) replayNote.text.textContent = text;
+    const load = broke ? 1 : Math.min(1, link.utilization);
+    replayNote.bar.style.width = `${Math.round(load * 100)}%`;
+    const tip = broke ? failureTip(/** @type {any} */ (replayOf), game.level.track) : '';
+    if (replayNote.tip.textContent !== tip) replayNote.tip.textContent = tip;
+  }
+
   /** @type {number | undefined} */
   let lastFrame;
 
@@ -1269,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateTooltip(tooltip, game.hoverInfo, canvas);
     updatePlaceTip();
     updateTutorial();
+    updateReplayNote();
     updateSound();
     requestAnimationFrame(tick);
   }

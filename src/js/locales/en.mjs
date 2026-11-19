@@ -288,4 +288,10 @@ export default {
   "realBridge.tower.name": "Tower Bridge",
   "realBridge.tower.place": "London, England, 1894",
   "realBridge.tower.fact": "Its road splits in the middle, and both halves lift up so tall ships can sail through. It still opens hundreds of times a year.",
+
+  // ---- the replay: why it broke
+  "replay.watch.tension": "Watch the glowing {what} piece: it is being pulled harder and harder.",
+  "replay.watch.compression": "Watch the glowing {what} piece: it is being squashed harder and harder.",
+  "replay.broke.tension": "Snap! It was pulled harder than a {what} piece can take.",
+  "replay.broke.compression": "Crunch! It was squashed harder than a {what} piece can take.",
 };

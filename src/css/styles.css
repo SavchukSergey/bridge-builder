@@ -1091,6 +1091,56 @@ kbd {
   font-weight: 700;
 }
 
+/* ---------- the replay's note: why it broke ---------- */
+
+#replay-note {
+  position: fixed;
+  z-index: 20;
+  top: 64px;
+  left: 16px;
+  width: min(340px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background-color: rgba(18, 24, 30, 0.92);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+#replay-note[hidden] {
+  display: none;
+}
+
+#replay-note p {
+  margin: 4px 0 0;
+}
+
+#replay-note-tip {
+  color: var(--muted);
+}
+
+#replay-note-tip:empty {
+  display: none;
+}
+
+.replay-meter {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.replay-meter span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #f2b233, #e2654b);
+}
+
 /* ---------- tutorial ---------- */
 
 #tutorial {
