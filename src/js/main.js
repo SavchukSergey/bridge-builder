@@ -16,6 +16,7 @@ import { REAL_BRIDGES, bridgeDrawing, realBridgeFor } from './real-bridges.mjs';
 import { PAINTS, loadLooks, saveLooks } from './looks.mjs';
 import { dailyFor, dailyLabel, dailyMet, dayOf, daysDone, markDone, streak } from './daily.mjs';
 import { clearFriendGoal, friendGoal, friendInHash, friendUrl, judgeFriend, setFriendGoal } from './friend.mjs';
+import { addScore, lastPlayer, players, scoresFor } from './scoreboard.mjs';
 import { LANGUAGES, detectLanguage, formatMoney, formatNumber, isLanguage, language, saveLanguage, setLanguage, t, translatePage } from './i18n.mjs';
 
 // before anything is shown: the page and everything it builds are in this language
@@ -237,6 +238,9 @@ document.addEventListener('DOMContentLoaded', function () {
     badges: byId('result-badges', HTMLUListElement),
     real: byId('result-real', HTMLButtonElement),
     friend: byId('result-friend', HTMLButtonElement),
+    score: byId('result-score', HTMLFormElement),
+    scoreName: byId('result-score-name', HTMLInputElement),
+    scoreDone: byId('result-score-done', HTMLParagraphElement),
     name: byId('result-name', HTMLParagraphElement),
     compare: byId('result-compare', HTMLDivElement),
     compareText: byId('result-compare-text', HTMLParagraphElement),
@@ -739,6 +743,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const famous = result.kind === 'success' ? realBridgeFor(game.level.id) : undefined;
     dlg.real.hidden = !famous;
     dlg.friend.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
+    // a win: put a name to it on the family scoreboard
+    dlg.score.hidden = result.kind !== 'success' || game.level.sandbox !== undefined;
+    dlg.score.classList.remove('added');
+    dlg.scoreDone.hidden = true;
+    dlg.scoreName.value = lastPlayer();
+    dlg.scoreName.placeholder = t('score.placeholder');
     if (famous) {
       const picture = dlg.real.firstElementChild;
       if (picture) picture.innerHTML = bridgeDrawing(famous.kind);
@@ -759,6 +769,70 @@ document.addEventListener('DOMContentLoaded', function () {
     if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
     (dlg.next.hidden ? dlg.retry : dlg.next).focus();
   }
+
+  // ---- the family scoreboard: names put to wins, on this browser
+  dlg.scoreName.addEventListener('keydown', (ev) => ev.stopPropagation()); // typing isn't building
+  dlg.score.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const result = game.result;
+    if (result?.kind !== 'success') return;
+    const placed = addScore(game.level.id, dlg.scoreName.value, result.cost, result.stars);
+    if (!placed) {
+      dlg.scoreName.focus();
+      return;
+    }
+    dlg.score.classList.add('added');
+    dlg.scoreDone.hidden = false;
+    dlg.scoreDone.textContent = t('score.placed', { place: placed.place, of: placed.of });
+  });
+  const board = {
+    root: byId('scoreboard', HTMLDivElement),
+    open: byId('levels-scores', HTMLButtonElement),
+    close: byId('scoreboard-close', HTMLButtonElement),
+    empty: byId('scoreboard-empty', HTMLParagraphElement),
+    players: byId('scoreboard-players', HTMLTableElement),
+    levels: byId('scoreboard-levels', HTMLOListElement),
+  };
+  function showScoreboard() {
+    const everyone = players(levels.map(l => l.id));
+    board.empty.hidden = everyone.length > 0;
+    board.players.hidden = everyone.length === 0;
+    const body = /** @type {HTMLTableSectionElement} */ (board.players.tBodies[0]);
+    body.replaceChildren(...everyone.map(p => {
+      const row = document.createElement('tr');
+      for (const value of [p.name, String(p.stars), String(p.levels), String(p.cheapest)]) {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    board.levels.replaceChildren(...levels.map(level => {
+      const li = document.createElement('li');
+      const [first] = scoresFor(level.id);
+      li.append(`${level.name}: `);
+      const who = document.createElement('span');
+      who.className = first ? 'who' : 'none';
+      who.textContent = first ? `${first.name}, ${formatMoney(first.cost)}` : '\u2014';
+      li.append(who);
+      return li;
+    }));
+    board.root.hidden = false;
+    board.close.focus();
+  }
+  function hideScoreboard() {
+    board.root.hidden = true;
+    if (!picker.root.hidden) board.open.focus();
+  }
+  board.open.addEventListener('click', showScoreboard);
+  board.close.addEventListener('click', hideScoreboard);
+  board.root.addEventListener('click', (ev) => { if (ev.target === board.root) hideScoreboard(); });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !board.root.hidden) {
+      ev.stopImmediatePropagation();
+      hideScoreboard();
+    }
+  }, true);
 
   // ---- for grown-ups: what the game teaches, how to help, privacy, and progress so far
   const grownups = {

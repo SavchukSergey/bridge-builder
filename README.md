@@ -215,6 +215,10 @@ with the bridge.
 Every level has a reference bridge (`src/js/solutions.mjs`) that crosses within budget, and the budgets
 are set so the cheapest known design uses 85-95% of them.
 
+The **family scoreboard** (in the level list) is for everyone who plays on one browser:
+after a win, type a name in the result and add it. Each player keeps their cheapest win on
+each level; the board ranks players by stars and shows who built each level cheapest.
+
 **Challenge a friend** (after a win) copies a link with the level and the price, but not
 the bridge: opening it sets that price as a goal on the level, shown in the panel until it is
 beaten or put away.
@@ -279,6 +283,7 @@ src/
     solutions.mjs       a reference bridge for each level (the hint outline; the tests use them too)
     guide.mjs           "Build it with me": the order to build a reference bridge in, and how far along you are
     guide-ui.mjs        "Build it with me" on screen: when it runs, and what it says for each step
+    scoreboard.mjs      the family scoreboard: names put to wins, on this browser
     share.mjs           bridges packed into links
     scenery.mjs         background, ground, water
     effects.mjs         debris, dust, splashes

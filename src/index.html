@@ -447,6 +447,12 @@
         <p id="result-compare-text"></p>
         <button type="button" id="result-compare-show" class="btn" title="See the hint bridge drawn over yours" data-i18n-title="compare.title"><svg class="icon"><use href="#icon-bulb" /></svg><span data-i18n="compare.show">Compare</span></button>
       </div>
+      <form id="result-score" class="result-score" hidden>
+        <label for="result-score-name" data-i18n="score.who">Who built it?</label>
+        <input type="text" id="result-score-name" maxlength="20" autocomplete="off" spellcheck="false" />
+        <button type="submit" class="btn" data-i18n="score.add">Add to the scoreboard</button>
+        <p id="result-score-done" hidden></p>
+      </form>
       <p id="result-hint"></p>
       <div class="result-actions">
         <button type="button" id="result-share" class="btn" title="Copy a link that opens this bridge" data-i18n-title="ui.shareTitle"><svg class="icon"><use href="#icon-link" /></svg><span data-i18n="ui.share">Share</span></button>
@@ -456,6 +462,23 @@
         <button type="button" id="result-retry" class="btn"><svg class="icon"><use href="#icon-reset" /></svg><span></span></button>
         <button type="button" id="result-next" class="btn primary"><span data-i18n="ui.nextLevel">Next level</span><svg class="icon"><use href="#icon-next" /></svg></button>
       </div>
+    </div>
+  </div>
+
+  <div id="scoreboard" hidden>
+    <div class="settings-card scoreboard-card" role="dialog" aria-modal="true" aria-labelledby="scoreboard-title">
+      <button type="button" id="scoreboard-close" class="btn icon-only close" title="Close (Esc)" data-i18n-title="ui.closeEsc" aria-label="Close" data-i18n-aria="ui.close">
+        <svg class="icon"><use href="#icon-close" /></svg>
+      </button>
+      <h2 id="scoreboard-title" data-i18n="score.title">Family scoreboard</h2>
+      <p class="scoreboard-note" data-i18n="score.note">Everyone who plays here can put their name to a win. It stays on this device.</p>
+      <p id="scoreboard-empty" data-i18n="score.empty">No names yet. Win a level, then add your name in the result.</p>
+      <table id="scoreboard-players" class="scoreboard-table">
+        <thead><tr><th data-i18n="score.player">Player</th><th data-i18n="score.stars">Stars</th><th data-i18n="score.levels">Levels</th><th data-i18n="score.cheapest">Cheapest</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <h3 data-i18n="score.byLevel">Cheapest on each level</h3>
+      <ol id="scoreboard-levels" class="scoreboard-levels"></ol>
     </div>
   </div>
 
@@ -546,6 +569,7 @@
         </div>
         <button type="button" id="daily-play" class="btn primary" data-i18n="daily.play">Play</button>
       </section>
+      <button type="button" id="levels-scores" class="btn levels-trophy"><svg class="icon"><use href="#icon-star" /></svg><span data-i18n="score.title">Family scoreboard</span></button>
       <button type="button" id="levels-trophy" class="btn levels-trophy" hidden><svg class="icon"><use href="#icon-trophy" /></svg><span data-i18n="ending.again">You built every bridge: see your trophy</span></button>
       <h3 class="badges-title" data-i18n="ui.badges">Badges</h3>
       <ul class="badges" id="levels-badges"></ul>

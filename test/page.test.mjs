@@ -20,6 +20,8 @@ const TAGS = {
   HTMLOutputElement: "output",
   HTMLFormElement: "form",
   HTMLUListElement: "ul",
+  HTMLOListElement: "ol",
+  HTMLTableElement: "table",
 };
 
 test("every element main.js looks up exists in index.html with the expected tag", () => {

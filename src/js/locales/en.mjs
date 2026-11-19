@@ -328,4 +328,8 @@ export default {
   "friend.copied": "Challenge link copied: send it to a friend.",
   "friend.opened": "A friend’s bridge on {name} cost {cost}. Can you build one for less?",
   "friend.locked": "A friend dares you to build {number}. {name}: win {before} first.",
+
+  // ---- the family scoreboard
+  "score.placeholder": "Your name",
+  "score.placed": "On the scoreboard: number {place} of {of} on this level.",
 };

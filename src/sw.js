@@ -64,6 +64,7 @@ const SHELL = [
   "js/sandbox.mjs",
   "js/scene.js",
   "js/scenery.mjs",
+  "js/scoreboard.mjs",
   "js/share.mjs",
   "js/solutions.mjs",
   "js/speech.mjs",
