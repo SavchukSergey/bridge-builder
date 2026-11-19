@@ -1058,7 +1058,10 @@ document.addEventListener('DOMContentLoaded', function () {
     btnUndo.disabled = !game.canUndo;
     btnRedo.disabled = !game.canRedo;
     const mode = modeText(game);
-    txtMode.innerText = mode.text;
+    if (txtMode.textContent !== mode.text) {
+      txtMode.textContent = mode.text;
+      txtMode.title = mode.text; // all of it, if it's cut short
+    }
     txtMode.className = mode.kind;
     txtCost.textContent = formatMoney(game.cost);
     txtBudget.textContent = formatMoney(game.level.budget);

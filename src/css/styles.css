@@ -113,6 +113,14 @@ symbol .solid {
 
 .group.status {
   gap: 8px;
+  /* whatever room is left, and no more: a long message is cut short, not wrapped onto a line
+     of its own, and the buttons after it stay put as the message changes */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.group.status #simulation-time {
+  flex: none;
 }
 
 .level-button {
@@ -239,16 +247,37 @@ input:checked + .btn.toggle {
 }
 
 #mode-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  /* up to two short lines, then cut short with an ellipsis */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.25;
   font-weight: 600;
+}
+
+/* a narrower window: the name makes room for the status */
+@media (max-width: 1200px) {
+  .brand {
+    display: none;
+  }
+
+  .brand + .group {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
 #mode-label::before {
   content: "";
+  display: inline-block;
   width: 8px;
   height: 8px;
+  margin-right: 7px;
+  vertical-align: 1px;
   border-radius: 50%;
   background: var(--muted);
 }

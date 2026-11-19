@@ -21,10 +21,10 @@ export default {
   "mode.falling.train": "The train is falling!",
   "mode.crossed": "Hooray! All the {many} made it.",
   "mode.crossed.train": "Hooray! The train made it.",
-  "mode.overBudget": "All the {many} made it, but the bridge costs too much. Press Reset and make it cheaper.",
-  "mode.overBudget.train": "The train made it, but the bridge costs too much. Press Reset and make it cheaper.",
-  "mode.fell": "Oh no, a {one} fell! Press Reset and try again.",
-  "mode.fell.train": "Oh no, the train fell! Press Reset and try again.",
+  "mode.overBudget": "They made it, but it costs too much!",
+  "mode.overBudget.train": "It made it, but it costs too much!",
+  "mode.fell": "Oh no, a {one} fell!",
+  "mode.fell.train": "Oh no, the train fell!",
   "time": "{s}s",
 
   // ---- the load tooltip and the placement readout
