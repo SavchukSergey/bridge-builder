@@ -54,6 +54,9 @@ export class GameInput extends GameEditing {
    * @param {PointerEvent} ev 
    */
   __handleMouseDown(ev) {
+    // a new press: whatever the last one said about its click is over (a browser may send
+    // no click after a long press, and that must not swallow this tap)
+    this.__suppressClick = false;
     const client = this.__getPointerClient(ev);
     this.pointerType = ev.pointerType === "touch" || ev.pointerType === "pen" ? ev.pointerType : "mouse";
     if (ev.pointerType === "touch") {
@@ -563,7 +566,8 @@ export class GameInput extends GameEditing {
       return;
     }
     const drag = this.__dragState;
-    this.__suppressClick = drag?.moved ?? false;
+    // (a long press has already said its release is not a tap, and ended the drag)
+    if (drag) this.__suppressClick = drag.moved;
     this.__dragState = undefined;
     if (!drag?.moves || !drag.moved || drag.cancelled) return;
 

@@ -81,6 +81,43 @@ describe("touch", () => {
     }
   });
 
+  test("lifting the finger after a long press near a dot doesn't start a piece from it", () => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+    try {
+      const game = createGame("brook");
+      ui.material = "road";
+      tap(game, -10, 10);
+      tap(game, -10, 14); // a post up from the anchor
+      game.__handleMouseDown(finger(game, 1, -10, 12.5)); // nearest its top, and the anchor within reach
+      mock.timers.tick(500);
+      assert.equal(game.scene.links.length, 0, "deleted");
+      game.__handleMouseUp(finger(game, 1, -10, 12.5));
+      game.__handleClick(finger(game, 1, -10, 12.5));
+      assert.equal(game.isPlacing, false, "the anchor nearby was not picked up");
+      tap(game, -10, 10);
+      assert.equal(game.isPlacing, true, "the next tap is a tap");
+    } finally {
+      mock.timers.reset();
+    }
+  });
+
+  test("a long press the browser sends no click for doesn't swallow the next tap", () => {
+    mock.timers.enable({ apis: ["setTimeout"] });
+    try {
+      const game = createGame("brook");
+      ui.material = "road";
+      tap(game, -10, 10);
+      tap(game, 0, 10);
+      game.__handleMouseDown(finger(game, 1, -5, 10));
+      mock.timers.tick(500);
+      game.__handleMouseUp(finger(game, 1, -5, 10)); // and no click
+      tap(game, -10, 10);
+      assert.equal(game.isPlacing, true);
+    } finally {
+      mock.timers.reset();
+    }
+  });
+
   test("moving the finger, lifting it or a second finger stops the long press", () => {
     mock.timers.enable({ apis: ["setTimeout"] });
     try {
