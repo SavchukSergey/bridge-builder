@@ -2,9 +2,6 @@ import { createVec3F } from "../math.js";
 
 export class Joint {
 
-  /** How much bigger dots are drawn, e.g. on a touch screen where a finger has to find them. */
-  static drawScale = 1;
-
   velocity = createVec3F(0, 0, 0);
   force = createVec3F(0, 0, 0);
   mass = 0;
@@ -27,7 +24,7 @@ export class Joint {
     // a gusset plate with a bolt; anchors get a bigger pin
     const g = ctx.ctx;
     const { x, y } = this.position;
-    const r = Math.max(this.fixed ? 0.45 : 0.3, (this.fixed ? 4 : 2.6) * Joint.drawScale / ctx.zoom);
+    const r = Math.max(this.fixed ? 0.45 : 0.3, (this.fixed ? 4 : 2.6) * ctx.jointScale / ctx.zoom);
     g.beginPath();
     g.arc(x, y, r, 0, 2 * Math.PI);
     g.fillStyle = this.fixed ? "#23272c" : "#353b42";

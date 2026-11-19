@@ -186,7 +186,7 @@ export default {
   "tip.pulled": "A {what} piece was pulled apart. Add more pieces to share the weight, or make the triangles taller.",
 
   // ---- badges
-  "badge.locked": "Not yet:",
+  "badge.notYet": "not yet",
   "badge.first.name": "First bridge",
   "badge.first.how": "Win a level.",
   "badge.stars10.name": "10 stars",

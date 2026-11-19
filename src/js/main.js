@@ -1,5 +1,4 @@
 // Main entry point for the Bridge Builder game
-import { Joint } from './engine/joint.mjs';
 import { Game, SPEEDS } from './game.js';
 import { findLevel, levels } from './level.mjs';
 import { bridgeInHash, bridgeUrl, decodeBridge } from './share.mjs';
@@ -399,6 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function refreshLevels() {
     showDecks();
     txtLevelName.textContent = game.level.sandbox ? game.level.name : `${game.level.number}. ${game.level.name}`;
+    if (txtLevel.textContent !== game.level.description) stopReading?.();
     txtLevel.textContent = game.level.description;
     if (!picker.root.hidden) renderLevelCards();
 
@@ -467,9 +467,9 @@ document.addEventListener('DOMContentLoaded', function () {
   /**
    * @param {string} id
    * @param {boolean} earned
-   * @param {boolean} [isNew]
+   * @param {{ isNew?: boolean, how?: boolean }} [opts] how: say how it's earned, under its name
    */
-  function badgeItem(id, earned, isNew = false) {
+  function badgeItem(id, earned, { isNew = false, how = false } = {}) {
     const li = document.createElement('li');
     li.className = 'badge';
     li.classList.toggle('earned', earned);
@@ -481,10 +481,31 @@ document.addEventListener('DOMContentLoaded', function () {
     icon.append(use);
     const name = document.createElement('span');
     name.textContent = t(`badge.${id}.name`);
-    li.append(icon, name);
-    li.title = (earned ? '' : t('badge.locked') + ' ') + t(`badge.${id}.how`);
+    const text = document.createElement('span');
+    text.className = 'badge-text';
+    text.append(name);
+    if (how) {
+      const line = document.createElement('span');
+      line.className = 'how';
+      line.textContent = t(`badge.${id}.how`);
+      text.append(line);
+    } else {
+      li.title = t(`badge.${id}.how`);
+    }
+    if (!earned) {
+      // said, not only shown by its colour
+      const status = document.createElement('span');
+      status.className = 'visually-hidden';
+      status.textContent = ` (${t('badge.notYet')})`;
+      name.append(status);
+    }
+    li.append(icon, text);
     return li;
   }
+  // a player from before badges: what they have counts as told, so the next win doesn't list it all
+  try {
+    if (localStorage.getItem(BADGES_KEY) === null) localStorage.setItem(BADGES_KEY, JSON.stringify(earnedBadges(progress())));
+  } catch { /* storage blocked: nothing to remember */ }
 
   /** @param {import('./game.js').TestResult} result */
   function showResult(result) {
@@ -550,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function () {
       fresh = newBadges(have, toldBadges());
       try { localStorage.setItem(BADGES_KEY, JSON.stringify(have)); } catch { /* ignore */ }
     }
-    dlg.badges.replaceChildren(...fresh.map(id => badgeItem(id, true, true)));
+    dlg.badges.replaceChildren(...fresh.map(id => badgeItem(id, true, { isNew: true })));
     dlg.badges.hidden = fresh.length === 0;
     dlg.root.hidden = false;
     if (result.kind === 'success') confetti(window, result.stars + (fresh.length ? 1 : 0));
@@ -796,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const { earned, max } = game.totalStars;
     picker.total.textContent = `${earned} / ${max}`;
     const have = earnedBadges(progress());
-    picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id))));
+    picker.badges.replaceChildren(...BADGES.map(b => badgeItem(b.id, have.includes(b.id), { how: true })));
   }
 
   function showLevels() {
@@ -1227,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ---- a touch screen: bigger dots, for a finger to find
   const coarse = window.matchMedia?.('(pointer: coarse)');
-  const sizeDots = () => { Joint.drawScale = coarse?.matches ? 1.6 : 1; };
+  const sizeDots = () => { game.ctx.jointScale = coarse?.matches ? 1.6 : 1; };
   sizeDots();
   coarse?.addEventListener?.('change', sizeDots);
 
@@ -1252,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   // M would switch on the mirror, whose button is put away: ignore it (this runs before the game sees the key)
   window.addEventListener('keydown', (ev) => {
-    if (settings.simple.checked && ev.key.toLowerCase() === 'm' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+    if (settings.simple.checked && ev.key?.toLowerCase() === 'm' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
       const target = ev.target;
       if (!(target instanceof Element && target.closest('input, textarea, select, [contenteditable]'))) ev.stopImmediatePropagation();
     }

@@ -20,6 +20,8 @@ export class RenderCtx {
    * positions, stays in CSS pixels.
    */
   pixelRatio = 1;
+  /** How much bigger dots are drawn than usual, e.g. on a touch screen where a finger has to find them. */
+  jointScale = 1;
   shift = createVec3F(0, 0, 0);
 
   #updateTransform() {

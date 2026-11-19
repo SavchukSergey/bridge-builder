@@ -1526,6 +1526,16 @@ kbd {
   display: none;
 }
 
+/* the hint's button says a whole sentence: let it wrap in the narrow panel */
+.hint-card .btn {
+  height: auto;
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  white-space: normal;
+  text-align: left;
+}
+
 #hint-text {
   margin: 0;
   font-size: 12.5px;
@@ -1813,7 +1823,25 @@ body.simple .advanced {
   color: var(--muted);
   background: rgba(255, 255, 255, 0.05);
   border: 1px dashed var(--glass-border);
-  opacity: 0.7;
+}
+
+.badge .icon {
+  flex: none;
+}
+
+.badge-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.badge .how {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+#levels-badges .badge {
+  border-radius: 10px;
+  padding: 5px 10px 5px 7px;
 }
 
 .badge.earned {
@@ -1834,14 +1862,4 @@ body.simple .advanced {
 
 @media (prefers-reduced-motion: reduce) {
   .badge.new { animation: none; }
-}
-
-/* the hint's button says a whole sentence: let it wrap in the narrow panel */
-.hint-card .btn {
-  height: auto;
-  min-height: 34px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  white-space: normal;
-  text-align: left;
 }
